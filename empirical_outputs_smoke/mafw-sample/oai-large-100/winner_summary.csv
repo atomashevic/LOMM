@@ -1,0 +1,2 @@
+"candidate_id","mode","profile","n_fac","eta_base","zeta_base","eta_spread","zeta_spread","eta_spec","zeta_spec","sigma_q","dt","n_replicates","raw_loss","latent_loss","total_loss","synthetic_n_dim","candidate_rank","delta_from_best"
+9,"heterogeneous","linear_ranked",2,-0.1,0.1,0.5,0.2,"-0.0500;-0.1500","0.0800;0.1200",0.25,0.5,3,0.968659293363737,2.02609524871322,1.49737727103848,2,1,0

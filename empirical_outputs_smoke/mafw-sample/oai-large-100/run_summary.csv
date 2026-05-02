@@ -1,0 +1,2 @@
+"model","best_mode","total_loss","raw_loss","latent_loss","empirical_n_dim","synthetic_n_dim","elapsed_seconds"
+"oai-large-100","heterogeneous",1.49737727103848,0.968659293363737,2.02609524871322,2,2,317.968936681747

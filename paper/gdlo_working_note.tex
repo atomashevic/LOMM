@@ -1,0 +1,180 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.35em}
+\title{A Generalized Damped Linear Oscillator Measurement Model for FER-like Time Series}
+\author{Internal working note for the BRM revision}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-3.2em}
+
+\begin{abstract}
+We describe the generalized simulation model used in the revision workflow in a form that is intended to be readable for quantitative methods audiences in psychology. The model combines a small set of latent second-order processes with a block measurement model for facial-expression-recognition (FER)-like observables. The familiar two-factor positive/negative sentiment setup is treated as one special case rather than the default starting point. We also write the broader vector form, which allows cross-factor coupling in principle, and then state explicitly that the current source-of-truth implementation uses a restricted uncoupled version.
+\end{abstract}
+
+\section*{1. Core generative model}
+Psychological time series often show more than simple carry-over from one moment to the next. For example, a viewer may show a rapid rise in negative expressivity after a threatening scene, a slowing of that rise once the scene stabilizes, and then a gradual return toward baseline. A second-order latent process is useful in this setting because it represents both the current level of a latent response and how quickly that response is changing.
+
+Let $i=1,\dots,V$ index videos, $t=1,\dots,T$ time points, and let $\bm x^{(i)}(t)\in\mathbb R^m$ denote the latent expressive state for video $i$, where $m$ is the number of latent dimensions. Write $\bm v^{(i)}(t)=\dot{\bm x}^{(i)}(t)$. In the most general version considered here, the continuous-time dynamics are
+\begin{equation}
+\frac{d}{dt}
+\begin{bmatrix}
+ \bm x(t)\\ \bm v(t)
+\end{bmatrix}
+=
+\begin{bmatrix}
+ \bm 0 & \bm I_m\\
+ \bm K & \bm C
+\end{bmatrix}
+\begin{bmatrix}
+ \bm x(t)\\ \bm v(t)
+\end{bmatrix}
++
+\begin{bmatrix}
+ \bm 0\\ \bm I_m
+\end{bmatrix}
+\bm q(t),
+\qquad
+\bm q(t)\sim \mathcal N(\bm 0,\bm Q_q),
+\label{eq:vector}
+\end{equation}
+or equivalently,
+\begin{equation}
+\ddot{\bm x}(t)=\bm K\,\bm x(t)+\bm C\,\dot{\bm x}(t)+\bm q(t).
+\label{eq:vector_secondorder}
+\end{equation}
+This vector form is useful because off-diagonal elements of $\bm K$ or $\bm C$ can represent cross-factor coupling. For example, a future version of the model could allow a rise in threat-related expressivity to suppress positive expressivity, or allow engagement to amplify both positive and negative expression during a highly arousing clip.
+
+The current source-of-truth implementation does not simulate those couplings. Instead, it uses the restricted case
+\[
+\bm K=\eta \bm I_m,
+\qquad
+\bm C=\zeta \bm I_m,
+\qquad
+\bm Q_q=\sigma_q^2 \bm I_m,
+\]
+so that the factors evolve independently except for sharing the same position-feedback parameter $\eta$ and velocity-feedback parameter $\zeta$ within a simulation condition. In other words, the implemented model is an uncoupled multivariate system with factor-specific shocks and no off-diagonal dynamic effects.
+
+Under that restriction, each latent factor $f=1,\dots,m$ follows the scalar system
+\begin{equation}
+\frac{d}{dt}
+\begin{bmatrix}
+ x_f(t)\\ v_f(t)
+\end{bmatrix}
+=
+\bm A
+\begin{bmatrix}
+ x_f(t)\\ v_f(t)
+\end{bmatrix}
++ \bm B\, q_f(t),
+\qquad
+\bm A=
+\begin{bmatrix}
+0 & 1\\ \eta & \zeta
+\end{bmatrix},
+\quad
+\bm B=
+\begin{bmatrix}
+0\\1
+\end{bmatrix},
+\end{equation}
+with innovation process $q_f(t)\sim \mathcal N(0,\sigma_q^2)$. Equivalently,
+\begin{equation}
+\ddot x_f(t)=\eta x_f(t)+\zeta \dot x_f(t)+q_f(t).
+\label{eq:secondorder}
+\end{equation}
+To keep the notation close to the implementation, we refer to $\eta$ as position feedback and $\zeta$ as velocity feedback. In the current implementation these parameters are global within a simulation condition: they are shared across factors within a run, while the shocks $q_f(t)$ are factor-specific.
+
+The implementation offers several numerical integrators. For the exact linear transition used by the \texttt{linear\_exact} option, let $\Delta>0$ denote the sampling interval and define the state vector $\bm s_{tf}=(x_{tf},v_{tf})^\top$. Then
+\begin{equation}
+\bm s_{t+1,f}=\bm \Phi_{\Delta}\,\bm s_{tf}+\bm \Gamma_{\Delta}\, q_{t+1,f},
+\qquad
+\bm \Phi_{\Delta}=\exp(\bm A\Delta),
+\qquad
+\bm \Gamma_{\Delta}=(\bm \Phi_{\Delta}-\bm I_2)\bm A^{-1}\bm B,
+\label{eq:exact}
+\end{equation}
+with a generalized inverse used when $\bm A$ is singular. The default initialization is $x_{1f}=0.25$ and $v_{1f}=2$ for all $f$.
+
+\section*{2. Dimensionality and measurement model}
+The number of latent factors is not fixed at two. This is important for psychology applications because some clips may look approximately one-dimensional, whereas others may require several partially distinct expressive tendencies to describe the data well. For example, a simple clip might mostly track a single broad affective factor, while a more complex clip might plausibly involve separate latent dimensions for positive expression, negative expression, and social engagement.
+
+In the current simulation workflow, an external complexity index $Q_2$ determines the number of latent factors through the monotone step function
+\begin{equation}
+ g(Q_2)=
+\begin{cases}
+1,& Q_2<1,\\
+2,& 1\le Q_2<2,\\
+3,& 2\le Q_2<3,\\
+4,& 3\le Q_2<5,\\
+5,& 5\le Q_2<7,\\
+6,& 7\le Q_2<10,\\
+7,& 10\le Q_2<15,\\
+8,& 15\le Q_2<25,\\
+9,& 25\le Q_2<40,\\
+10,& 40\le Q_2<70,\\
+11,& 70\le Q_2<120,\\
+12,& Q_2\ge 120.
+\end{cases}
+\label{eq:q2map}
+\end{equation}
+If each factor has $k$ indicators, then the observed dimensionality is $p=mk$. Writing $\bm x_t=(x_{t1},\dots,x_{tm})^\top\in\mathbb R^m$ and $\bm y_t\in\mathbb R^p$, the measurement model is
+\begin{equation}
+\bm y_t=\bm \Lambda\,\bm x_t+\bm \varepsilon_t,
+\qquad
+\bm \varepsilon_t\sim \mathcal N(\bm 0,\bm \Sigma),
+\label{eq:mm}
+\end{equation}
+where $\bm \Lambda\in\mathbb R^{p\times m}$ has a simple block structure: indicator $j$ loads on exactly one factor. If $j\in B_f$, where $B_f$ is the block of indicators assigned to factor $f$, then
+\begin{equation}
+\Lambda_{jf}=\lambda(Q_2)+u_j,
+\qquad
+u_j\sim \mathrm{Unif}(-0.15,0.15),
+\qquad
+\lambda(Q_2)=\min\!\left\{\max\!\left(\frac{0.75}{1+0.10\log(1+Q_2)},0.40\right),0.85\right\}.
+\label{eq:loadings}
+\end{equation}
+All off-block entries of $\bm \Lambda$ are zero. Measurement noise is diagonal,
+\begin{equation}
+\bm \Sigma=\mathrm{diag}(\sigma_r^2+\xi_1,\dots,\sigma_r^2+\xi_p),
+\qquad
+\xi_j\sim \mathrm{Unif}(-0.01,0.01).
+\label{eq:sigma}
+\end{equation}
+For psychology readers, the intended interpretation is straightforward: the observed channels are not treated as separate dynamical systems. Instead, groups of channels are treated as noisy indicators of a smaller number of latent expressive processes. Thus the model generates latent trajectories first and then produces FER-like observables through a noisy block measurement operator.
+
+\section*{3. Special case: two-factor sentiment}
+The familiar sentiment model is recovered by setting $m=2$ and writing
+\[
+\bm x_t=(x_t^{+},x_t^{-})^\top,
+\qquad
+\bm y_t=(y_{t1}^{+},\dots,y_{tk}^{+},y_{t1}^{-},\dots,y_{tk}^{-})^\top.
+\]
+The positive and negative sentiment factors follow the same dynamic law in Eq.~\eqref{eq:secondorder}, and each has $k$ indicators under Eqs.~\eqref{eq:mm}--\eqref{eq:sigma}. This is the correct way to present the old positive/negative setup in the revision: it is a constrained instance of the generic model, not the starting point.
+
+Neutrality should not appear in the core formalism unless it is explicitly implemented in the source code. If it is retained for exposition, the cleanest formulation is as an optional scaling extension,
+\begin{equation}
+\tilde{\bm y}_t=(1-c_t)\,\bm y_t,
+\qquad c_t\in[0,1],
+\label{eq:neutral}
+\end{equation}
+where $c_t$ is a separate neutrality process. Equation~\eqref{eq:neutral} is only a possible add-on; it is not part of the current source-of-truth simulation kernel.
+
+\section*{4. Illustrative example}
+Suppose a researcher analyzes a short video clip using the two-factor sentiment version of the model, with one latent factor for positive expressivity and one for negative expressivity. Each factor is measured by several observed channels. For example, the positive factor might be reflected in smile-related or amusement-related FER outputs, whereas the negative factor might be reflected in channels associated with fear, sadness, or anger.
+
+Now imagine that the clip contains a sudden aversive event. In the model, that event is represented as a shock to the negative latent process. The negative latent position increases, its rate of change also changes, and the observed negative channels rise together because they share the same underlying latent source. Later, as the latent trajectory bends back, those observed channels also return toward their earlier levels. At the same time, the positive latent process can remain relatively flat or follow its own trajectory, depending on the shocks it receives.
+
+This example illustrates the main purpose of the model. The researcher only observes noisy item-level time series, but the model assumes that those series are generated by a much smaller set of latent second-order trajectories. In the current implementation the latent factors do not directly push on one another over time. If cross-factor coupling were introduced in a later extension, the same example could also allow a sharp rise in negative expressivity to dampen or delay the positive factor through off-diagonal elements of $\bm K$ or $\bm C$.
+
+\end{document}

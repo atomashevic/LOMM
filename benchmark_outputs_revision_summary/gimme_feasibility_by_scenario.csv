@@ -1,0 +1,13 @@
+"scenario","scenario_mode","scenario_nfac","N","TimeP","NVAR","Error","Q","Loadings","n_fits","n_ok_fits","n_timeout_fits","n_error_fits","fit_success_rate","fit_runtime_mean","fit_runtime_median","fit_runtime_max"
+"high_single_stable_2d","high_single_stable",2,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.6188,360.616,360.689
+"high_single_stable_3d","high_single_stable",3,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5768,360.5865,360.619
+"high_single_stable_4d","high_single_stable",4,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5603,360.5665,360.59
+"high_switch_stable_2d","high_switch_stable",2,50,100,3,0.025,0.75,0.6,10,10,0,0,1,298.1225,299.564,342.696
+"high_switch_stable_3d","high_switch_stable",3,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5979,360.6005,360.613
+"high_switch_stable_4d","high_switch_stable",4,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5658,360.575,360.61
+"high_switch_volatile_2d","high_switch_volatile",2,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5132,360.544,360.548
+"high_switch_volatile_3d","high_switch_volatile",3,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5377,360.5445,360.564
+"high_switch_volatile_4d","high_switch_volatile",4,50,100,3,0.025,0.75,0.6,10,0,10,0,0,360.5502,360.5515,360.571
+"low_single_stable_2d","low_single_stable",2,50,100,3,0.025,0.75,0.6,10,10,0,0,1,248.1367,258.2215,299.294
+"low_single_stable_3d","low_single_stable",3,50,100,3,0.025,0.75,0.6,10,1,6,3,0.1,435.8678,600.5445,600.586
+"low_single_stable_4d","low_single_stable",4,50,100,3,0.025,0.75,0.6,10,0,10,0,0,504.5952,600.522,600.586

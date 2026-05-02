@@ -1,0 +1,3 @@
+"method_compare","method_family","community_algorithm","uni_method","n_conditions","n_ok","n_timeout","n_error","success_rate","exact_rate_all","exact_rate_ok","cor_mean","nrmse_mean","assignment_mean","runtime_mean"
+"DynEGA[louvain|expand]","dynEGA","louvain","expand",1920,1920,0,0,1,0.973958333333333,0.973958333333333,0.654441753679275,0.867271441800875,0.980938946759259,3.60818177083333
+"GraphicalVAR","graphicalVAR","louvain",NA,1920,1872,48,0,0.975,0.872916666666667,0.895299145299145,0.649436706529485,0.864844120134706,0.94836553300095,191.398286979167

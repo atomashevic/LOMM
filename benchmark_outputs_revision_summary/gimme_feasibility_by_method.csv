@@ -1,0 +1,2 @@
+"method_compare","method_family","community_algorithm","uni_method","n_conditions","n_ok","n_timeout","n_error","success_rate","exact_rate_all","exact_rate_ok","cor_mean","nrmse_mean","assignment_mean","runtime_mean"
+"GIMME[louvain]","gimme","louvain",NA,120,21,96,3,0.175,0.158333333333333,0.904761904761905,0.613587652154806,0.944304468782412,0.96031746031746,364.270241666667

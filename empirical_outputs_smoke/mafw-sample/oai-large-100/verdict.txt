@@ -1,0 +1,8 @@
+Best overall mode: heterogeneous
+Best overall total_loss: 1.4974
+
+heterogeneous | total_loss=1.4974 | raw_loss=0.9687 | latent_loss=2.0261 | eta=-0.0500;-0.1500 | zeta=0.0800;0.1200 | sigma_q=0.2500 | dt=0.5000
+homogeneous | total_loss=1.7203 | raw_loss=1.6507 | latent_loss=1.7900 | eta=-0.4000;-0.4000 | zeta=0.1000;0.1000 | sigma_q=0.2500 | dt=0.5000
+
+Winner between homogeneous and heterogeneous: heterogeneous
+Loss margin: 0.2229
