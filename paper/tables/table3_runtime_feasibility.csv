@@ -1,0 +1,4 @@
+Dimensionality,DynEGA median (s),GraphicalVAR median (s),GIMME median (s),GraphicalVAR/DynEGA,GIMME/DynEGA
+2D,0.74,27.8,107.6,37.4x,145.0x
+3D,0.94,53.3,234.2,56.7x,249.2x
+4D,1.10,128.1,not run,116.3x,not run

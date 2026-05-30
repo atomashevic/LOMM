@@ -1,0 +1,7 @@
+response,term,df,ss,partial_eta2
+exact_recovery,scenario_family,5,40.19753086419731,0.227
+exact_recovery,Error_sd,2,5.574759945130364,0.039
+exact_recovery,Loadings,2,2.0418381344306944,0.015
+score_cor_common,scenario_family,5,166.9170004695847,0.897
+score_cor_common,Error_sd,2,24.95782689088993,0.565
+score_cor_common,Loadings,2,6.070482942633901,0.24

@@ -1,3 +1,0 @@
-"fit_method_compare","method_family","n_fits","n_ok_fits","n_timeout_fits","n_error_fits","fit_success_rate","fit_runtime_mean","fit_runtime_median","fit_runtime_max"
-"DynEGA[louvain|expand]","dynEGA",1920,1920,0,0,1,3.60818177083333,3.12999999999988,12.028
-"GraphicalVAR structure fit","graphicalVAR",1920,1872,48,0,0.975,191.398286979167,142.3445,775.729

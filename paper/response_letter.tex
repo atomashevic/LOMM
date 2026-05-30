@@ -1,0 +1,225 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\setlist[enumerate]{leftmargin=*, itemsep=0.65em, topsep=0.35em}
+
+\newenvironment{reviewquote}{\begin{quote}\small\itshape}{\end{quote}}
+\newcommand{\point}[1]{\textbf{#1.}}
+\newcommand{\location}[1]{\textbf{Location in revised manuscript:} #1\par}
+\newcommand{\response}{\textbf{Response:} }
+
+\begin{document}
+
+\begin{center}
+{\Large Response to the Editor and Reviewer}\\[0.5em]
+Manuscript: \textit{A Latent Oscillator Measurement Model for Benchmarking Emotion Dynamics in Video}
+\end{center}
+
+Dear Dr. Epskamp, Editors, and Reviewer,
+
+Thank you for the careful and constructive evaluation of our manuscript. We have made a substantial revision. The revised paper now has a narrower methods-paper structure centered on the Latent Oscillator Measurement Model (LOMM), an empirical realism check against MAFW score panels, and a known-truth benchmark of dimensional recovery methods.
+
+Two naming and scope decisions guided the revision. First, we removed ``damping'' from the model name and now use \textit{Latent Oscillator Measurement Model}. We made this change because damping is an optional velocity-feedback regime in the model rather than a required property of every empirical application. The revised model section states that negative velocity feedback produces damped return, zero velocity feedback removes damping, and positive velocity feedback can sustain or amplify change over the finite interval. This matters for short video time series: brief expressive episodes in the empirical MAFW example may show bursts, switching, or low expressivity without clearly exhibiting damping. Second, we removed the tutorial framing because the \textit{transforEmotion} R package tutorial has already been published separately and is cited in the revised Introduction. The present manuscript therefore focuses on the model, realism check, and benchmark.
+
+The revised manuscript also now defines MAFW at first substantive mention as a large-scale, multi-modal, compound affective database for dynamic facial-expression recognition in the wild.
+
+Because line numbers can change during production, we refer below to sections, figures, tables, and pages in the rendered revised manuscript.
+
+\section*{Response to the Editor}
+
+\begin{enumerate}
+  \item \point{Editorial guidance on structure and pipeline}
+  \begin{reviewquote}
+  In your revision, I urge you to especially note the reviewer's comments on restructuring the paper, and also consider including a pipeline figure describing how all components interact.
+  \end{reviewquote}
+  \location{Abstract, p. 1; Introduction, pp. 2--4; Figure 1, p. 4; Method, pp. 7--11; Results, pp. 12--18; Discussion, pp. 19--20.}
+  \response We restructured the manuscript around a single scientific spine. The Introduction now states three contributions: specifying LOMM, evaluating empirical realism against MAFW score panels, and benchmarking dimensional recovery under known truth. We added Figure 1 as an early workflow figure showing how empirical scoring, realism targets, scenario selection, the LOMM observation layer, and method recovery tests connect.
+
+  \item \point{Editorial guidance on politically sensitive examples}
+  \begin{reviewquote}
+  In addition, please carefully reconsider the use of politically sensitive examples in the manuscript. My concerns are that (1) the political content may distract readers from the methodological contribution, which should be the focus; (2) the interpretive framing of emotion results (e.g., anger and fear in Boris Johnson's Brexit address) involves editorial judgment that goes beyond what a methods paper typically requires; and (3) politically charged examples risk dating the paper and may be less accessible to an international readership unfamiliar with the specific political context. The methodological points could likely be illustrated equally well with less politically loaded material, which may also be more suitable for guiding empirical researchers aiming to use your method in a lab setting.
+  \end{reviewquote}
+  \location{Empirical Calibration and Realism Targets, pp. 7--9; Figure 3, p. 8; Limitations, p. 20.}
+  \response We removed the political example and replaced it with a neutral MAFW video illustration. The revised example is used only to show the measurement problem: frame-level FER-like score channels, short bursts in score trajectories, and a DynEGA network estimated from the same clip. We also revised the limitation language to state that FER-like scores are model-derived observations of visible expression, not validated emotion labels or exact empirical trajectories.
+\end{enumerate}
+
+\subsection*{Action Editor Comments}
+
+\begin{enumerate}[resume]
+  \item \point{Notation for \(N_g\) and \(P_s\)}
+  \begin{reviewquote}
+  I find the notation \(N_g\) and \(P_s\) confusing, especially as N is already used for neutrality, making g and s read as subscripts rather than parts of compound variable names. Please consider clearer notation.
+  \end{reviewquote}
+  \location{Expressive Affective Dynamics as an Oscillator Measurement Model, pp. 4--6; Known-Truth Dimensional-Recovery Benchmark, pp. 10--11.}
+  \response We removed the confusing notation and rewrote the model with explicit indices for videos, time, latent dimensions, and observed indicators. The revised notation uses \(i\) for videos, \(t\) for time, \(f\) for latent expressive dimensions, \(m\) for the number of dimensions, \(p\) for observed indicators, and \(B_f\) for the indicator block associated with dimension \(f\).
+
+  \item \point{Matrix multiplication notation}
+  \begin{reviewquote}
+  Equation (2): The \(\times\) symbol is used for matrix multiplication; the \(\cdot\) symbol or simple juxtaposition would be more conventional in this context.
+  \end{reviewquote}
+  \location{Equations (1) and (2), pp. 5--6.}
+  \response We rewrote the equations and now use standard matrix notation. The measurement equation is written with simple juxtaposition, \(\mathbf{y}_{it}=\mathbf{\Lambda}_i\tilde{\mathbf{x}}_{it}+\boldsymbol{\varepsilon}_{it}\).
+
+  \item \point{Boldfacing of covariance matrices}
+  \begin{reviewquote}
+  Line 277: The covariance matrix Q is not boldfaced, inconsistent with the boldfacing convention used for other matrices.
+  \end{reviewquote}
+  \location{Model equations and measurement model, pp. 5--6.}
+  \response We revised the notation throughout the model section. Matrices and vectors are now consistently typeset as \(\mathbf{\Lambda}_i\), \(\tilde{\mathbf{x}}_{it}\), \(\boldsymbol{\varepsilon}_{it}\), and \(\mathbf{\Sigma}_i\), while scalar process shocks are written as \(q_{if}(t)\).
+
+  \item \point{Missing word}
+  \begin{reviewquote}
+  Line 304: A word appears to be missing: "We will illustrate this approach [using?] OpenAI's CLIP..."
+  \end{reviewquote}
+  \location{Empirical Calibration and Realism Targets, pp. 7--9.}
+  \response We removed the old tutorial-style sentence and replaced it with a direct description of the empirical scoring target, the prompt-defined score channels, interpolation, complete-row retention, clipping, and renormalization.
+
+  \item \point{Interpretive claim in the previous political example}
+  \begin{reviewquote}
+  Figure 3 implies that Boris Johnson expressed fear throughout the duration of his address on Brexit. This is a substantial interpretive claim that I do not think is suitable for a methods journal, and it relies on the validity of CLIP, which is not discussed. Furthermore, if this paper is to guide empirical research, it would be more suitable to demonstrate the method using neutral or controlled videos that researchers might encounter in a lab setting.
+  \end{reviewquote}
+  \location{Empirical Calibration and Realism Targets, pp. 7--9; Figure 3, p. 8; Limitations, p. 20.}
+  \response We removed the Boris Johnson and Brexit example. The revised Figure 3 uses a MAFW clip and describes only the observed score behavior and recovered network communities. The text no longer makes a substantive political interpretation of a public speech.
+
+  \item \point{CLIP and FER validity}
+  \begin{reviewquote}
+  The method relies heavily on CLIP being able to accurately classify emotions for any given set of emotion labels. However, the manuscript does not cite or discuss evidence for CLIP's validity in facial expression recognition specifically. At minimum, the authors should review existing work on CLIP's FER accuracy and acknowledge limitations.
+  \end{reviewquote}
+  \location{Introduction, p. 2; Empirical Calibration and Realism Targets, pp. 7--9; Limitations, p. 20.}
+  \response We revised the framing so that the score series are treated as FER-like, model-derived measurements rather than validated emotion labels. The Introduction now cites work on CLIP-like and zero-shot FER models, including EmoCLIP, CLIPER, and \textit{transforEmotion}. The empirical section describes the score channels as prompt-specific classifier outputs, and the Discussion explicitly states that the realism check does not validate emotion labels or exact trajectories.
+
+  \item \point{Realism of DLO-MM/LOMM simulations}
+  \begin{reviewquote}
+  How do we know that DLO-MM produces realistic FER-like data? It would strengthen the paper considerably to compare statistical properties of simulated datasets to those of real CLIP-derived FER data, to demonstrate that the simulation model produces data resembling real-world observations.
+  \end{reviewquote}
+  \location{Empirical Calibration and Realism Targets, pp. 7--9; Empirical Realism Results, pp. 12--13; Figure 4, pp. 12--13; realism table, p. 13; Discussion, p. 19.}
+  \response We added an empirical realism analysis comparing simulated panels with MAFW FER-like score panels. The comparison evaluates channel IQR, derivative IQR, lag-1 autocorrelation, run-length entropy, spectral entropy, and effective rank at observed-channel and community-score readouts. The results now report which properties pass, partially match, or fail, with the channel-IQR mismatch retained as an explicit limitation.
+
+  \item \point{Alternative dimensionality recovery benchmarks}
+  \begin{reviewquote}
+  I appreciate the effort in developing a simulation framework, which is not common in image classification work as far as I am aware. However, since the authors develop both the DLO-MM simulation method and the DynEGA analysis method, strong performance of DynEGA on DLO-MM data is not entirely surprising. It would considerably strengthen the contribution to include alternative dimensionality recovery methods as benchmarks, to determine whether DynEGA specifically excels or whether recovering latent dimensions from this type of data is straightforward more generally.
+  \end{reviewquote}
+  \location{Known-Truth Dimensional-Recovery Benchmark, pp. 10--11; Benchmark Recovery Results, pp. 14--17; Table 2, p. 14; Figure 5, pp. 15--16; Figure 6, pp. 16--17; Computational Feasibility, pp. 17--18; Figure 7, p. 18.}
+  \response We added GraphicalVAR and GIMME as benchmarks. GraphicalVAR is used as the main dynamic-network comparator, and GIMME is retained as a bounded feasibility comparator because complete factorial estimation was computationally unstable in this setting. The revised Results report dimensional hit rate, assignment accuracy, score correlation, score NRMSE, runtime, timeouts, errors, and deferred conditions.
+\end{enumerate}
+
+\section*{Response to Reviewer 1}
+
+\begin{enumerate}
+  \item \point{General assessment and scope}
+  \begin{reviewquote}
+  The paper has the potential to be very timely and interesting to psychologists, as it uses both advanced zero-shot classification (AI-based) and theoretically motivated dynamic modeling (ODE-based). In principle, this is an exciting and valuable direction and I see a lot of applications. I would have been considerably more enthusiastic about the contribution if the manuscript did not suffer from notable lack of coherence, structure, conceptual clarity, and mathematical precision.
+  \end{reviewquote}
+  \location{Whole manuscript, especially Abstract, p. 1; Introduction, pp. 2--4; model section, pp. 4--6; Method, pp. 7--11; Results, pp. 12--18.}
+  \response We substantially narrowed and reorganized the manuscript. It is no longer framed as a tutorial, software demonstration, political illustration, and DynEGA validation paper at the same time. The revised manuscript focuses on LOMM as a benchmark framework for FER-like video score series.
+
+  \item \point{Introduction and conceptual clarity}
+  \begin{reviewquote}
+  I think the Introduction can be tightened in favor of conceptual clarity, such that the paper quickly comes to the point. Currently, it oscillates between aims, brief snippets of related work, and a restatement of a singular aim (P6L46). I suggest a more brain-friendly structure that briefly introduces emotion recognition, existing difficulties with theory-driven modeling (DLO-MM) and data-driven detection (DL, supervised and zero-shot classification), and how the proposed framework addressed these difficulties. Upon a naive reading, it may currently not become clear whether the authors propose new methods, apply existing methods in a new context, validate their own software, or a hodgepodge of different things revolving around the quantitative analysis of emotion dynamics. Some methodological aspects currently appear out of the blue (e.g., dynEGA) and it is not at all clear which method is being validated for what purpose. For example, only much later does it become clear that DLO-MM will be used as a simulator to validate the accuracy of dynEGA in in silico.
+  \end{reviewquote}
+  \location{Abstract, p. 1; Introduction, pp. 2--4; Figure 1, p. 4.}
+  \response We rewrote the Introduction to move quickly from FER-like score series, to the measurement problem, to LOMM, to the benchmark sequence. The Introduction now states the three contributions explicitly and introduces Figure 1 before the model details. DynEGA, GraphicalVAR, and GIMME are presented as dimensional-recovery estimators evaluated under known truth, not as disconnected methodological elements.
+
+  \item \point{Connections among CLIP, simulation, and DynEGA}
+  \begin{reviewquote}
+  Related: It is unclear how the goals of the different methods connect to each other. For instance, even 15 pages deep in the paper, it remains unclear how the goal of generic synthetic emotion scores connects to the goal of applying zero-shot classification to the frames. How exactly do CLIPs outputs feed into DLO-MM or vice versa (or not at all?). Some figures appear at random places (e.g., Figure 3 presages the entire methodology of the paper, even though only DLO-MM has been formally introduced). It would be helpful it the paper included a ``pull figure'' describing all components of the pipeline and their interrelations (and priming for the tutorial part), instead of relying on readers to piece together the puzzle and fill in the blanks. Additionally, it would be helpful if sections include paragraphs (see AI papers) that group together and delineate core ideas. For instance, CLIP and details about its pretraining appear under ``Emotion Dynamics as a Damper Oscillator Model'', implying an apparent (but missing) connection.
+  \end{reviewquote}
+  \location{Figure 1, p. 4; Method overview, p. 7; Empirical Calibration and Realism Targets, pp. 7--9; Known-Truth Dimensional-Recovery Benchmark, pp. 10--11.}
+  \response We added Figure 1 to show the full workflow. Empirical zero-shot FER-like scores define realism targets; those targets inform scenario selection; LOMM generates known-truth simulated score panels; and recovery methods are evaluated against the known latent structure. The revised Method begins by restating this workflow so readers do not have to infer how the parts fit together.
+
+  \item \point{Uneven detail and tutorial framing}
+  \begin{reviewquote}
+  Furthermore, the granularity of description of the components of the pipeline differs widely, from more precise and theoretically argued for (DLO-MM), to less detailed with a patchwork of mathematical details and lots of submethods and moving parts (dynEGA), to merely explained on a high level (CLIP, zero-shot classification). Together with the fact that the descriptions of these methods are interleaved throughout the text, but their connections are often left implicit or informal, it becomes incredibly hard to follow the paper, especially as a ``tutorial''. The formal level of description also experiences an uninterrupted drop from DLO-MM onwards.
+  \end{reviewquote}
+  \location{Introduction, pp. 2--4; Method, pp. 7--11; Known-Truth Dimensional-Recovery Benchmark, pp. 10--11.}
+  \response We removed the tutorial framing from the manuscript because the \textit{transforEmotion} R package tutorial has already been published separately and is cited in the Introduction. The revised manuscript now gives a formal model section for LOMM, a bounded empirical scoring description for the MAFW realism target, and a single benchmark section explaining the recovery methods and evaluation metrics.
+
+  \item \point{Notation and mathematical precision}
+  \begin{reviewquote}
+  There are some unfortunate choices of notation and mathematical sloppiness. For example, in a dynamic modeling context, Nt (Eq.1) can easily be interpreted as N times t (continuous time). Why do the parameters eta and xi need an Nt subscript? I understand that Eq.1 applies to all three sentiment variables, but positive and negative sentiment are only briefly discussed. Matrices are not consistently bolded (e.g., P13L270). It is unclear where the 2D vector \(X_t\) comes from (which is bolded and capitalized as if it were a matrix). It is later redefined as a delay embedding matrix (P20L398). Where does the i index come from (P14L281)? The dynamic errors's symbol is redefined from sigma to q. The time index is redefined from t to i (I assume t was meant to be reserved for continuous time and i for discrete). These are just a few examples of sloppy mathematics, prompting a thorough revision for consistency and precision.
+  \end{reviewquote}
+  \location{Model equations, pp. 5--6; measurement model, p. 6; benchmark metrics, p. 11.}
+  \response We rewrote the mathematical exposition. The revised model defines video index \(i\), time \(t\), latent dimension \(f\), latent level \(x_{if}(t)\), velocity \(v_{if}(t)\), process shock \(q_{if}(t)\), loading matrix \(\mathbf{\Lambda}_i\), measurement error \(\boldsymbol{\varepsilon}_{it}\), and covariance matrix \(\mathbf{\Sigma}_i\). We no longer use the old \(N_t\), \(N_g\), or \(P_s\) notation.
+
+  \item \point{Data-generation pipeline and relation to CLIP outputs}
+  \begin{reviewquote}
+  I am left puzzled by some aspects of the data generation pipeline. For example, it is called simulate\_video (which would imply that video frames are simulated), but as far as I understood, it simply used DLO-MM to generate score time series. Also a new parameter eta (with no subscript) appears out of nowhere. Further, at a conceptual level, FER scores are said to apply to both sentiments (neutral, positive) and concrete emotions (excitement, fear,...), so in what sense are the outputs of CLIP compatible, conflicting with, or orthogonal to the outputs of DLO-MM? Can DLO-MM be fitted to CLIP outputs? In the latter case, DLO-MM will be rather a model of AI emotion detection performance than a model of emotion dynamics per se.
+  \end{reviewquote}
+  \location{Introduction, pp. 2--4; Empirical Calibration and Realism Targets, pp. 7--9; Scenario Selection, pp. 9--10; Limitations, p. 20.}
+  \response We revised the terminology to avoid implying that video frames are simulated. LOMM generates FER-like score panels, not videos. The empirical scores from MAFW are used as realism targets for the observation layer; the simulated data are then used for known-truth recovery benchmarks. The Discussion now states that the score series are model-derived observations of visible expression, so the current benchmark does not validate emotion labels or claim direct equivalence between empirical trajectories and latent affective states.
+
+  \item \point{Recovery metrics beyond correlation}
+  \begin{reviewquote}
+  Using correlation for validation the recovery of true scores only tells part of the story. Please, complement the results with a metric that reflects potential biases (e.g., NRMSE, predictive coefficient of determination, ...).
+  \end{reviewquote}
+  \location{Known-Truth Dimensional-Recovery Benchmark, p. 11; Benchmark Recovery Results, pp. 14--17; Table 2, p. 14; Table 3, p. 17.}
+  \response We added metrics beyond correlation. The benchmark now reports dimensional hit rate, assignment accuracy, matched-score correlation, matched-score NRMSE, runtime, timeout counts, error counts, and deferred-condition counts. We also interpret score correlations as conditional diagnostics rather than as the primary method-ranking criterion.
+
+  \item \point{Calibration and limitations of zero-shot classifiers}
+  \begin{reviewquote}
+  The calibration of zero-shot classifiers is generally hard to measure or unknown (comapred to the calibration of supervised classifier). That means that CLIP-induced FER scores (which can be interpreted or converted into probabilities) for more exotic emotions (e.g., excitement, pride) have an unknown reliability. The same goes for its accuracy in detecting rare emotions. I believe these points warrant at least a small discussion, as users should know what to expect for their own applications and where to find numbers on accuracy and calibration for common emotion sets.
+  \end{reviewquote}
+  \location{Introduction, p. 2; Empirical Calibration and Realism Targets, pp. 7--9; Limitations, p. 20.}
+  \response We now describe these outputs as FER-like score channels and prompt-specific classifier outputs rather than calibrated emotion probabilities. The Introduction cites recent zero-shot and CLIP-like FER work, and the Limitations section states that the realism check evaluates statistical signatures of score panels rather than the validity of emotion labels.
+
+  \item \point{Acronyms and model name}
+  \begin{reviewquote}
+  Some acronyms are not introduced, redundantly introduced multiple times, or introduced following a different term (e.g., DLO is hidden among references on P7L52, but the term is Damped Oscillator Model, which would abbreviate to DOM).
+  \end{reviewquote}
+  \location{Title and Abstract, p. 1; Introduction, pp. 2--4; model section, pp. 4--6.}
+  \response We changed the model name to Latent Oscillator Measurement Model (LOMM) and introduce it directly in the title, abstract, and Introduction. We removed ``damped'' from the model name because damping is only one optional velocity-feedback regime. The model section now explains damped, undamped, and amplifying velocity-feedback cases without making damping part of the model's name.
+
+  \item \point{Neutral factor}
+  \begin{reviewquote}
+  Why is there no neutral factor in the measurement model? The latent neutral trajectory is plotted in Figure 2 but its relationship to the observable scores is unclear.
+  \end{reviewquote}
+  \location{Measurement model, p. 6; Figure 2, p. 6; empirical illustration, pp. 7--8.}
+  \response We removed neutrality from the source-truth structure of the benchmark. The revised measurement model uses \(m\) latent expressive dimensions with observed indicator blocks, and explicitly states that neutrality is not part of the source-truth structure. Neutral may appear as an empirical score channel, but it is not treated as a latent source factor in the benchmark design.
+
+  \item \point{Equation 1}
+  \begin{reviewquote}
+  Eq. 1 needs attention. The first term literally evaluates to \(dN_t/dt = dN_t/dt\) and is completely redundant. I suspect the zero and the one in the ``parameter matrix'' have to be swapped.
+  \end{reviewquote}
+  \location{Equation (1), p. 5.}
+  \response We replaced the old equation with a standard second-order state representation. The first row now maps velocity to the derivative of position, and the second row maps position feedback, velocity feedback, and process shock to acceleration.
+
+  \item \point{Dynamic error}
+  \begin{reviewquote}
+  It is not clear where the ``dynamic error'' enters the model and what makes it dynamic (it is not introduced as a function of time). Since this is a tutorial, I would have expected a more precise and focused mathematical exposition.
+  \end{reviewquote}
+  \location{Equation (1), p. 5; Figure 2 and accompanying text, pp. 6--7.}
+  \response We now define the shock process as \(q_{if}(t)\sim\mathcal{N}(0,\sigma_{qf}^{2})\), entering the acceleration equation at each time point. The Figure 2 text explains that \(\sigma_q\) perturbs each latent process locally, producing peaks, reversals, and irregular fluctuations around the underlying trajectory.
+
+  \item \point{Idiosyncratic expressions}
+  \begin{reviewquote}
+  Nit: Some expressions are rather idiosyncratic, e.g., ``Emotion Dynamics as a Damped Oscillator Model'' -> the notion of ``X as a model'' seems strange, a more natural expressions would be ``Modeling emotion dynamics via ...'', ``quantitative methods approach'' is redundant -> perhaps ``a quantitative framework / method / approach'', there are lots of synonyms.
+  \end{reviewquote}
+  \location{Title, p. 1; section title ``Expressive Affective Dynamics as an Oscillator Measurement Model'', p. 4; manuscript-wide prose revisions.}
+  \response We revised the title and section titles to better match the paper's methodological contribution. We also reduced tutorial-style and redundant phrasing throughout the revised manuscript.
+
+  \item \point{Figure captions}
+  \begin{reviewquote}
+  Figure captions are sloppy, use inconsistent capitalization, and rarely helpful or self-explanatory.
+  \end{reviewquote}
+  \location{Figure 1, p. 4; Figure 2, p. 6; Figure 3, p. 8; Figure 4, pp. 12--13; Figure 5, pp. 15--16; Figure 6, pp. 16--17; Figure 7, p. 18.}
+  \response We rewrote the figure captions to be self-contained and consistent. The revised captions identify the panels, state what is being shown, and clarify the role of each figure in the model, empirical realism, benchmark recovery, measurement-quality, or feasibility analysis.
+\end{enumerate}
+
+\section*{Closing}
+
+We appreciate the editor's and reviewer's guidance. The revised manuscript now specifies LOMM as a benchmark generator with an explicit measurement layer, checks empirical realism against MAFW FER-like score panels, and compares dimensional-recovery methods under known truth with transparent feasibility accounting. We believe these changes substantially improve the clarity, scope, and methodological value of the paper.
+
+Sincerely,
+
+The Authors
+
+\end{document}

@@ -1,0 +1,4 @@
+Method,Correct rows,Hit rate,Mean conditional r,Conditional r range,Correct rows per stratum,Widest CI,Missing strata
+DynEGA,480/486,98.8%,0.700,0.383-0.871,48-54,0.491,0
+GraphicalVAR,417/486,85.8%,0.731,0.447-0.871,9-54,0.857,0
+GIMME,198/486,40.7%,0.791,0.681-0.822,6-48,0.961,2

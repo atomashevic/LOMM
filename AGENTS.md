@@ -16,5 +16,8 @@ Follow the existing base R and tidyverse style already used here. Use `snake_cas
 ## Testing Guidelines
 There is no `testthat` suite yet; testing is script-driven. Before merging estimator, integrator, or plotting changes, run `Rscript test_dynEGA_inspect.R` and `RUN_SIM_SUITE_SMOKE=1 Rscript run_sim_suite.R`. If summary graphics depend on the change, rerun `Rscript viz.R`. Keep new checks lightweight and name any new validation scripts with a `test_*.R` prefix.
 
+## Research Log
+Maintain `research-log.md` as an append-only project log. Add dated entries at the bottom for manuscript decisions, benchmark status changes, result interpretation changes, and verification commands. Do not rewrite or delete earlier log entries; if a previous entry becomes stale, append a dated correction with the newer source of truth.
+
 ## Commit & Pull Request Guidelines
-This workspace snapshot does not include `.git`, so repository-specific commit conventions cannot be inferred from local history. Use short imperative commit subjects such as `Add smoke check for rk4 recovery`. Keep each commit scoped to one logical change. In pull requests, describe the modeling or plotting change, list the rerun commands used for validation, call out any regenerated files under `sim_outputs*/`, and include updated plot images when visual outputs change.
+This workspace is a git repository. Use short imperative commit subjects such as `Add smoke check for rk4 recovery`. Keep each commit scoped to one logical change. In pull requests, describe the modeling or plotting change, list the rerun commands used for validation, call out any regenerated files under `sim_outputs*/` or `benchmark_outputs*/`, and include updated plot images when visual outputs change.

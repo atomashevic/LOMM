@@ -78,11 +78,34 @@ normalize_factor_parameter <- function(x, NFAC, name) {
 }
 
 # Latent noise innovations q_t for NFAC DLO factors
-generate_q_multi <- function(num_steps, NFAC, sigma_q) {
+generate_q_multi <- function(num_steps, NFAC, sigma_q, rho_q = 0, q_cov = NULL) {
+  if (!is.null(q_cov)) {
+    q_cov <- as.matrix(q_cov)
+    if (!all(dim(q_cov) == c(NFAC, NFAC))) {
+      stop("q_cov must be NFAC x NFAC.", call. = FALSE)
+    }
+    return(MASS::mvrnorm(
+      n = num_steps,
+      mu = rep(0, NFAC),
+      Sigma = q_cov
+    ))
+  }
+
   sigma_vec <- normalize_factor_parameter(sigma_q, NFAC, "sigma_q")
-  do.call(cbind, lapply(seq_len(NFAC), function(f) {
-    rnorm(num_steps, mean = 0, sd = sigma_vec[[f]])
-  }))
+  rho_min <- -1 / max(NFAC - 1, 1)
+  rho_q <- min(max(as.numeric(rho_q), rho_min + 1e-6), 0.999)
+
+  R <- matrix(rho_q, nrow = NFAC, ncol = NFAC)
+  diag(R) <- 1
+
+  D <- diag(sigma_vec, nrow = NFAC, ncol = NFAC)
+  Sigma <- D %*% R %*% D
+
+  MASS::mvrnorm(
+    n = num_steps,
+    mu = rep(0, NFAC),
+    Sigma = Sigma
+  )
 }
 
 # Generic acceleration for the second-order system
@@ -166,17 +189,40 @@ integrate_step <- function(method, x_old, dx_old, noise, dt, eta, zeta, exact_ca
 # Simulate latent DLO trajectories (second-order) for NFAC factors
 # Equation: x'' = eta * x + zeta * x' + q
 simulate_latent_multi <- function(dt, num_steps, NFAC, sigma_q, eta, zeta,
-                                  integrator = "euler_explicit") {
-  x    <- matrix(0, nrow = num_steps, ncol = NFAC)
-  dxdt <- matrix(0, nrow = num_steps, ncol = NFAC)
+                                  integrator = "euler_explicit",
+                                  rho_q = 0,
+                                  q_cov = NULL,
+                                  init_x_sd = NULL,
+                                  init_dx_sd = NULL,
+                                  burn_in = 0L) {
+  requested_steps <- as.integer(num_steps)
+  burn_in <- max(0L, as.integer(burn_in))
+  total_steps <- requested_steps + burn_in
+
+  x    <- matrix(0, nrow = total_steps, ncol = NFAC)
+  dxdt <- matrix(0, nrow = total_steps, ncol = NFAC)
   eta_vec <- normalize_factor_parameter(eta, NFAC, "eta")
   zeta_vec <- normalize_factor_parameter(zeta, NFAC, "zeta")
   
-  # initialization (can be tuned)
-  x[1, ]    <- 0.25
-  dxdt[1, ] <- 2
+  if (is.null(init_x_sd)) {
+    x[1, ] <- 0.25
+  } else {
+    x[1, ] <- stats::rnorm(NFAC, mean = 0, sd = as.numeric(init_x_sd))
+  }
+
+  if (is.null(init_dx_sd)) {
+    dxdt[1, ] <- 2
+  } else {
+    dxdt[1, ] <- stats::rnorm(NFAC, mean = 0, sd = as.numeric(init_dx_sd))
+  }
   
-  q_t <- generate_q_multi(num_steps, NFAC, sigma_q)
+  q_t <- generate_q_multi(
+    num_steps = total_steps,
+    NFAC = NFAC,
+    sigma_q = sigma_q,
+    rho_q = rho_q,
+    q_cov = q_cov
+  )
   
   exact_cache <- if (integrator == "linear_exact") {
     lapply(seq_len(NFAC), function(f) {
@@ -186,29 +232,35 @@ simulate_latent_multi <- function(dt, num_steps, NFAC, sigma_q, eta, zeta,
     NULL
   }
   
-  for (i in 2:num_steps) {
-    for (f in seq_len(NFAC)) {
-      x_old  <- x[i - 1, f]
-      dx_old <- dxdt[i - 1, f]
-      noise_i <- q_t[i, f]
-      
-      step <- integrate_step(
-        method      = integrator,
-        x_old       = x_old,
-        dx_old      = dx_old,
-        noise       = noise_i,
-        dt          = dt,
-        eta         = eta_vec[[f]],
-        zeta        = zeta_vec[[f]],
-        exact_cache = if (is.null(exact_cache)) NULL else exact_cache[[f]]
-      )
-      
-      x[i, f]    <- step$x
-      dxdt[i, f] <- step$dx
+  if (total_steps > 1L) {
+    for (i in 2:total_steps) {
+      for (f in seq_len(NFAC)) {
+        x_old  <- x[i - 1, f]
+        dx_old <- dxdt[i - 1, f]
+        noise_i <- q_t[i, f]
+
+        step <- integrate_step(
+          method      = integrator,
+          x_old       = x_old,
+          dx_old      = dx_old,
+          noise       = noise_i,
+          dt          = dt,
+          eta         = eta_vec[[f]],
+          zeta        = zeta_vec[[f]],
+          exact_cache = if (is.null(exact_cache)) NULL else exact_cache[[f]]
+        )
+
+        x[i, f]    <- step$x
+        dxdt[i, f] <- step$dx
+      }
     }
   }
-  
-  x
+
+  if (burn_in > 0L) {
+    x[(burn_in + 1L):total_steps, , drop = FALSE]
+  } else {
+    x[seq_len(requested_steps), , drop = FALSE]
+  }
 }
 
 # Build measurement model and generate observables
@@ -248,7 +300,12 @@ simulate_video_multi <- function(dt, num_steps,
                                  sigma_q,
                                  sd_observable,
                                  loadings,
-                                 integrator = "euler_explicit") {
+                                 integrator = "euler_explicit",
+                                 rho_q = 0,
+                                 q_cov = NULL,
+                                 init_x_sd = NULL,
+                                 init_dx_sd = NULL,
+                                 burn_in = 0L) {
   
   latent <- simulate_latent_multi(
     dt        = dt,
@@ -257,7 +314,12 @@ simulate_video_multi <- function(dt, num_steps,
     sigma_q   = sigma_q,
     eta       = eta,
     zeta      = zeta,
-    integrator = integrator
+    integrator = integrator,
+    rho_q = rho_q,
+    q_cov = q_cov,
+    init_x_sd = init_x_sd,
+    init_dx_sd = init_dx_sd,
+    burn_in = burn_in
   )
   
   obs <- generate_observables_multi(
@@ -1312,9 +1374,10 @@ EMPIRICAL_EMOTION_COLUMNS <- c(
 )
 
 EMPIRICAL_PRIMARY_METRICS <- c(
-  "mean_value", "std_value", "lag1_acf", "total_variation",
+  "mean_value", "std_value", "channel_iqr", "lag1_acf", "total_variation", "diff_iqr",
   "zero_crossing_rate", "dominant_frequency", "spectral_centroid",
-  "sample_entropy", "mean_pairwise_cor", "sd_pairwise_cor",
+  "sample_entropy", "permutation_entropy", "spectral_entropy", "run_length_entropy",
+  "mean_pairwise_cor", "mean_abs_pairwise_cor", "sd_pairwise_cor",
   "first_eigen_share", "effective_rank"
 )
 
@@ -1519,6 +1582,70 @@ compute_sample_entropy <- function(series, m = 2L, r = NULL) {
   -log(phi_m1 / phi_m)
 }
 
+compute_permutation_entropy <- function(series, m = 3L) {
+  series <- as.numeric(series)
+  series <- series[is.finite(series)]
+  n <- length(series)
+
+  if (n < m + 1L) {
+    return(NA_real_)
+  }
+
+  patterns <- vapply(seq_len(n - m + 1L), function(i) {
+    paste(order(series[i:(i + m - 1L)]), collapse = ",")
+  }, character(1))
+  freq <- table(patterns) / length(patterns)
+
+  -sum(freq * log2(freq)) / log2(factorial(m))
+}
+
+compute_spectral_entropy <- function(series) {
+  series <- as.numeric(series)
+  series <- series[is.finite(series)]
+  n <- length(series)
+
+  if (n < 8L) {
+    return(NA_real_)
+  }
+
+  power <- Mod(stats::fft(series - mean(series)))^2
+  power <- power[2:(floor(n / 2L) + 1L)]
+  power <- power / sum(power)
+  power <- power[is.finite(power) & power > 0]
+
+  if (length(power) <= 1L) {
+    return(NA_real_)
+  }
+
+  -sum(power * log2(power)) / log2(length(power))
+}
+
+compute_run_length_entropy <- function(series, max_run = 8L) {
+  series <- as.numeric(series)
+  series <- series[is.finite(series)]
+
+  if (length(series) < 4L) {
+    return(NA_real_)
+  }
+
+  signs <- sign(diff(series))
+  signs <- signs[signs != 0]
+
+  if (length(signs) < 2L) {
+    return(0)
+  }
+
+  run_lengths <- pmin(rle(signs)$lengths, as.integer(max_run))
+  probs <- as.numeric(table(run_lengths))
+  probs <- probs / sum(probs)
+
+  if (length(probs) <= 1L) {
+    return(0)
+  }
+
+  -sum(probs * log2(probs)) / log2(length(probs))
+}
+
 compute_spectral_properties_r <- function(series, dt = 1) {
   series <- as.numeric(series)
   series <- series[is.finite(series)]
@@ -1560,12 +1687,17 @@ compute_series_properties <- function(series, dt = 1) {
     return(data.frame(
       mean_value = NA_real_,
       std_value = NA_real_,
+      channel_iqr = NA_real_,
       lag1_acf = NA_real_,
       total_variation = NA_real_,
+      diff_iqr = NA_real_,
       zero_crossing_rate = NA_real_,
       dominant_frequency = NA_real_,
       spectral_centroid = NA_real_,
       sample_entropy = NA_real_,
+      permutation_entropy = NA_real_,
+      spectral_entropy = NA_real_,
+      run_length_entropy = NA_real_,
       stringsAsFactors = FALSE
     ))
   }
@@ -1575,16 +1707,22 @@ compute_series_properties <- function(series, dt = 1) {
   zero_crossings <- sum(signs[-1L] * signs[-length(signs)] < 0, na.rm = TRUE)
   lag1_acf <- suppressWarnings(stats::acf(series, lag.max = 1, plot = FALSE, na.action = stats::na.pass)$acf[[2]])
   spectral <- compute_spectral_properties_r(series, dt = dt)
+  increments <- diff(series)
 
   data.frame(
     mean_value = mean(series),
     std_value = stats::sd(series),
+    channel_iqr = stats::IQR(series, na.rm = TRUE),
     lag1_acf = lag1_acf,
     total_variation = mean(abs(diff(series))),
+    diff_iqr = stats::IQR(increments, na.rm = TRUE),
     zero_crossing_rate = zero_crossings / length(series),
     dominant_frequency = spectral$dominant_frequency,
     spectral_centroid = spectral$spectral_centroid,
     sample_entropy = compute_sample_entropy(series),
+    permutation_entropy = compute_permutation_entropy(series),
+    spectral_entropy = compute_spectral_entropy(series),
+    run_length_entropy = compute_run_length_entropy(series),
     stringsAsFactors = FALSE
   )
 }
@@ -1606,6 +1744,7 @@ compute_panel_properties <- function(mat) {
   if (!is.matrix(cor_mat) || any(!is.finite(cor_mat))) {
     return(data.frame(
       mean_pairwise_cor = NA_real_,
+      mean_abs_pairwise_cor = NA_real_,
       sd_pairwise_cor = NA_real_,
       first_eigen_share = NA_real_,
       effective_rank = NA_real_,
@@ -1618,6 +1757,7 @@ compute_panel_properties <- function(mat) {
 
   data.frame(
     mean_pairwise_cor = mean(upper_values, na.rm = TRUE),
+    mean_abs_pairwise_cor = mean(abs(upper_values), na.rm = TRUE),
     sd_pairwise_cor = stats::sd(upper_values, na.rm = TRUE),
     first_eigen_share = max(eigenvalues, na.rm = TRUE) / sum(eigenvalues, na.rm = TRUE),
     effective_rank = safe_effective_rank(cor_mat),
@@ -1767,9 +1907,15 @@ estimate_named_loadings <- function(panel,
 build_property_target_from_panel <- function(panel,
                                              model_name,
                                              score_cols = EMPIRICAL_EMOTION_COLUMNS,
-                                             ord0_embed = 10L) {
+                                             ord0_embed = 10L,
+                                             algorithm = "louvain") {
   raw_metrics <- metric_table_from_panel(panel, series_cols = score_cols, family = "raw", dt = 1)
-  latent_fit <- fit_pooled_ord0_dynega(panel, score_cols = score_cols, n_embed = ord0_embed)
+  latent_fit <- fit_pooled_ord0_dynega(
+    panel,
+    score_cols = score_cols,
+    n_embed = ord0_embed,
+    algorithm = algorithm
+  )
   latent_panel <- extract_latent_scores(latent_fit, panel, score_cols = score_cols)
   latent_cols <- setdiff(names(latent_panel), c("clip", "frame_index", "truth_label", "model"))
   latent_metrics <- metric_table_from_panel(latent_panel, series_cols = latent_cols, family = "latent", dt = 1)
@@ -1780,6 +1926,7 @@ build_property_target_from_panel <- function(panel,
   list(
     model = model_name,
     panel = panel,
+    latent_panel = latent_panel,
     raw_metrics = raw_metrics,
     latent_metrics = latent_metrics,
     raw_cor = extract_mean_correlation_matrix(panel, series_cols = score_cols),
@@ -1823,25 +1970,381 @@ build_empirical_target <- function(frame_scores_path,
   target
 }
 
+make_residual_cov <- function(var_vec, resid_rho = 0, eps = 1e-8) {
+  var_vec <- pmax(as.numeric(var_vec), eps)
+  n <- length(var_vec)
+
+  rho_min <- -1 / max(n - 1, 1)
+  resid_rho <- min(max(as.numeric(resid_rho), rho_min + 1e-6), 0.999)
+
+  R <- matrix(resid_rho, nrow = n, ncol = n)
+  diag(R) <- 1
+
+  D <- diag(sqrt(var_vec), nrow = n, ncol = n)
+  D %*% R %*% D
+}
+
+simulate_ar1 <- function(num_steps, phi = 0.6, sd = 1.0) {
+  phi <- min(max(as.numeric(phi), -0.999), 0.999)
+  sd <- max(as.numeric(sd), 0)
+  g <- numeric(num_steps)
+
+  if (num_steps == 0L || sd == 0) {
+    return(g)
+  }
+
+  g[[1]] <- stats::rnorm(1, 0, sd / sqrt(max(1 - phi^2, 1e-6)))
+  if (num_steps > 1L) {
+    for (t in 2:num_steps) {
+      g[[t]] <- phi * g[[t - 1L]] + stats::rnorm(1, 0, sd)
+    }
+  }
+  g
+}
+
+apply_score_link <- function(z,
+                             link = c("softmax", "identity", "logistic"),
+                             temperature = 1.0,
+                             eps = 1e-8) {
+  link <- match.arg(link)
+  temperature <- max(as.numeric(temperature), eps)
+
+  if (link == "identity") {
+    return(z)
+  }
+
+  if (link == "logistic") {
+    return(plogis(z / temperature))
+  }
+
+  z <- z / temperature
+  z <- sweep(z, 1, apply(z, 1, max, na.rm = TRUE), "-")
+  ez <- exp(z)
+  ez / pmax(rowSums(ez), eps)
+}
+
+robust_rescale_panel <- function(synthetic_panel,
+                                 empirical_panel,
+                                 score_cols,
+                                 shrink = 1.0,
+                                 eps = 1e-8) {
+  syn <- synthetic_panel
+  emp_center <- vapply(empirical_panel[score_cols], stats::median, numeric(1), na.rm = TRUE)
+  emp_iqr <- vapply(empirical_panel[score_cols], stats::IQR, numeric(1), na.rm = TRUE)
+
+  syn_center <- vapply(syn[score_cols], stats::median, numeric(1), na.rm = TRUE)
+  syn_iqr <- vapply(syn[score_cols], stats::IQR, numeric(1), na.rm = TRUE)
+
+  scale <- shrink * emp_iqr / pmax(syn_iqr, eps)
+
+  syn[score_cols] <- sweep(syn[score_cols], 2, syn_center, "-")
+  syn[score_cols] <- sweep(syn[score_cols], 2, scale, "*")
+  syn[score_cols] <- sweep(syn[score_cols], 2, emp_center, "+")
+  syn
+}
+
+amplitude_decomp <- function(panel,
+                             score_cols,
+                             clip_col_candidates = c("clip", "clip_id", "video_id", "video"),
+                             eps = 1e-8) {
+  clip_col <- intersect(clip_col_candidates, names(panel))[1]
+  if (is.na(clip_col)) {
+    stop("No clip column found. Supply or rename clip identifier.", call. = FALSE)
+  }
+
+  long <- panel |>
+    dplyr::select(dplyr::all_of(c(clip_col, score_cols))) |>
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(score_cols),
+      names_to = "channel",
+      values_to = "value"
+    )
+
+  pooled <- long |>
+    dplyr::group_by(channel) |>
+    dplyr::summarise(
+      pooled_iqr = stats::IQR(value, na.rm = TRUE),
+      pooled_sd = stats::sd(value, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  within_clip <- long |>
+    dplyr::group_by(.data[[clip_col]], channel) |>
+    dplyr::summarise(
+      within_iqr = stats::IQR(value, na.rm = TRUE),
+      clip_median = stats::median(value, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  within_summary <- within_clip |>
+    dplyr::group_by(channel) |>
+    dplyr::summarise(
+      mean_within_iqr = mean(within_iqr, na.rm = TRUE),
+      median_within_iqr = stats::median(within_iqr, na.rm = TRUE),
+      between_clip_median_iqr = stats::IQR(clip_median, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  dplyr::left_join(pooled, within_summary, by = "channel") |>
+    dplyr::mutate(
+      pooled_iqr = pmax(pooled_iqr, eps),
+      mean_within_iqr = pmax(mean_within_iqr, eps),
+      median_within_iqr = pmax(median_within_iqr, eps),
+      between_clip_median_iqr = pmax(between_clip_median_iqr, eps)
+    )
+}
+
+compare_amplitude_decomp <- function(empirical_panel,
+                                     synthetic_panel,
+                                     score_cols,
+                                     eps = 1e-8) {
+  emp_amp <- amplitude_decomp(empirical_panel, score_cols = score_cols, eps = eps)
+  syn_amp <- amplitude_decomp(synthetic_panel, score_cols = score_cols, eps = eps)
+
+  emp_amp |>
+    dplyr::rename_with(~ paste0("emp_", .x), -channel) |>
+    dplyr::inner_join(
+      syn_amp |> dplyr::rename_with(~ paste0("syn_", .x), -channel),
+      by = "channel"
+    ) |>
+    dplyr::mutate(
+      pooled_iqr_ratio = syn_pooled_iqr / pmax(emp_pooled_iqr, eps),
+      within_iqr_ratio = syn_mean_within_iqr / pmax(emp_mean_within_iqr, eps),
+      between_median_iqr_ratio =
+        syn_between_clip_median_iqr / pmax(emp_between_clip_median_iqr, eps)
+    )
+}
+
+compress_tanh <- function(x, center, radius, slope = 1.0, eps = 1e-8) {
+  radius <- pmax(as.numeric(radius), eps)
+  center + radius * tanh(as.numeric(slope) * (x - center) / radius)
+}
+
+apply_empirical_tanh_link <- function(synthetic_panel,
+                                      empirical_panel,
+                                      score_cols,
+                                      radius_multiplier = 1.5,
+                                      slope = 1.0,
+                                      eps = 1e-8) {
+  out <- synthetic_panel
+
+  centers <- vapply(empirical_panel[score_cols], stats::median, numeric(1), na.rm = TRUE)
+  radii <- as.numeric(radius_multiplier) *
+    vapply(empirical_panel[score_cols], stats::IQR, numeric(1), na.rm = TRUE)
+
+  for (ch in score_cols) {
+    out[[ch]] <- compress_tanh(
+      x = out[[ch]],
+      center = centers[[ch]],
+      radius = radii[[ch]],
+      slope = slope,
+      eps = eps
+    )
+  }
+
+  out
+}
+
+clamp_to_empirical_range <- function(panel,
+                                     empirical_panel,
+                                     score_cols) {
+  out <- panel
+  lower <- vapply(empirical_panel[score_cols], min, numeric(1), na.rm = TRUE)
+  upper <- vapply(empirical_panel[score_cols], max, numeric(1), na.rm = TRUE)
+
+  for (ch in score_cols) {
+    out[[ch]] <- pmin(pmax(out[[ch]], lower[[ch]]), upper[[ch]])
+  }
+
+  out
+}
+
+logit_transform_score_panel <- function(panel,
+                                        score_cols,
+                                        eps = 1e-4) {
+  out <- panel
+  eps <- min(max(as.numeric(eps), .Machine$double.eps), 0.49)
+
+  for (ch in score_cols) {
+    p <- as.numeric(out[[ch]])
+    out[[ch]] <- stats::qlogis(pmin(pmax(p, eps), 1 - eps))
+  }
+
+  out
+}
+
+affine_iqr_normalize_panel <- function(synthetic_panel,
+                                       empirical_panel,
+                                       score_cols,
+                                       alpha = 1.0,
+                                       clamp = TRUE,
+                                       eps = 1e-8) {
+  normalized <- robust_rescale_panel(
+    synthetic_panel = synthetic_panel,
+    empirical_panel = empirical_panel,
+    score_cols = score_cols,
+    shrink = 1.0,
+    eps = eps
+  )
+
+  out <- synthetic_panel
+  alpha <- min(max(as.numeric(alpha), 0), 1)
+  out[score_cols] <- (1 - alpha) * synthetic_panel[score_cols] + alpha * normalized[score_cols]
+
+  if (clamp) {
+    out <- clamp_to_empirical_range(out, empirical_panel, score_cols)
+  }
+
+  out
+}
+
+empirical_quantile_normalize_panel <- function(synthetic_panel,
+                                               empirical_panel,
+                                               score_cols,
+                                               alpha = 1.0,
+                                               n_prob = 1001L,
+                                               clamp = TRUE) {
+  out <- synthetic_panel
+  alpha <- min(max(as.numeric(alpha), 0), 1)
+  probs <- seq(0, 1, length.out = as.integer(n_prob))
+
+  for (ch in score_cols) {
+    syn <- as.numeric(synthetic_panel[[ch]])
+    emp <- as.numeric(empirical_panel[[ch]])
+    emp <- emp[is.finite(emp)]
+    finite <- is.finite(syn)
+
+    mapped <- syn
+    if (sum(finite) > 1L && length(emp) > 1L) {
+      ranks <- rank(syn[finite], ties.method = "average")
+      rank_probs <- (ranks - 0.5) / length(ranks)
+      emp_quantiles <- stats::quantile(emp, probs = probs, names = FALSE, type = 8, na.rm = TRUE)
+      mapped[finite] <- stats::approx(
+        x = probs,
+        y = emp_quantiles,
+        xout = rank_probs,
+        rule = 2,
+        ties = "ordered"
+      )$y
+    }
+
+    out[[ch]] <- (1 - alpha) * syn + alpha * mapped
+  }
+
+  if (clamp) {
+    out <- clamp_to_empirical_range(out, empirical_panel, score_cols)
+  }
+
+  out
+}
+
+candidate_channel_iqr_frontier <- function(candidate_summary,
+                                           metric_comparison_long) {
+  candidate_metrics <- metric_comparison_long |>
+    dplyr::mutate(
+      max_discrepancy = pmax(median_diff_scaled, wasserstein_scaled, na.rm = TRUE)
+    )
+
+  channel_frontier <- candidate_metrics |>
+    dplyr::filter(metric == "channel_iqr") |>
+    dplyr::group_by(candidate_id) |>
+    dplyr::summarise(
+      channel_iqr_worst = max(max_discrepancy, na.rm = TRUE),
+      raw_channel_iqr = max(max_discrepancy[family == "raw"], na.rm = TRUE),
+      latent_channel_iqr = max(max_discrepancy[family == "latent"], na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  diff_frontier <- candidate_metrics |>
+    dplyr::filter(metric == "diff_iqr") |>
+    dplyr::group_by(candidate_id) |>
+    dplyr::summarise(
+      diff_iqr_worst = max(max_discrepancy, na.rm = TRUE),
+      raw_diff_iqr = max(max_discrepancy[family == "raw"], na.rm = TRUE),
+      latent_diff_iqr = max(max_discrepancy[family == "latent"], na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  channel_frontier |>
+    dplyr::inner_join(diff_frontier, by = "candidate_id") |>
+    dplyr::inner_join(candidate_summary, by = "candidate_id") |>
+    dplyr::arrange(channel_iqr_worst, total_loss)
+}
+
+cor_sign_summary <- function(panel, score_cols, label = NA_character_) {
+  C <- suppressWarnings(stats::cor(panel[score_cols], use = "pairwise.complete.obs"))
+  if (!is.matrix(C) || any(!is.finite(C))) {
+    return(data.frame(
+      label = label,
+      mean_pairwise_cor = NA_real_,
+      mean_abs_pairwise_cor = NA_real_,
+      positive_cor_fraction = NA_real_,
+      negative_cor_fraction = NA_real_,
+      first_eigen_share = NA_real_,
+      effective_rank = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  vals <- C[upper.tri(C)]
+  eigenvalues <- eigen(C, symmetric = TRUE, only.values = TRUE)$values
+
+  data.frame(
+    label = label,
+    mean_pairwise_cor = mean(vals, na.rm = TRUE),
+    mean_abs_pairwise_cor = mean(abs(vals), na.rm = TRUE),
+    positive_cor_fraction = mean(vals > 0, na.rm = TRUE),
+    negative_cor_fraction = mean(vals < 0, na.rm = TRUE),
+    first_eigen_share = max(eigenvalues, na.rm = TRUE) / sum(eigenvalues, na.rm = TRUE),
+    effective_rank = safe_effective_rank(C),
+    stringsAsFactors = FALSE
+  )
+}
+
 simulate_named_observables <- function(latent,
                                        community_map,
                                        loadings,
-                                       measurement_var) {
+                                       measurement_var,
+                                       obs_scale = 1.0,
+                                       resid_rho = 0,
+                                       common_sd = 0,
+                                       common_phi = 0.6,
+                                       cross_loading_sd = 0,
+                                       link = c("softmax", "identity", "logistic"),
+                                       temperature = 1.0) {
+  link <- match.arg(link)
   emotion_names <- names(community_map)
   n_steps <- nrow(latent)
-  obs <- matrix(NA_real_, nrow = n_steps, ncol = length(emotion_names))
-  colnames(obs) <- emotion_names
+  n_emotions <- length(emotion_names)
+  n_fac <- ncol(latent)
+
+  L <- matrix(0, nrow = n_emotions, ncol = n_fac)
+  rownames(L) <- emotion_names
+
+  if (cross_loading_sd > 0) {
+    L[,] <- stats::rnorm(n_emotions * n_fac, mean = 0, sd = cross_loading_sd)
+  }
 
   for (emotion in emotion_names) {
     fac <- community_map[[emotion]]
-    error_sd <- sqrt(unname(measurement_var[emotion]))
-    obs[, emotion] <- latent[, fac] * loadings[[emotion]] +
-      stats::rnorm(n_steps, mean = 0, sd = error_sd)
+    L[emotion, fac] <- loadings[[emotion]]
   }
 
-  obs <- exp(obs - apply(obs, 1, max))
-  obs <- obs / rowSums(obs)
-  as.data.frame(obs, stringsAsFactors = FALSE)
+  Sigma <- make_residual_cov(measurement_var[emotion_names], resid_rho = resid_rho)
+  e <- MASS::mvrnorm(
+    n = n_steps,
+    mu = rep(0, n_emotions),
+    Sigma = Sigma
+  )
+
+  g <- simulate_ar1(n_steps, phi = common_phi, sd = common_sd)
+  obs_star <- obs_scale * (latent %*% t(L) + outer(g, rep(1, n_emotions))) + e
+  colnames(obs_star) <- emotion_names
+
+  obs <- apply_score_link(obs_star, link = link, temperature = temperature)
+  obs <- as.data.frame(obs, stringsAsFactors = FALSE)
+  names(obs) <- emotion_names
+  obs
 }
 
 simulate_empirical_dlo_panel <- function(clip_lengths,
@@ -1855,7 +2358,19 @@ simulate_empirical_dlo_panel <- function(clip_lengths,
                                          n_replicates = 1L,
                                          model_name = "synthetic",
                                          integrator = "linear_exact",
-                                         seed = NULL) {
+                                         seed = NULL,
+                                         rho_q = 0,
+                                         q_cov = NULL,
+                                         obs_scale = 1.0,
+                                         resid_rho = 0,
+                                         common_sd = 0,
+                                         common_phi = 0.6,
+                                         cross_loading_sd = 0,
+                                         link = "softmax",
+                                         temperature = 1.0,
+                                         init_x_sd = NULL,
+                                         init_dx_sd = NULL,
+                                         burn_in = 0L) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -1876,14 +2391,26 @@ simulate_empirical_dlo_panel <- function(clip_lengths,
         sigma_q = sigma_q,
         eta = eta,
         zeta = zeta,
-        integrator = integrator
+        integrator = integrator,
+        rho_q = rho_q,
+        q_cov = q_cov,
+        init_x_sd = init_x_sd,
+        init_dx_sd = init_dx_sd,
+        burn_in = burn_in
       )
 
       observables <- simulate_named_observables(
         latent = latent,
         community_map = community_map,
         loadings = loadings,
-        measurement_var = measurement_var
+        measurement_var = measurement_var,
+        obs_scale = obs_scale,
+        resid_rho = resid_rho,
+        common_sd = common_sd,
+        common_phi = common_phi,
+        cross_loading_sd = cross_loading_sd,
+        link = link,
+        temperature = temperature
       )
 
       observables$clip <- sprintf("rep%03d_%s", rep_idx, clip_names[[clip_idx]])

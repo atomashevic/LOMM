@@ -1,0 +1,4 @@
+Method,Scope,Structural cells,Method rows,Hit rate (%),Assignment (%),Score r,Score NRMSE,Median runtime (s)
+DynEGA,Matched bounded comparison,162,486,98.8,99.5,0.659,0.844,0.8
+GraphicalVAR,Matched bounded comparison,162,486,85.8,94.6,0.655,0.841,40
+GIMME,Matched bounded comparison,162,486,40.7,74.3,0.629,0.844,161

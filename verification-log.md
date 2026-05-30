@@ -1,0 +1,990 @@
+# Verification Log
+
+## 2026-05-16
+
+- Goal: Produce a literature-grounded map of model families related to LOMM and explain LOMM's utility and originality relative to prior work.
+- Files changed:
+  - `paper/lit-review/lomm_model_landscape_review.md`
+  - `paper/figures/lomm_model_landscape_map.png`
+  - `paper/figures/lomm_model_landscape_map.svg`
+  - `analysis-map.md`
+  - `paper-plan.md`
+  - `style-guide.md`
+  - `verification-log.md`
+  - `research-log.md`
+- Commands:
+  - Literature-review skill workflow with `paper-search` attempts; several psychology/statistics Semantic Scholar queries failed with `RetryError`, while the latent ODE query returned usable results.
+  - Direct web checks for ctsem, DSEM, GraphicalVAR/GGM, GIMME, DynEGA documentation, Latent ODE, and GRU-ODE-Bayes sources.
+  - Deterministic matplotlib generation of `paper/figures/lomm_model_landscape_map.png` and `.svg`.
+- Outputs:
+  - Added a manuscript-facing review note that classifies LOMM as an interpretable generative bridge between oscillator/LDE models, psychometric measurement models, state-space SEM, network recovery methods, and latent ODE families.
+  - Added a map asset showing where LOMM sits relative to damped oscillator/LDE, dynamic factor/DAFS, ctSEM/DSEM, DynEGA/EGA, GraphicalVAR/GIMME, and latent ODE/neural ODE families.
+  - Added a style guardrail: claim originality for the integrated generator-plus-measurement-plus-benchmark use case, not for inventing oscillators, latent variables, measurement models, or continuous-time dynamics.
+- Checks passed:
+  - `file paper/figures/lomm_model_landscape_map.png paper/figures/lomm_model_landscape_map.svg` confirms a 2852 x 1737 PNG and a valid SVG asset.
+  - `git diff --check -- paper/lit-review/lomm_model_landscape_review.md paper/figures/lomm_model_landscape_map.svg analysis-map.md paper-plan.md style-guide.md verification-log.md research-log.md` reported no whitespace errors for tracked diffs.
+  - `grep -n '[[:blank:]]$' paper/lit-review/lomm_model_landscape_review.md paper/figures/lomm_model_landscape_map.svg analysis-map.md paper-plan.md style-guide.md verification-log.md research-log.md || true` reported no remaining trailing whitespace after trimming generated SVG path lines.
+  - `rg -n "LOMM model-landscape|lomm_model_landscape|integrated generator|Known-truth|Originality" ...` confirmed the review, figure links, and control-doc references are present.
+- Checks failed/blockers:
+  - Local `paper-search` was partially unavailable due to retry failures; direct primary-source web checks were used instead.
+- Claims changed:
+  - None in the claims ledger. This adds literature-positioning support and manuscript wording guardrails only.
+
+## 2026-05-16
+
+- Goal: Prepare an RR Quarto manuscript scaffold from the existing R Markdown manuscript without changing visible manuscript content.
+- Files changed:
+  - `paper/Paper_emotion_dynamics_HGolino_RR.qmd`
+  - `paper-plan.md`
+  - `analysis-map.md`
+  - `reviewer-issues.md`
+  - `README.md`
+  - `verification-log.md`
+- Commands:
+  - `quarto convert paper/Paper_emotion_dynamics_HGolino.Rmd --output paper/Paper_emotion_dynamics_HGolino_RR.qmd`
+  - `cp paper/Paper_emotion_dynamics_HGolino.Rmd paper/Paper_emotion_dynamics_HGolino_RR.qmd`
+  - `quarto inspect paper/Paper_emotion_dynamics_HGolino_RR.qmd`
+  - `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --execute false`
+  - `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf -M execute.eval=false`
+- Outputs:
+  - Created `paper/Paper_emotion_dynamics_HGolino_RR.qmd` as the active RR Quarto scaffold.
+  - Converted the top-level output metadata from R Markdown `output: papaja::apa6_pdf` to Quarto `format: pdf`.
+  - Added Quarto `paper-as-code` metadata pointing to `paper-plan.md`, `claims-ledger.md`, `analysis-map.md`, `reviewer-issues.md`, `style-guide.md`, and `verification-log.md`.
+  - Converted visible R chunk headers to Quarto hashpipe options.
+  - Inserted non-rendered `RR-TODO` comments at the abstract/introduction, model, empirical example, DynEGA, simulation design, data generation, data analysis, results, tutorial, and discussion insertion points.
+  - Added the RR Quarto scaffold to `paper-plan.md`, `analysis-map.md`, `reviewer-issues.md`, and `README.md`.
+- Checks passed:
+  - `quarto inspect paper/Paper_emotion_dynamics_HGolino_RR.qmd` succeeds and recognizes the document as a Quarto/knitr input.
+- Checks failed/blockers:
+  - Full render failed before document execution because the R package `papaja` is not installed in this environment.
+  - The source manuscript also references local bibliography files and `Examples/` inputs that are not present in this checkout; these are expected future render blockers after the `papaja` issue is resolved.
+- Claims changed:
+  - None. This was a conversion and RR insertion-comment scaffold only.
+
+## 2026-05-16
+
+- Goal: Update manuscript-facing documentation to use Latent Oscillator Measurement Model (LOMM) as the preferred model name.
+- Files changed:
+  - `README.md`
+  - `paper-plan.md`
+  - `claims-ledger.md`
+  - `analysis-map.md`
+  - `reviewer-issues.md`
+  - `style-guide.md`
+  - `paper/gdlo_working_note.tex`
+  - `paper/Paper_emotion_dynamics_HGolino.Rmd`
+  - `reports/revision_benchmark_report_v2.tex`
+  - `verification-log.md`
+  - `research-log.md`
+- Outputs:
+  - Replaced the manuscript-facing "DLO-MM" / generalized DLO framing with LOMM.
+  - Kept legacy DLO terminology only for older scripts, archived artifacts, and historical labels.
+  - Recorded that "Latent Oscillator Measurement Model" should be used without "with" because the measurement model is part of the integrated generative model.
+- Checks passed:
+  - Searched updated docs for stale manuscript-facing `DLO-MM` and generalized-DLO wording.
+  - `git diff --check` passed for the updated documentation set.
+  - Rebuilt `reports/revision_benchmark_report_v2.pdf` with two `pdflatex` passes.
+
+## 2026-05-11
+
+- Goal: Update core paper control docs after completing the retained-100 OpenAI-large video-analysis section.
+- Files changed:
+  - `paper-plan.md`
+  - `claims-ledger.md`
+  - `analysis-map.md`
+  - `reviewer-issues.md`
+  - `style-guide.md`
+  - `README.md`
+  - `verification-log.md`
+- Source evidence:
+  - `comparison_revision_report_v2/oai_louvain_validation_table_v2.tex`
+  - `comparison_revision_report_v2/oai_metric_table_v2.tex`
+  - `comparison_revision_report_v2/oai_validation_sensitivity_metrics_v2.csv`
+  - `empirical_outputs_smoke/mafw-sample-130-retained100/oai-large-100/`
+  - `reports/revision_benchmark_report_v2.tex`
+- Outputs:
+  - Locked the OpenAI video analysis as the current completed empirical-realism scaffold.
+  - Updated the paper plan to use the retained-100 target and the five-metric dynamical-system interpretation.
+  - Updated C8 and C10, and added C18 for matched louvain coarse structure and partial effective-rank geometry.
+  - Updated reviewer issues R5 and R6 to say the OpenAI-large/CLIP-like scores are empirical input and a dynamical-regime check, not broad FER validation.
+  - Updated the style guide so manuscript wording uses local persistence, typical movement scale, directional-regime complexity, spectral complexity, and dimensional spread.
+- Current OpenAI interpretation:
+  - Raw lag-1 ACF, raw derivative IQR, raw run-length entropy, and latent run-length entropy pass under the `0.33` maximum scaled-discrepancy threshold.
+  - Raw/latent spectral entropy and raw/latent effective rank are partial.
+  - No report-facing OpenAI metric fails.
+  - The louvain structural readout matches empirical and synthetic `n_dim = 3`, community sizes `6-3-2`.
+  - Mean total variation remains a stricter sensitivity check showing larger synthetic excursions and should not be used as the headline posterior-predictive-style criterion.
+- Checks passed:
+  - Documentation updated from existing retained-100 artifacts; no analysis rerun needed for this doc-only step.
+- Checks failed/blockers:
+  - None for the paper-control docs.
+
+## 2026-05-11
+
+- Goal: Check current project status, latest scripts, latest results, and synced lab R&R context before restructuring the manuscript workflow with paper-as-code control files.
+- Files changed:
+  - `paper-plan.md`
+  - `claims-ledger.md`
+  - `analysis-map.md`
+  - `reviewer-issues.md`
+  - `style-guide.md`
+  - `research-log.md`
+  - `AGENTS.md`
+- Commands:
+  - `git status --short --branch`
+  - `find /home/atomasevic/dlo -maxdepth 3 -type f`
+  - `find . -maxdepth 3 -type f ... -printf ...`
+  - `ob sync` in `/home/atomasevic/lab`
+  - `sed -n` reads for `AGENTS.md`, `README.md`, `run_method_benchmark.R`, `summarize_full_suite_results.R`, `plot_revision_report_v2_figures.R`, `reports/revision_benchmark_report_v2.tex`, `paper/gdlo_working_note.tex`, `/home/atomasevic/lab/methods/dlo-paper-rr.md`, `/home/atomasevic/lab/log.md`, `/home/atomasevic/lab/wp.md`
+  - `Rscript -e 'd<-read.csv("benchmark_outputs_revision_summary/full_suite_combined_results.csv"); ...'`
+  - `Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r'); cat('extract.r loaded\n')"`
+  - `pgrep -af 'run_.*(benchmark|suite)|R --.*dlo|Rscript.*dlo|run_method_benchmark' || true`
+  - `git diff --check`
+  - `rg -n "[^[:ascii:]]" AGENTS.md paper-plan.md claims-ledger.md analysis-map.md reviewer-issues.md style-guide.md verification-log.md research-log.md || true`
+  - `ob sync` in `/home/atomasevic/lab` after the repository edits
+- Outputs:
+  - Confirmed clean git state on `main...origin/main` before edits.
+  - Confirmed no active benchmark R jobs.
+  - Confirmed current tracked head: `30ba81b Add revision benchmark report v2`.
+  - Confirmed `extract.r` loads without triggering the expensive pipeline.
+  - Confirmed combined benchmark rows: 3,960.
+  - Confirmed method status counts: DynEGA 1,920 ok; GraphicalVAR 1,872 ok and 48 timeouts; GIMME 21 ok, 96 timeouts, 3 errors.
+  - Corrected stale `AGENTS.md` git guidance after live `git status` showed this is a git repo.
+- Checks passed:
+  - Lab vault synced successfully before reading.
+  - Lab vault synced successfully again after repository edits.
+  - `git diff --check` passed.
+  - New and modified markdown files contain ASCII only.
+  - Latest repo outputs match the report v2 headline table.
+  - Existing final outputs support DynEGA versus GraphicalVAR as the main benchmark and GIMME as bounded feasibility.
+- Checks failed/blockers:
+  - `pdftotext` is not installed, so report text was read from `reports/revision_benchmark_report_v2.tex` instead of extracting the PDF.
+  - PCA is implemented as a supported method in `run_method_benchmark.R` but is not present in current final result outputs.
+- Claims changed:
+  - Added supported benchmark claims C4-C9.
+  - Marked full empirical equivalence, broad FER validation, and PCA result claims as unsupported for now.
+
+## 2026-05-11
+
+- Goal: Record the Hudson/Alex meeting decision that PCA should not be added to the current revision benchmark.
+- Files changed:
+  - `paper-plan.md`
+  - `claims-ledger.md`
+  - `reviewer-issues.md`
+  - `style-guide.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `git diff --check`
+  - `rg -n "PCA|pca" paper-plan.md claims-ledger.md reviewer-issues.md style-guide.md research-log.md verification-log.md`
+  - `rg -n "[^[:ascii:]]" paper-plan.md claims-ledger.md reviewer-issues.md style-guide.md verification-log.md research-log.md || true`
+  - `git status --short`
+- Outputs:
+  - PCA changed from open/unsupported benchmark question to explicit exclusion decision for this revision.
+- Checks passed:
+  - `git diff --check` passed.
+  - ASCII check passed for the edited control/log files.
+  - PCA references now preserve the append-only earlier note and add the later exclusion correction.
+- Checks failed/blockers:
+  - None.
+- Claims changed:
+  - C11 now states that PCA is not part of the current revision benchmark.
+
+## 2026-05-11
+
+- Goal: Investigate whether positive `zeta` in the OpenAI-large empirical-realism outputs conflicts with damped-oscillator wording.
+- Files changed:
+  - `model-sign-convention-audit.md`
+  - `claims-ledger.md`
+  - `reviewer-issues.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `sed -n '80,220p' extract.r`
+  - `sed -n '430,700p' extract.r`
+  - `sed -n '1,230p' run_empirical_mafw_sample_pipeline.R`
+  - `sed -n '280,470p' run_empirical_mafw_sample_pipeline.R`
+  - `sed -n '1,80p' empirical_outputs_smoke/mafw-sample/oai-large-100/winner_summary.csv`
+  - `sed -n '1,80p' empirical_outputs_smoke/mafw-sample/oai-large-100/mode_summary.csv`
+  - `sed -n '1,80p' empirical_outputs_smoke/mafw-sample/oai-large-100/verdict.txt`
+  - `Rscript` stability/eigenvalue probe for benchmark and OpenAI-large parameter sets
+  - `Rscript` no-noise trajectory probe through `simulate_latent_multi()`
+  - `rg -n "Damped|damped|damping|overdamped|unphysical|zeta|Zeta" . -g '*.R' -g '*.r' -g '*.tex' -g '*.md'`
+  - `env RUN_EMPIRICAL_DLO_SMOKE=1 EMPIRICAL_DLO_MODELS=oai-large-100 EMPIRICAL_DLO_OUTPUT_ROOT=/home/atomasevic/dlo/empirical_outputs_smoke/mafw-stable-zeta-sensitivity EMPIRICAL_DLO_COMPARE_MODES=homogeneous,heterogeneous EMPIRICAL_DLO_ETA=-0.10,-0.40 EMPIRICAL_DLO_ZETA=-0.08,-0.12,-0.20,-0.40 EMPIRICAL_DLO_SIGMA_Q=0.25 EMPIRICAL_DLO_DT=0.50 EMPIRICAL_DLO_ETA_SPREAD=0.20,0.50 EMPIRICAL_DLO_ZETA_SPREAD=0.20,0.50 EMPIRICAL_DLO_REPS=3 Rscript run_empirical_mafw_sample_pipeline.R`
+  - `sed -n '1,80p' empirical_outputs_smoke/mafw-stable-zeta-sensitivity/oai-large-100/winner_summary.csv`
+  - `Rscript` comparison of current positive-`zeta` winner against stable-negative-`zeta` sensitivity winner
+- Outputs:
+  - Confirmed implemented equation: `x'' = eta x + zeta x' + q`.
+  - Confirmed stable damped condition under implementation: `eta < 0` and `zeta < 0`.
+  - Confirmed benchmark scenarios use negative `zeta`.
+  - Confirmed OpenAI-large winner uses positive `zeta = 0.0800;0.1200`.
+  - Confirmed older production-estimator warning logic uses the opposite `zeta` interpretation.
+  - Stable-negative-`zeta` sensitivity completed in 605.2 seconds.
+  - Best stable-negative-`zeta` sensitivity total loss: 1.6988.
+  - Current positive-`zeta` winner total loss: 1.4974; delta vs stable sensitivity: 0.2014.
+- Checks passed:
+  - Stability calculation and no-noise simulation agree qualitatively: positive-`zeta` OpenAI-large candidates are anti-damped/persistent, while benchmark scenarios decay.
+  - Constrained stable-negative-`zeta` empirical-realism search completed successfully.
+- Checks failed/blockers:
+  - None.
+- Claims changed:
+  - Added C13 on the implemented sign convention.
+  - Added C14 on the OpenAI-large winner not being a damped-regime match.
+  - Added C15 on the stable-negative-`zeta` sensitivity being plausible but weaker than the current positive-`zeta` winner.
+
+## 2026-05-11
+
+- Goal: Implement and run the signed-`zeta` smoke benchmark addon without modifying completed revision benchmark outputs.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `run_signed_zeta_smoke_benchmark.R`
+  - `benchmark_outputs_signed_zeta_smoke/`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+  - `reviewer-issues.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `env SIGNED_ZETA_DRY_RUN=1 Rscript run_signed_zeta_smoke_benchmark.R`
+  - `Rscript` dry-run admissibility checks for candidate/runnable counts and growth cap
+  - `Rscript` one-cell GraphicalVAR timing probes
+  - `Rscript run_signed_zeta_smoke_benchmark.R`
+  - `Rscript` acceptance checks for result count, method families, GIMME/PCA absence, `finite_growth <= 5`, and status counts
+  - `head -20 benchmark_outputs_signed_zeta_smoke/signed_zeta_summary_by_regime.csv`
+  - `cat benchmark_outputs_signed_zeta_smoke/signed_zeta_metadata.txt`
+  - `git diff --check`
+- Outputs:
+  - Dry-run candidate cells: 112.
+  - Dry-run runnable cells: 88.
+  - Max retained `finite_growth`: 4.874415.
+  - Excluded cells: `zeta = 0.12` at `TimeP = 100` and `zeta = 0.20` at both horizons.
+  - Saved `growth_horizon` values are the actual exponent spans: 24.5 for `TimeP = 50` and 39.6 for `TimeP = 100`.
+  - Full smoke result rows: 176.
+  - Status counts: DynEGA 88 ok; GraphicalVAR 88 ok.
+  - Method families present: `dynEGA`, `graphicalVAR`.
+  - GIMME/PCA rows: 0.
+  - Overall DynEGA means: exact recovery 1.00, assignment accuracy 1.00, score correlation 0.9416, NRMSE 0.4725.
+  - Overall fixed-lambda GraphicalVAR means: exact recovery 0.25, assignment accuracy 0.5208, score correlation 0.9374, NRMSE 0.3952.
+- Checks passed:
+  - Output directory is `benchmark_outputs_signed_zeta_smoke/`.
+  - Completed revision benchmark directories were not rerun or overwritten.
+  - All result rows have `finite_growth <= 5`.
+  - Expected result count passed: 88 cells x 2 methods = 176 rows.
+  - No GIMME or PCA result rows appear.
+  - `git diff --check` passed before the final log append.
+- Checks failed/blockers:
+  - Default GraphicalVAR EBIC/lambda search timed out on the first two signed-smoke cells at 240 seconds. The smoke runner was changed to use fixed-lambda GraphicalVAR settings for feasibility, while keeping existing revision benchmark defaults env-gated and unchanged.
+- Claims changed:
+  - Added C16 for the signed-`zeta` smoke benchmark.
+
+## 2026-05-11
+
+- Goal: Generate the signed-`zeta` smoke report figure/table pack.
+- Files changed:
+  - `plot_signed_zeta_smoke_report.R`
+  - `comparison_signed_zeta_smoke/`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `Rscript plot_signed_zeta_smoke_report.R`
+  - `find comparison_signed_zeta_smoke -maxdepth 1 -type f -printf '%f\n' | sort`
+  - `sed -n '1,220p' comparison_signed_zeta_smoke/signed_zeta_smoke_report.md`
+  - `file comparison_signed_zeta_smoke/*.png`
+  - visual inspection of `signed_zeta_exact_recovery_heatmap.png`
+  - visual inspection of `signed_zeta_growth_filter_heatmap.png`
+- Outputs:
+  - `comparison_signed_zeta_smoke/signed_zeta_smoke_report.md`
+  - Metric heatmaps as `.png` and `.pdf`: exact recovery, assignment accuracy, score correlation, NRMSE, runtime.
+  - Feedback-regime summary figure as `.png` and `.pdf`.
+  - Growth-filter heatmap as `.png` and `.pdf`.
+  - CSV summaries: method overview, regime summary, zeta summary, horizon/dimension summary, growth-filter summary, excluded cells.
+  - LaTeX snippets: method overview, regime summary, growth-filter summary.
+- Checks passed:
+  - Script completed successfully.
+  - PNG outputs are nonempty image files with expected dimensions.
+  - Report markdown includes acceptance snapshot, method overview, regime summary, growth filter, excluded cells, figure inventory, and interpretation guardrails.
+  - Visual inspection confirmed the exact-recovery and growth-filter heatmaps render legibly and encode the intended split/retention structure.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Run the signed-`zeta` replicated benchmark with 5 replications per retained finite-growth cell and generate the matching report pack.
+- Files changed:
+  - `run_signed_zeta_smoke_benchmark.R`
+  - `run_signed_zeta_replicated_benchmark.R`
+  - `plot_signed_zeta_smoke_report.R`
+  - `plot_signed_zeta_replicated_report.R`
+  - `benchmark_outputs_signed_zeta_reps5/`
+  - `comparison_signed_zeta_reps5/`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `env SIGNED_ZETA_DRY_RUN=1 Rscript run_signed_zeta_replicated_benchmark.R`
+  - `Rscript` dry-run checks for candidate counts, retained unique cells, runnable rows, replications, and growth cap
+  - `Rscript run_signed_zeta_replicated_benchmark.R`
+  - `Rscript` acceptance checks for result count, method families, GIMME/PCA absence, `finite_growth <= 5`, replications, and status counts
+  - `Rscript plot_signed_zeta_replicated_report.R`
+  - `find comparison_signed_zeta_reps5 -maxdepth 1 -type f -printf '%f\n' | sort`
+  - `sed -n '1,220p' comparison_signed_zeta_reps5/signed_zeta_reps5_report.md`
+  - `file comparison_signed_zeta_reps5/*.png`
+  - visual inspection of `comparison_signed_zeta_reps5/signed_zeta_regime_summary.png`
+- Outputs:
+  - Dry-run candidate cells: 112.
+  - Unique retained cells: 88.
+  - Runnable scenario rows: 440.
+  - Replications per retained cell: 5.
+  - Max retained `finite_growth`: 4.874415.
+  - Full replicated result rows: 880.
+  - Status counts: DynEGA 440 ok; GraphicalVAR 440 ok.
+  - Method families present: `dynEGA`, `graphicalVAR`.
+  - GIMME/PCA rows: 0.
+  - Overall DynEGA means: exact recovery 1.000, assignment accuracy 1.000, score correlation 0.940, NRMSE 0.472, runtime 0.92 s.
+  - Overall fixed-lambda GraphicalVAR means: exact recovery 0.248, assignment accuracy 0.527, score correlation 0.936, NRMSE 0.397, runtime 0.28 s.
+  - Report pack output: `comparison_signed_zeta_reps5/signed_zeta_reps5_report.md` plus `.png` and `.pdf` metric figures.
+- Checks passed:
+  - Output directory is `benchmark_outputs_signed_zeta_reps5/`.
+  - Completed revision benchmark directories were not rerun or overwritten.
+  - All result rows have `finite_growth <= 5`.
+  - Expected result count passed: 440 scenarios x 2 methods = 880 rows.
+  - No GIMME or PCA result rows appear.
+  - Report markdown includes acceptance snapshot, method overview, regime summary, growth filter, excluded cells, figure inventory, and interpretation guardrails.
+  - PNG outputs are nonempty image files with expected dimensions.
+  - Visual inspection confirmed the replicated regime summary renders cleanly.
+- Checks failed/blockers:
+  - None.
+- Claims changed:
+  - Updated C16 with replicated signed-`zeta` evidence.
+
+## 2026-05-11
+
+- Goal: Audit and correct the signed-`zeta` runtime wording after the report made GraphicalVAR look faster than DynEGA.
+- Files changed:
+  - `plot_signed_zeta_smoke_report.R`
+  - `comparison_signed_zeta_smoke/`
+  - `comparison_signed_zeta_reps5/`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `rg -n "runtime_sec|system.time|proc.time|lambda_beta|lambda_kappa|maxit|graphicalVAR|BENCHMARK_GRAPHICALVAR" run_method_benchmark.R run_signed_zeta_smoke_benchmark.R plot_signed_zeta_smoke_report.R benchmark_outputs_signed_zeta_reps5/signed_zeta_metadata.txt benchmark_outputs_signed_zeta_reps5/benchmark_results.csv`
+  - `sed -n '1,220p' benchmark_outputs_signed_zeta_reps5/signed_zeta_metadata.txt`
+  - `Rscript` runtime summaries for `benchmark_outputs_signed_zeta_reps5/benchmark_results.csv`
+  - `sed -n '1600,1660p' run_method_benchmark.R`
+  - `sed -n '1840,2095p' run_method_benchmark.R`
+  - `Rscript` full revision benchmark runtime summary from `benchmark_outputs_revision_summary/full_suite_combined_results.csv`
+  - `Rscript plot_signed_zeta_smoke_report.R`
+  - `Rscript plot_signed_zeta_replicated_report.R`
+  - `rg -n "Runtime|fixed-lambda|full revision" comparison_signed_zeta_reps5/signed_zeta_reps5_report.md comparison_signed_zeta_smoke/signed_zeta_smoke_report.md`
+  - visual inspection of regenerated `comparison_signed_zeta_reps5/signed_zeta_regime_summary.png`
+- Outputs:
+  - Confirmed signed-`zeta` metadata uses fixed GraphicalVAR settings: `lambda_beta = 0.1`, `lambda_kappa = 0.1`, `maxit.in = 25`, `maxit.out = 25`.
+  - Confirmed signed-`zeta` runtime values are elapsed time around bounded fixed-lambda fitting and clustering.
+  - Confirmed full revision runtime reference: DynEGA ok-row mean runtime 3.608 s; GraphicalVAR ok-row mean runtime 180.908 s, median 138.288 s; GraphicalVAR timeouts 48 rows at about 600 s.
+  - Regenerated signed-`zeta` smoke and reps5 report packs with runtime labeled as fixed-lambda smoke runtime.
+- Checks passed:
+  - Reports now include `Runtime (fixed-lambda smoke)` table columns.
+  - Regenerated report guardrails say the runtime values are fixed-lambda smoke runtimes and are not comparable to the full revision benchmark runtime table.
+  - Replicated regime summary plot renders with `Fixed-lambda runtime sec` as the runtime facet label.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Redo the signed-`zeta` compact summary graph without the runtime facet.
+- Files changed:
+  - `plot_signed_zeta_smoke_report.R`
+  - `comparison_signed_zeta_smoke/signed_zeta_regime_summary.png`
+  - `comparison_signed_zeta_smoke/signed_zeta_regime_summary.pdf`
+  - `comparison_signed_zeta_reps5/signed_zeta_regime_summary.png`
+  - `comparison_signed_zeta_reps5/signed_zeta_regime_summary.pdf`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `Rscript plot_signed_zeta_smoke_report.R`
+  - `Rscript plot_signed_zeta_replicated_report.R`
+  - visual inspection of `comparison_signed_zeta_reps5/signed_zeta_regime_summary.png`
+- Outputs:
+  - Regenerated compact summary graph with four facets: exact recovery, assignment accuracy, score correlation, and NRMSE.
+  - Runtime removed from the compact graph and retained only in fixed-lambda smoke runtime tables/heatmaps.
+  - Added `signed_zeta_regime_summary_no_runtime.png` and `.pdf` to avoid stale cached displays of the earlier five-panel figure.
+- Checks passed:
+  - Reps5 summary graph rendered cleanly after regeneration.
+  - Report figure inventory points to `signed_zeta_regime_summary_no_runtime.png`.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Implement the first primary signed-feedback simulation benchmark step: generate and verify the reps20 dry-run grid with proper GraphicalVAR-search metadata.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `run_signed_zeta_smoke_benchmark.R`
+  - `run_signed_feedback_primary_benchmark.R`
+  - `benchmark_outputs_signed_feedback_primary/`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `Rscript run_signed_feedback_primary_benchmark.R`
+  - `Rscript` dry-run checks for candidate count, retained count, runnable rows, reps, growth cap, and scenario family
+  - `Rscript - <<'RS' source('run_signed_zeta_smoke_benchmark.R') ... RS`
+  - `sed -n '1,80p' benchmark_outputs_signed_feedback_primary/signed_zeta_metadata.txt`
+  - `find benchmark_outputs_signed_feedback_primary -maxdepth 1 -type f -printf '%f\n' | sort`
+- Outputs:
+  - Dry-run candidate cells: 112.
+  - Unique retained cells: 88.
+  - Runnable scenario rows: 1,760.
+  - Replications per retained cell: 20.
+  - Max retained `finite_growth`: 4.874415.
+  - Output files: `signed_zeta_admissibility_grid.csv`, `signed_zeta_benchmark_grid.csv`, `signed_zeta_grid_counts.csv`, `signed_zeta_metadata.txt`.
+  - Proper GraphicalVAR-search metadata: `graphical_var_lambda_beta = NA`, `graphical_var_lambda_kappa = NA`, `graphical_var_maxit_in = NA`, `graphical_var_maxit_out = NA`, timeout 900 seconds.
+- Checks passed:
+  - All runnable rows satisfy `finite_growth <= growth_cap`.
+  - Scenario family is `signed_feedback_primary`.
+  - Excluded cells are only high-growth positive-`zeta` cells: `zeta = 0.12` at 100 frames and `zeta = 0.20` at both horizons.
+  - Source-path guards now handle `Rscript -` / `--file=-` for the benchmark scripts.
+  - No method-fitting outputs were produced in this dry-run step.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Run and verify the DynEGA-only primary signed-feedback benchmark pass.
+- Files changed:
+  - `benchmark_outputs_signed_feedback_primary_dynega/`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `SIGNED_ZETA_DRY_RUN=0 BENCHMARK_METHODS=dynEGA BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_primary_dynega Rscript run_signed_feedback_primary_benchmark.R`
+  - `Rscript` checkpoint checks against `benchmark_outputs_signed_feedback_primary_dynega/checkpoint_results.csv`
+  - `Rscript` acceptance checks against `benchmark_results.csv`, `signed_zeta_benchmark_grid.csv`, and `signed_zeta_admissibility_grid.csv`
+  - `sed -n '1,120p' benchmark_outputs_signed_feedback_primary_dynega/signed_zeta_metadata.txt`
+  - `find benchmark_outputs_signed_feedback_primary_dynega -maxdepth 1 -type f -printf '%f\n' | sort`
+- Outputs:
+  - Result rows: 1,760.
+  - Status counts: 1,760 `ok`.
+  - Method families present: `dynEGA` only.
+  - Candidate cells: 112; retained unique cells: 88; runnable rows: 1,760; reps: 20.
+  - Max retained `finite_growth`: 4.874415.
+  - Output files: `benchmark_results.csv`, `benchmark_results.rds`, `benchmark_summary.csv`, `checkpoint_results.csv`, `signed_zeta_admissibility_grid.csv`, `signed_zeta_benchmark_grid.csv`, `signed_zeta_grid_counts.csv`, `signed_zeta_metadata.txt`, `signed_zeta_summary_by_regime.csv`.
+- Checks passed:
+  - `nrow(benchmark_results.csv) == 1760`.
+  - All result rows have `status == "ok"`.
+  - All result rows have `finite_growth <= 5`.
+  - No GraphicalVAR, GIMME, or PCA rows appear.
+  - DynEGA exact recovery and assignment accuracy are both 1.000 in damped, critical, and persistent retained regimes.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Run a proper-search GraphicalVAR pilot before attempting the full primary signed-feedback GraphicalVAR benchmark.
+- Files changed:
+  - `run_signed_feedback_graphicalvar_pilot.R`
+  - `benchmark_outputs_signed_feedback_graphicalvar_pilot/`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `SIGNED_ZETA_DRY_RUN=1 Rscript run_signed_feedback_graphicalvar_pilot.R`
+  - `Rscript` dry-run checks for pilot row count, regime/horizon/dimension coverage, growth cap, and GraphicalVAR metadata
+  - `SIGNED_ZETA_DRY_RUN=0 Rscript run_signed_feedback_graphicalvar_pilot.R`
+  - `kill` on the active pilot R processes after the first two 900-second timeouts were checkpointed and the runner had moved to the next chunk
+  - `Rscript` checkpoint verification for row count, statuses, method family, runtime, and growth cap
+  - `sed -n '1,120p' benchmark_outputs_signed_feedback_graphicalvar_pilot/signed_zeta_metadata.txt`
+  - `find benchmark_outputs_signed_feedback_graphicalvar_pilot -maxdepth 1 -type f -printf '%f\n' | sort`
+- Outputs:
+  - Dry-run pilot rows: 12.
+  - Pilot coverage: damped, critical, persistent regimes; 50 and 100 frames; 2 and 4 latent dimensions.
+  - Proper-search metadata: `graphical_var_lambda_beta = NA`, `graphical_var_lambda_kappa = NA`, `graphical_var_maxit_in = NA`, `graphical_var_maxit_out = NA`, timeout `900`.
+  - Checkpoint rows: 2.
+  - Status counts: 2 `timeout`.
+  - Timeout evidence: `signed_zeta_damped_eta15_neg30_2d_t50` at `900.541 s`; `signed_zeta_critical_eta15_zero_2d_t50` at `900.534 s`.
+- Checks passed:
+  - Pilot grid has 12 rows and all rows satisfy `finite_growth <= 5`.
+  - Checkpoint contains GraphicalVAR rows only.
+  - Checkpoint rows are both proper-search timeouts, not fixed-lambda results.
+- Checks failed/blockers:
+  - Proper GraphicalVAR search timed out on the first two 2D/50-frame pilot cells, so a full 1,760-row primary GraphicalVAR run is blocked pending redesign.
+
+## 2026-05-11
+
+- Goal: Add GraphicalVAR explicitly as a comparator under a high-impact-methods reporting policy.
+- Files changed:
+  - `graphicalvar-comparator-policy.md`
+  - `benchmark_reporting_policy.md`
+  - `paper-plan.md`
+  - `reviewer-issues.md`
+  - `claims-ledger.md`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `rg -n "GraphicalVAR|comparator|primary|signed-feedback|signed-zeta|C16|timeout|GIMME|PCA" claims-ledger.md reviewer-issues.md paper-plan.md analysis-map.md research-log.md verification-log.md`
+  - `sed -n '1,240p' benchmark_reporting_policy.md`
+- Outputs:
+  - Added a dedicated comparator policy separating the completed full-grid revision benchmark from the signed-feedback extension.
+  - Added C17 to the claims ledger.
+  - Updated reviewer issue R7 to say GraphicalVAR remains a resource-bounded comparator in the signed-feedback extension.
+  - Updated the paper plan benchmark section to avoid implying a full proper-search signed-feedback GraphicalVAR grid.
+- Checks passed:
+  - Policy preserves GraphicalVAR as a comparator.
+  - Policy preserves timeout accounting and fixed-lambda sensitivity labeling.
+  - No PCA was introduced.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-11
+
+- Goal: Correct benchmark design so positive `zeta` is treated as part of the main benchmark and comparator coverage includes GraphicalVAR and GIMME attempts.
+- Files changed:
+  - `signed-feedback-main-benchmark-plan.md`
+  - `graphicalvar-comparator-policy.md`
+  - `benchmark_reporting_policy.md`
+  - `paper-plan.md`
+  - `reviewer-issues.md`
+  - `claims-ledger.md`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `rg -n 'extension|main signed-feedback|positive|GIMME|GraphicalVAR|C17|24-cell|standardized' signed-feedback-main-benchmark-plan.md graphicalvar-comparator-policy.md benchmark_reporting_policy.md paper-plan.md reviewer-issues.md claims-ledger.md analysis-map.md research-log.md verification-log.md`
+  - `git diff --check`
+  - `rg -n "[^[:ascii:]]" signed-feedback-main-benchmark-plan.md graphicalvar-comparator-policy.md benchmark_reporting_policy.md paper-plan.md reviewer-issues.md claims-ledger.md analysis-map.md research-log.md verification-log.md || true`
+- Outputs:
+  - Added a standardized 24-cell signed-feedback cross-method benchmark plan.
+  - Replaced "positive-zeta extension" framing with "main signed-feedback benchmark" framing.
+  - Updated C17 to require GraphicalVAR and GIMME attempts on standardized signed-feedback cells before claiming multi-method positive-`zeta` coverage.
+  - Preserved fixed-lambda GraphicalVAR smoke as sensitivity/feasibility only.
+- Checks passed:
+  - No PCA was introduced.
+  - GIMME is now explicitly required as an attempted comparator for signed-feedback cells, with timeout accounting.
+  - GraphicalVAR is retained as a comparator but fixed-lambda smoke alone is not treated as sufficient main evidence.
+- Checks failed/blockers:
+  - Standardized cross-method runner and 1-rep feasibility run still need to be implemented.
+
+## 2026-05-11
+
+- Goal: Reconcile the signed-feedback condition count with the original manuscript simulation scale.
+- Files changed:
+  - `signed-feedback-main-benchmark-plan.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `rg -n "condition|conditions|expand.grid|eta|zeta|Q2|TimeP|NVAR|Loadings|Error|rep|reps|DynEGA|GraphicalVAR|GIMME|N <-|seq\\(|for \\(" paper/Paper_emotion_dynamics_HGolino.Rmd`
+  - `sed -n '1,260p' paper/Paper_emotion_dynamics_HGolino.Rmd`
+  - `sed -n '260,620p' paper/Paper_emotion_dynamics_HGolino.Rmd`
+  - `Rscript` current full-grid count from `run_method_benchmark.R`
+- Outputs:
+  - Original Rmd simulation text describes 216 analysis conditions and 500 replicates.
+  - Current completed revision full grid has 192 condition cells and 10 reps, yielding 1,920 rows per main method.
+  - The 24-cell signed-feedback grid is now labeled as feasibility layer only.
+  - The main signed-feedback plan now defines a 432-cell factorial grid before replications.
+- Checks passed:
+  - Positive `zeta` remains part of the main benchmark design.
+  - GraphicalVAR and GIMME remain required comparator attempts on standardized signed-feedback cells.
+  - The small grid is no longer described as a replacement for the main benchmark.
+- Checks failed/blockers:
+  - The new main/feasibility runner still needs implementation.
+
+## 2026-05-11
+
+- Goal: Implement and dry-run the standardized signed-feedback cross-method benchmark runner.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `run_signed_feedback_standardized_benchmark.R`
+  - `benchmark_outputs_signed_feedback_standardized/`
+  - `signed-feedback-main-benchmark-plan.md`
+  - `analysis-map.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `SIGNED_FEEDBACK_DRY_RUN=1 Rscript run_signed_feedback_standardized_benchmark.R`
+  - `Rscript` dry-run verification for main/feasibility row counts, feedback regimes, zeta values, eta values, growth cap, and absence of fitting outputs
+  - `sed -n '1,120p' benchmark_outputs_signed_feedback_standardized/signed_feedback_metadata.txt`
+  - `find benchmark_outputs_signed_feedback_standardized -maxdepth 1 -type f -printf '%f\n' | sort`
+- Outputs:
+  - Main condition cells: 432.
+  - Main grid rows at 1 rep: 432.
+  - Feasibility condition cells: 24.
+  - Feasibility grid rows at 1 rep: 24.
+  - Main regime counts: 144 damped, 144 critical, 144 persistent.
+  - Feasibility regime counts: 8 damped, 8 critical, 8 persistent.
+  - Main zeta values: `-0.30`, `0.00`, `0.08`.
+  - Feasibility zeta values: `-0.30`, `0.00`, `0.08`.
+  - Max finite growth: 4.874415.
+  - Output files: `signed_feedback_main_conditions.csv`, `signed_feedback_main_grid.csv`, `signed_feedback_feasibility_conditions.csv`, `signed_feedback_feasibility_grid.csv`, `signed_feedback_grid_counts.csv`, `signed_feedback_metadata.txt`.
+- Checks passed:
+  - All main and feasibility rows satisfy `finite_growth <= 5`.
+  - Positive `zeta` is included as a normal persistent benchmark regime.
+  - Metadata includes DynEGA, GraphicalVAR, and GIMME.
+  - GraphicalVAR fixed-lambda overrides remain `NA`.
+  - No PCA was introduced.
+  - No `benchmark_results.csv` was produced in dry-run mode.
+- Checks failed/blockers:
+  - None for dry-run. The 1-rep feasibility fitting layer has not been run yet.
+
+## 2026-05-11
+
+- Goal: Correct the standardized feasibility layer from `N = 16` to `N = 50,100` with `TimeP = 100`.
+- Files changed:
+  - `run_signed_feedback_standardized_benchmark.R`
+  - `signed-feedback-main-benchmark-plan.md`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `pgrep -af 'run_signed_feedback_standardized_benchmark|mlGraphicalVAR|graphicalVAR|gimme|Rscript'`
+  - `kill` / `pkill` to stop the old `N = 16` feasibility run
+- Outputs:
+  - Stopped the old feasibility run before continuing.
+  - Updated feasibility grid levels to `N = 50, 100` and `TimeP = 100`.
+  - Preserved 24 feasibility cells before replications.
+- Checks passed:
+  - Old standardized benchmark R processes were stopped.
+- Checks failed/blockers:
+  - Corrected-grid dry-run and fitting run still need to be rerun.
+
+## 2026-05-11
+
+- Goal: Run the corrected standardized signed-feedback feasibility layer on `N = 50,100`, `TimeP = 100` for DynEGA, GraphicalVAR, and GIMME.
+- Files changed:
+  - `benchmark_outputs_signed_feedback_standardized/`
+  - `research-log.md`
+  - `verification-log.md`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+  - `signed-feedback-main-benchmark-plan.md`
+- Commands:
+  - `env SIGNED_FEEDBACK_DRY_RUN=0 SIGNED_FEEDBACK_RUN_GRID=feasibility BENCHMARK_METHODS=dynEGA,graphicalVAR,gimme BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_standardized BENCHMARK_GRAPHICALVAR_WORKERS=6 BENCHMARK_GIMME_WORKERS=6 BENCHMARK_WORKERS=4 Rscript run_signed_feedback_standardized_benchmark.R`
+  - `Rscript` acceptance checks for result count, checkpoint count, feasibility grid count, `N`, `TimeP`, `zeta`, finite-growth cap, method families, PCA absence, and status counts
+  - `find benchmark_outputs_signed_feedback_standardized -maxdepth 1 -type f -printf '%f\n' | sort`
+- Outputs:
+  - Feasibility grid rows: 24.
+  - Main grid rows written for later use: 432.
+  - Result rows: 72.
+  - Checkpoint rows: 72.
+  - Feasibility `N` values: `50`, `100`.
+  - Feasibility `TimeP`: `100`.
+  - Feasibility `zeta` values: `-0.30`, `0.00`, `0.08`.
+  - Max feasibility `finite_growth`: 4.874415.
+  - DynEGA status counts: 24 `ok`, 0 timeouts.
+  - GraphicalVAR status counts: 0 `ok`, 24 timeouts.
+  - GIMME status counts: 0 `ok`, 24 timeouts.
+  - Each method has 8 damped, 8 critical, and 8 persistent result rows.
+- Checks passed:
+  - Output directory is `benchmark_outputs_signed_feedback_standardized/`.
+  - Corrected feasibility grid has exactly 24 rows.
+  - Result file has exactly 72 rows, equal to 24 cells crossed with 3 methods.
+  - All feasibility grid rows and result rows satisfy `finite_growth <= 5`.
+  - No PCA rows appear.
+  - DynEGA, GraphicalVAR, and GIMME all appear in the result file.
+- Checks failed/blockers:
+  - Proper-search GraphicalVAR timed out for every corrected feasibility cell under the 900-second cap.
+  - GIMME timed out for every corrected feasibility cell under the 900-second cap.
+
+## 2026-05-11
+
+- Goal: Diagnose the root cause of the unacceptable 100% GraphicalVAR and GIMME timeouts.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `run_external_structure_fit.R`
+  - `comparator-timeout-root-cause.md`
+  - `research-log.md`
+  - `verification-log.md`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+  - `signed-feedback-main-benchmark-plan.md`
+- Commands:
+  - Direct `mlGraphicalVAR()` probes with forked hard timeout, explicit `beepvar/dayvar`, fixed-lambda settings, and same-process timeout.
+  - Direct `gimmeSEM()` probes through `fit_gimme_structure()` with same-process and forked hard-timeout paths.
+  - Patched-path GraphicalVAR and GIMME diagnostic calls through `run_graphical_var_specs_for_scenario()` and `run_gimme_specs_for_scenario()`.
+  - Partial corrected GraphicalVAR feasibility rerun:
+    `env SIGNED_FEEDBACK_DRY_RUN=0 SIGNED_FEEDBACK_RUN_GRID=feasibility BENCHMARK_METHODS=graphicalVAR BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_standardized_graphicalvar_fixed BENCHMARK_GRAPHICALVAR_WORKERS=4 BENCHMARK_WORKERS=4 BENCHMARK_GRAPHICALVAR_TIMEOUT_SEC=900 Rscript run_signed_feedback_standardized_benchmark.R`
+  - Process inspection and termination for the exploratory GraphicalVAR rerun after root-cause evidence was established.
+- Outputs:
+  - Same-process fixed-lambda GraphicalVAR completed in 1.422 seconds for `N = 16` and 0.346 seconds for `N = 50`.
+  - Same-process proper-search GraphicalVAR completed in 29.219 seconds for `N = 16` and 33.542 seconds for `N = 50`.
+  - Patched GraphicalVAR path completed a corrected `N = 50` proper-search diagnostic cell in 34.337 seconds.
+  - Same-process GIMME completed in 38.637 seconds for `N = 4` and 139.916 seconds for `N = 16`.
+  - Forked hard-timeout GIMME timed out at 240 seconds even for `N = 4` and `N = 16`.
+  - External `Rscript` GIMME path completed an `N = 4` diagnostic in 14.653 seconds.
+  - Partial corrected GraphicalVAR feasibility rerun produced 8 `ok` rows before being stopped as diagnostic only.
+- Checks passed:
+  - Confirmed the GraphicalVAR 100% timeout pattern was a false-timeout artifact from the forked hard-timeout wrapper.
+  - Confirmed the GIMME forked hard-timeout path is also invalid because it times out on small cells that same-process GIMME can complete.
+  - Confirmed the external GIMME timeout backend can return a successful fit.
+  - Confirmed no exploratory signed-feedback GraphicalVAR process remains running.
+- Checks failed/blockers:
+  - Full corrected GraphicalVAR 24-cell feasibility rerun was not completed; the exploratory rerun was stopped after 8 successful rows because the remaining 4D critical/persistent cells were expensive and the same-process GraphicalVAR timeout is not a strict wall while native optimization is running.
+  - Corrected `N = 50,100` GIMME feasibility remains unresolved; it must be rerun with the external timeout backend.
+
+## 2026-05-11
+
+- Goal: Check whether the current GraphicalVAR implementation matches the CRAN `graphicalVAR` documentation.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - Read CRAN `graphicalVAR` index and reference manual.
+  - `Rscript` inspection of installed `graphicalVAR` version, `mlGraphicalVAR()` arguments, and `tsData()` source.
+  - `sed -n` read of `fit_graphical_var_structure()` in `run_method_benchmark.R`.
+  - `Rscript` comparison of implicit `beepvar` handling versus explicit `beepvar = "time"` for a signed-feedback simulated panel.
+  - `Rscript -e "options(run_extract_pipeline=FALSE); source('run_method_benchmark.R')"`
+  - `git diff --check`
+- Outputs:
+  - Installed `graphicalVAR` version: 0.3.4.
+  - CRAN docs confirm `mlGraphicalVAR(data, vars, beepvar, dayvar, idvar, ...)` is the multi-subject pooled estimator.
+  - Installed `tsData()` source confirms missing `dayvar` is replaced by a single `DAY = 1`, and missing `beepvar` is replaced by sequential beeps within each `id/day`.
+  - For the signed-feedback panel, implicit `beepvar` and explicit `beepvar = "time"` produced identical `data_c` and `data_l` matrices.
+  - `fit_graphical_var_structure()` now passes `beepvar = "time"` explicitly.
+- Checks passed:
+  - Source check passed after the code edit.
+  - Explicit-beep equivalence check passed.
+  - `git diff --check` passed.
+- Checks failed/blockers:
+  - None for the GraphicalVAR call-form check.
+
+## 2026-05-12
+
+- Goal: Produce a systematic corrected-feasibility comparison between DynEGA and proper-search GraphicalVAR.
+- Files changed:
+  - `plot_signed_feedback_feasibility_comparison.R`
+  - `comparison_signed_feedback_feasibility/`
+  - `research-log.md`
+  - `verification-log.md`
+  - `analysis-map.md`
+  - `claims-ledger.md`
+- Commands:
+  - `Rscript plot_signed_feedback_feasibility_comparison.R`
+  - `find comparison_signed_feedback_feasibility -maxdepth 1 -type f -printf '%f\n' | sort`
+  - `sed -n '1,220p' comparison_signed_feedback_feasibility/signed_feedback_feasibility_comparison_report.md`
+  - `file comparison_signed_feedback_feasibility/*.png comparison_signed_feedback_feasibility/*.pdf`
+  - `Rscript` acceptance checks for combined row count, method/status counts, cell-comparison count, and runtime-ratio range
+- Outputs:
+  - `comparison_signed_feedback_feasibility/signed_feedback_feasibility_comparison_report.md`
+  - `signed_feedback_feasibility_combined_results.csv`: 48 rows.
+  - `signed_feedback_feasibility_cell_comparison.csv`: 24 matched cells.
+  - `signed_feedback_feasibility_method_overview.csv`
+  - `signed_feedback_feasibility_regime_summary.csv`
+  - `signed_feedback_feasibility_dimension_summary.csv`
+  - Plot files as `.png` and `.pdf`: regime summary, runtime, runtime-ratio heatmap, and cell-metric heatmap.
+- Checks passed:
+  - Combined comparison has 24 DynEGA rows and 24 GraphicalVAR rows.
+  - All comparison rows have `status = ok`.
+  - No GIMME or PCA rows are included.
+  - Cell comparison has 24 matched corrected feasibility cells.
+  - Runtime ratio range is `24.047` to `402.397`.
+  - Plot files were generated as valid PNG/PDF files.
+- Checks failed/blockers:
+  - None for this comparison pack.
+
+## 2026-05-12
+
+- Goal: Archive prior simulation benchmark outputs and start from a clean slate before the DynEGA 432-cell signed-feedback grid.
+- Files changed:
+  - `archives/2026-05-12-pre-dynega-432-simulation-results/`
+  - `research-log.md`
+  - `verification-log.md`
+  - `analysis-map.md`
+- Commands:
+  - `find . -maxdepth 1 -type d \\( -name 'benchmark_outputs*' -o -name 'comparison_signed*' -o -name 'sim_outputs*' -o -name 'empirical_outputs_smoke' \\) -printf '%f\n' | sort`
+  - `du -sh benchmark_outputs* comparison_signed* sim_outputs* empirical_outputs_smoke 2>/dev/null | sort -h`
+  - `pgrep -af 'run_signed|run_method_benchmark|Rscript.*benchmark|mlGraphicalVAR|gimmeSEM' || true`
+  - `mkdir -p archives/2026-05-12-pre-dynega-432-simulation-results`
+  - `mv benchmark_outputs* comparison_signed* sim_outputs* archives/2026-05-12-pre-dynega-432-simulation-results/`
+  - `find archives/2026-05-12-pre-dynega-432-simulation-results -maxdepth 2 -type f -printf '%P\t%s bytes\n' | sort > archives/2026-05-12-pre-dynega-432-simulation-results/archive_manifest.tsv`
+  - `find archives/2026-05-12-pre-dynega-432-simulation-results -maxdepth 1 -type d -printf '%f\n' | sort > archives/2026-05-12-pre-dynega-432-simulation-results/archive_directories.txt`
+  - `find . -maxdepth 1 -type d \\( -name 'benchmark_outputs*' -o -name 'comparison_signed*' -o -name 'sim_outputs*' \\) -printf '%f\n' | sort || true`
+- Outputs:
+  - Created `archives/2026-05-12-pre-dynega-432-simulation-results/`.
+  - Moved all root-level `benchmark_outputs*`, `comparison_signed*`, and `sim_outputs*` directories into the archive.
+  - Archive size after move: 15M.
+  - Retained `empirical_outputs_smoke/`, `comparison_revision_report_v2/`, and `comparison_revision_report_v2_retained100/` in place.
+- Checks passed:
+  - No active benchmark process was running before the archive move.
+  - No root-level `benchmark_outputs*`, `comparison_signed*`, or `sim_outputs*` directories remain after the move.
+  - Archive manifest and directory index were written.
+- Checks failed/blockers:
+  - None.
+
+## 2026-05-12
+
+- Goal: Run and verify the clean 432-cell signed-feedback main-grid DynEGA benchmark as a detached background job.
+- Files changed:
+  - `benchmark_outputs_signed_feedback_main_dynega_432/`
+  - `research-log.md`
+  - `verification-log.md`
+  - `analysis-map.md`
+- Commands:
+  - `nohup setsid bash -lc "cd /home/atomasevic/dlo && exec env SIGNED_FEEDBACK_DRY_RUN=0 SIGNED_FEEDBACK_RUN_GRID=main SIGNED_FEEDBACK_MAIN_REPS=1 BENCHMARK_METHODS=dynEGA BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_main_dynega_432 BENCHMARK_WORKERS=8 BENCHMARK_RESUME=1 BENCHMARK_CHECKPOINT_EACH=1 Rscript run_signed_feedback_standardized_benchmark.R > benchmark_outputs_signed_feedback_main_dynega_432/run.log 2>&1 < /dev/null" >/dev/null 2>&1 &`
+  - `ps -p $(cat benchmark_outputs_signed_feedback_main_dynega_432/run.pid) -o pid,ppid,stat,etime,pcpu,pmem,rss,vsz,args || true`
+  - `tail -40 benchmark_outputs_signed_feedback_main_dynega_432/run.log`
+  - `Rscript` acceptance check over `benchmark_outputs_signed_feedback_main_dynega_432/benchmark_results.csv` and `signed_feedback_main_grid.csv`
+- Outputs:
+  - `benchmark_outputs_signed_feedback_main_dynega_432/benchmark_results.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/benchmark_results.rds`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/checkpoint_results.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/benchmark_summary.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/signed_feedback_summary_by_regime.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/signed_feedback_main_grid.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/run.log`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/run.command.txt`
+  - `benchmark_outputs_signed_feedback_main_dynega_432/run.pid`
+- Checks passed:
+  - Final result file exists and contains 432 rows.
+  - Checkpoint file contains 432 rows.
+  - All rows have `method_family = dynEGA`.
+  - All rows have `status = ok`.
+  - No GraphicalVAR, GIMME, or PCA rows are present.
+  - The grid contains 432 main rows with `N = 50,100`, `TimeP = 50,100`, `scenario_nfac = 2,3,4`, `NVAR = 3,4`, `Error = 0.025,0.05`, `eta = -0.30,-0.15,-0.05`, and `zeta = -0.30,0.00,0.08`.
+  - Regime counts are balanced: 144 damped, 144 critical, and 144 persistent rows.
+  - All result rows satisfy `finite_growth <= 5`; maximum observed `finite_growth = 4.874415`.
+  - Recovery summary is exact across the grid: mean `n_dim_exact = 1.000` and mean `assignment_accuracy = 1.000`.
+- Checks failed/blockers:
+  - None for the DynEGA 432-cell main-grid run.
+
+## 2026-05-12
+
+- Goal: Reclassify the 432-cell DynEGA signed-feedback run after discovering fixed `Loadings` and fixed `Q`.
+- Commands:
+  - `rg -n "Loadings|loading|Q\\b|expand.grid|conditions|NVAR|eta|zeta" paper/Paper_emotion_dynamics_HGolino.Rmd run_signed_feedback_standardized_benchmark.R run_method_benchmark.R signed-feedback-main-benchmark-plan.md research-log.md`
+  - `Rscript` uniqueness check over `benchmark_outputs_signed_feedback_main_dynega_432/signed_feedback_main_grid.csv` and `benchmark_results.csv`
+  - `nl -ba paper/Paper_emotion_dynamics_HGolino.Rmd | sed -n '700,725p'`
+  - `nl -ba run_signed_feedback_standardized_benchmark.R | sed -n '80,200p'`
+- Outputs:
+  - Confirmed completed grid has one `Loadings` value: `0.6`.
+  - Confirmed completed grid has one `Q` value: `0.75`.
+  - Confirmed older manuscript simulation text varied dynamic factor loadings (`0.4, 0.6, 0.8`) and measurement error conditions.
+  - Confirmed `run_signed_feedback_standardized_benchmark.R` hard-codes `Q = 0.75` and `Loadings = 0.6` in the custom signed-feedback scenario grid.
+- Checks passed:
+  - The 432-cell output remains valid as a fixed-measurement signed-feedback DynEGA baseline.
+- Checks failed/blockers:
+  - The 432-cell output is not sufficient as the final primary simulation benchmark because it does not vary `Loadings` or `Q`.
+
+## 2026-05-12
+
+- Goal: Expand the signed-feedback main grid to restore old-style measurement-loading and measurement-error variation, plus explicit `Q` variation.
+- Files changed:
+  - `run_signed_feedback_standardized_benchmark.R`
+  - `run_method_benchmark.R`
+  - `benchmark_outputs_signed_feedback_main_expanded_dryrun/`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `Rscript -e "options(run_extract_pipeline=FALSE); source('run_signed_feedback_standardized_benchmark.R')"`
+  - `SIGNED_FEEDBACK_DRY_RUN=1 SIGNED_FEEDBACK_RUN_GRID=main BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_main_expanded_dryrun BENCHMARK_METHODS=dynEGA Rscript run_signed_feedback_standardized_benchmark.R`
+  - `Rscript` dry-run acceptance check over `benchmark_outputs_signed_feedback_main_expanded_dryrun/signed_feedback_main_grid.csv` and `signed_feedback_main_conditions.csv`
+- Outputs:
+  - `benchmark_outputs_signed_feedback_main_expanded_dryrun/signed_feedback_main_conditions.csv`
+  - `benchmark_outputs_signed_feedback_main_expanded_dryrun/signed_feedback_main_grid.csv`
+  - `benchmark_outputs_signed_feedback_main_expanded_dryrun/signed_feedback_grid_counts.csv`
+  - `benchmark_outputs_signed_feedback_main_expanded_dryrun/signed_feedback_metadata.txt`
+- Checks passed:
+  - Source check passed.
+  - Expanded main dry-run grid has 5,832 conditions and 5,832 runnable rows at one replication.
+  - All rows are retained by the finite-horizon growth cap; maximum `finite_growth = 4.874415`.
+  - Main-grid levels are `eta = -0.30,-0.15,-0.05`, `zeta = -0.30,0.00,0.08`, `scenario_nfac = 2,3,4`, `N = 50,100`, `TimeP = 50,100`, `NVAR = 3,4`, `Error variance = 0.015625,0.0625,0.25`, `Loadings = 0.4,0.6,0.8`, and `Q = 0.50,0.75,1.00`.
+  - There are nine dynamic-scenario labels: weak/moderate/strong restoring crossed with damped/critical/persistent feedback.
+  - Each dynamic scenario has 648 rows; each feedback regime has 1,944 rows.
+- Checks failed/blockers:
+  - None for the dry-run grid expansion.
+
+## 2026-05-12
+
+- Goal: Launch the locked 10-rep expanded signed-feedback DynEGA benchmark as a detached background process.
+- Files changed:
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `nohup setsid bash -lc "cd /home/atomasevic/dlo && exec taskset -c 0-15 env SIGNED_FEEDBACK_DRY_RUN=0 SIGNED_FEEDBACK_RUN_GRID=main SIGNED_FEEDBACK_MAIN_REPS=10 SIGNED_FEEDBACK_SCENARIO_FAMILY=signed_feedback_primary_reps10 BENCHMARK_METHODS=dynEGA BENCHMARK_OUT_DIR=benchmark_outputs_signed_feedback_main_dynega_reps10 BENCHMARK_WORKERS=12 BENCHMARK_RESUME=1 BENCHMARK_CHECKPOINT_EACH=1 BENCHMARK_PROGRESS=1 Rscript run_signed_feedback_standardized_benchmark.R > benchmark_outputs_signed_feedback_main_dynega_reps10/run.log 2>&1 < /dev/null" >/dev/null 2>&1 &`
+  - `ps -p $(cat benchmark_outputs_signed_feedback_main_dynega_reps10/run.pid) -o pid,ppid,stat,etime,pcpu,pmem,rss,vsz,args`
+  - `taskset -pc $(cat benchmark_outputs_signed_feedback_main_dynega_reps10/run.pid)`
+  - `sed -n '1,80p' benchmark_outputs_signed_feedback_main_dynega_reps10/signed_feedback_metadata.txt`
+  - `Rscript` checkpoint inspection over `benchmark_outputs_signed_feedback_main_dynega_reps10/checkpoint_results.csv`
+- Outputs:
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/run.pid`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/run.command.txt`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/run.log`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/signed_feedback_metadata.txt`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/signed_feedback_grid_counts.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/checkpoint_results.csv`
+- Checks passed:
+  - Launched PID `1149729`.
+  - PID is running under R with CPU affinity `0-15`.
+  - Metadata confirms `selected_runnable_rows = 58320`, `selected_reps = 10`, `run_grid = main`, and `methods = dynEGA`.
+  - Grid counts confirm 5,832 main conditions and 58,320 main rows.
+  - Initial checkpoint contains 96 rows, all `dynEGA`, all `ok`.
+- Checks failed/blockers:
+  - None at launch time.
+
+## 2026-05-12
+
+- Goal: Verify completion of the locked 10-rep expanded signed-feedback DynEGA benchmark.
+- Files changed:
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `ps -p $(cat benchmark_outputs_signed_feedback_main_dynega_reps10/run.pid) -o pid,ppid,stat,etime,pcpu,pmem,rss,vsz,args || true`
+  - `tail -80 benchmark_outputs_signed_feedback_main_dynega_reps10/run.log`
+  - `Rscript` final acceptance check over `benchmark_outputs_signed_feedback_main_dynega_reps10/benchmark_results.csv` and `signed_feedback_main_grid.csv`
+- Outputs:
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/benchmark_results.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/benchmark_results.rds`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/benchmark_summary.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/checkpoint_results.csv`
+  - `benchmark_outputs_signed_feedback_main_dynega_reps10/signed_feedback_summary_by_regime.csv`
+- Checks passed:
+  - Final result file exists and contains 58,320 rows.
+  - Checkpoint file contains 58,320 rows.
+  - Grid file contains 58,320 rows.
+  - All rows have `method_family = dynEGA`.
+  - All rows have `status = ok`.
+  - No GraphicalVAR, GIMME, or PCA rows are present.
+  - Regime counts are balanced: 19,440 damped, 19,440 critical, and 19,440 persistent rows.
+  - Dynamic-scenario counts are balanced: all nine scenarios have 6,480 rows.
+  - All result rows satisfy `finite_growth <= 5`; maximum observed `finite_growth = 4.874415`.
+  - Measurement grid levels are retained: `Error variance = 0.015625,0.0625,0.25`, `Loadings = 0.4,0.6,0.8`, and `Q = 0.50,0.75,1.00`.
+  - Recovery summary is exact across the grid: mean `n_dim_exact = 1.000` and mean `assignment_accuracy = 1.000`.
+- Checks failed/blockers:
+  - None for the completed DynEGA benchmark.
+
+## 2026-05-12
+
+- Goal: Patch and launch the GraphicalVAR `nLambda` timing/equivalence pilot.
+- Files changed:
+  - `run_method_benchmark.R`
+  - `run_signed_feedback_standardized_benchmark.R`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot/`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot_10/`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot_dryrun/`
+  - `research-log.md`
+  - `verification-log.md`
+- Commands:
+  - `Rscript -e "options(run_extract_pipeline=FALSE); source('run_method_benchmark.R'); source('run_signed_feedback_standardized_benchmark.R')"`
+  - `SIGNED_FEEDBACK_DRY_RUN=1 SIGNED_FEEDBACK_RUN_GRID=main SIGNED_FEEDBACK_MAIN_REPS=1 SIGNED_FEEDBACK_PILOT_ROWS=180 BENCHMARK_OUT_DIR=benchmark_outputs_graphicalvar_nlambda_pilot_dryrun BENCHMARK_METHODS=graphicalVAR BENCHMARK_GRAPHICALVAR_COMMUNITY_ALGORITHMS=louvain,walktrap,leiden BENCHMARK_GRAPHICALVAR_NLAMBDA=10 Rscript run_signed_feedback_standardized_benchmark.R`
+  - Detached `nohup setsid bash -lc` wrapper looping through `nLambda = 10`, `20`, and default, using `BENCHMARK_GRAPHICALVAR_COMMUNITY_ALGORITHMS=louvain,walktrap,leiden`.
+  - `ps -p $(cat benchmark_outputs_graphicalvar_nlambda_pilot/run.pid) -o pid,ppid,stat,etime,pcpu,pmem,rss,vsz,args`
+  - `Rscript` checkpoint inspection for `benchmark_outputs_graphicalvar_nlambda_pilot_10/checkpoint_results.csv`.
+- Outputs:
+  - `benchmark_outputs_graphicalvar_nlambda_pilot/run.pid`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot/run.command.txt`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot/run.log`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot_10/signed_feedback_metadata.txt`
+  - `benchmark_outputs_graphicalvar_nlambda_pilot_10/checkpoint_results.csv`
+- Checks passed:
+  - Source checks passed.
+  - Dry-run metadata confirms `selected_runnable_rows = 180`, `pilot_rows_env = 180`, and `graphical_var_nlambda = 10`.
+  - Dry-run selected counts are balanced by feedback regime: 60 damped, 60 critical, and 60 persistent fitted cells.
+  - Detached wrapper launched with PID `2980109`.
+  - Initial `nLambda = 10` checkpoint has 60 rows from 20 fitted cells, all `ok`.
+  - Initial checkpoint includes 20 rows each for louvain, walktrap, and leiden.
+- Checks failed/blockers:
+  - None at launch time.

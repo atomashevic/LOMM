@@ -1,0 +1,4 @@
+Method,Planned method rows,ok,timeout,error,Not run,Feasibility note
+DynEGA,3402,3402,0,0,0,Full grid completed.
+GIMME,3402,672,0,18,2712,"Staged ladder stopped after OAI calibration scenarios returned unusable person-level Psi matrices; 4D, N = 100, T = 300, and k = 6 extensions were not attempted."
+GraphicalVAR,3402,2268,12,0,1122,Stopped after repeated 900-s timeouts in the 4D ranked-persistence base condition; T = 300 and k = 6 sensitivity blocks were not attempted.

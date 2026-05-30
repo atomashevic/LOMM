@@ -1,0 +1,1534 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+]{article}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+% definitions for citeproc citations
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  % set entry spacing
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+\raggedbottom
+\usepackage{setspace}
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+\usepackage[utf8]{inputenc}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={A Latent Oscillator Measurement Model for Simulating Emotion Dynamics in Video},
+  pdfauthor={Aleksandar Tomašević; Hudson Golino; Alexander P. Christensen},
+  pdfkeywords={Network Psychometrics, Emotion Dynamics, Transformer
+Models, Complex Systems, Dynamical Systems},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{A Latent Oscillator Measurement Model for Simulating Emotion
+Dynamics in Video}
+\author{Aleksandar Tomašević \and Hudson Golino \and Alexander P.
+Christensen}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Automated facial-expression scoring can turn video frames into dense
+time series of visible affective expression, but the resulting score
+channels are model-derived measurements whose latent temporal structure
+is unknown in empirical data. We introduce the Latent Oscillator
+Measurement Model (LOMM), a generative framework for simulation-based
+evaluation of dynamic dimensional recovery in
+facial-expression-recognition-like (FER-like) video score series. LOMM
+combines second-order latent oscillator dynamics with an explicit
+measurement layer, allowing researchers to simulate observed score
+panels under known latent dimensionality, loading strength, measurement
+error, feedback regime, and activity pattern. We first calibrated the
+generator against FER-like score panels from the MAFW dataset using
+empirical realism targets for dispersion, local movement, temporal
+persistence, directional-regime complexity, spectral complexity, and
+dimensional spread. The calibrated generator reproduced several temporal
+and dimensional signatures, although channel-level dispersion remained
+larger than in the empirical panels. We then used LOMM in a known-truth
+simulation study comparing Dynamic Exploratory Graph Analysis (DynEGA),
+GraphicalVAR, and bounded GIMME. DynEGA showed the strongest dimensional
+hit rate and completed the full design grid. GraphicalVAR recovered
+dimensionality in many conditions but was slower and more sensitive to
+the observation layer, whereas GIMME was useful mainly as a bounded
+feasibility comparator. LOMM therefore provides a controlled way to
+evaluate dynamic measurement and recovery methods before applying them
+to empirical video data.
+\end{abstract}
+
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Introduction}\label{introduction}
+
+Recent advancements in deep learning and computer vision have made it
+increasingly feasible to transform video frames into time series of
+emotional expression scores (\citeproc{ref-li2022Deep}{S. Li \& Deng,
+2022}; \citeproc{ref-meng2017IdentityAware}{Meng et al., 2017}). For
+behavioral-science applications, these tools create a new kind of
+intensive longitudinal record: high-frequency, model-derived
+measurements of visible affective expression. These records differ
+substantially from self-report time series collected through ecological
+momentary assessment (EMA; \citeproc{ref-tong2005Use}{Tong et al.,
+2005}) or experience sampling methods (ESM;
+\citeproc{ref-hoemann2020Contextaware}{Hoemann et al., 2020}).
+Facial-expression recognition (FER) scores are dense outputs of
+measurement systems applied to video frames, making them promising for
+studying the temporal organization of emotional expression at scale.
+Their use also raises a methodological problem: dynamic models need to
+separate latent expressive processes from the observed score series used
+to measure them.
+
+The substantive motivation comes from video-rich behavioral settings in
+which visible affect is part of the behavior being studied. Facial
+expressions are central to human communication
+(\citeproc{ref-barrett2019Emotionalb}{Barrett et al., 2019};
+\citeproc{ref-mehu2015Emotion}{Mehu \& Scherer, 2015};
+\citeproc{ref-stewart2009Presidential}{Stewart et al., 2009}), but many
+behavioral-science questions concern how these expressions unfold over
+time rather than how a single frame should be labeled. In psychotherapy
+tasks, autism assessments, collaborative work, public communication, and
+social-media videos, the relevant questions are dynamic: whether
+expressions return quickly after perturbation, whether affective
+displays settle into stable or volatile regimes, and whether many
+observed emotion labels reflect fewer latent expressive dimensions
+(\citeproc{ref-hollensteinStateSpaceGrids2007}{Hollenstein, 2007};
+\citeproc{ref-houbenRelationShorttermEmotion2015}{Houben et al., 2015};
+\citeproc{ref-kuppensEmotionDynamics2017}{Kuppens \& Verduyn, 2017}).
+
+Automated facial-analysis systems now make this kind of work feasible at
+scale. Datasets such as FER2013
+(\citeproc{ref-goodfellow2013Challenges}{Goodfellow et al., 2013})
+supported deep learning approaches to facial-expression recognition,
+especially Convolutional Neural Networks
+(\citeproc{ref-arriaga2017Realtimea}{Arriaga et al., 2017}; CNNs;
+\citeproc{ref-ezerceli2022Convolutional}{Ezerceli \& Eskil, 2022}). Most
+early systems inherited their emotion categories from the training data
+and focused on fixed classification tasks, commonly returning
+probabilities for seven categories: anger, disgust, fear, happiness,
+sadness, surprise, and neutral facial expression
+(\citeproc{ref-wang2022Rethinking}{Wang et al., 2022}). More recently,
+transformer-based and CLIP-like models have enabled zero-shot
+classification with user-specified emotion labels
+(\citeproc{ref-foteinopoulou2023EmoCLIP}{Foteinopoulou \& Patras, 2023};
+\citeproc{ref-li2023CLIPER}{H. Li et al., 2023};
+\citeproc{ref-tomasevic2026TransforEmotion}{Tomašević et al., 2026}),
+making it possible to represent each video frame as a vector of
+emotion-label scores. Applied studies are already using such automated
+scoring in clinical, collaborative, and social-media settings
+(\citeproc{ref-halamovaAutomatedFacialExpression2023}{Halamová et al.,
+2023}; \citeproc{ref-holidayMultimodalEmotionPerspective2023}{Holiday et
+al., 2023}; \citeproc{ref-liDecodingGroupEmotional2024}{Q. Li et al.,
+2024};
+\citeproc{ref-manelisbaramComparingThreeAlgorithms2025}{Manelis-Baram et
+al., 2025}).
+
+This technical progress also creates a validation problem. FER-like
+score series are model-derived, multivariate, and error-prone
+measurements of visible behavior. Their interpretation depends on
+whether the observed score channels are treated as emotion variables in
+their own right, as indicators of social interaction, or as noisy
+indicators of lower-dimensional latent affective processes
+(\citeproc{ref-mckeownAreFacialExpression2024}{McKeown \& Allison,
+2024}). For dynamic modeling, this distinction has practical
+consequences: measurement error can change the structure recovered by
+dynamic-network methods, making it important to separate latent temporal
+organization from the fallible score series used to observe it
+(\citeproc{ref-kankaanpaa2026multipleindicator}{Kankaanpää et al.,
+2026}).
+
+The aim of this paper is to introduce the Latent Oscillator Measurement
+Model (LOMM), a generative framework that combines latent second-order
+oscillator dynamics with a measurement model for observed FER score
+series (\citeproc{ref-boker2015Adaptive}{Boker, 2015};
+\citeproc{ref-boker2002Method}{Boker \& Nesselroade, 2002};
+\citeproc{ref-ollero2023Characterizing}{Ollero et al., 2023}). LOMM
+models video-derived emotion scores as fallible indicators generated
+from latent temporal processes. By generating observed FER-like score
+series from known latent dimensions and trajectories, LOMM supports a
+validation sequence: simulate score panels under controlled
+latent-dimensionality, loading, measurement-error, and feedback-regime
+conditions; compare selected simulated panels with empirical
+video-derived scores from MAFW, a large-scale, multi-modal, compound
+affective database for dynamic facial-expression recognition in the
+wild, as a realism check (\citeproc{ref-liu_mafw_2022}{Liu et al.,
+2022}); and evaluate whether dynamic modeling methods recover the
+intended latent organization. In this sequence, the realism check is
+part of simulation design because it asks whether the known-truth
+generator is close enough to empirical FER-like data for method
+comparisons to be meaningful.
+
+The paper makes three contributions and is organized accordingly. First,
+it specifies LOMM as an interpretable generative model for FER-like
+video emotion time series, combining second-order latent affective
+dynamics with an explicit measurement layer for observed emotion-label
+scores. Second, it evaluates the empirical realism of the LOMM generator
+by testing whether simulated panels reproduce selected statistical
+signatures of video-derived FER-like data. Third, it uses LOMM as a
+known-truth simulation study for dynamic dimensional recovery, comparing
+DynEGA with GraphicalVAR and GIMME under controlled measurement and
+dynamical conditions. We first define the LOMM data-generating model and
+its measurement component, then describe the empirical FER-like score
+source and realism checks, present the simulation study, and close by
+discussing when video-derived emotion traces can support
+behavioral-science claims about latent affective dynamics.
+
+Figure~\ref{fig-pipeline} summarizes the full workflow early in the
+manuscript. The empirical side of the pipeline defines realism targets
+for FER-like video score series (Panels A--C); scenario selection then
+translates those targets into LOMM parameters (Panel D); and the
+simulation study evaluates dimensional recovery against known latent
+structure (Panels E--H).
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_pipeline_visual_abstract.png}
+
+}
+
+\caption{\label{fig-pipeline}Visual overview of the LOMM simulation
+pipeline. Panels A--C show the empirical calibration step and realism
+targets for FER-like video score series. Panel D shows scenario
+selection through dynamics, activity, and measurement parameters. Panels
+E--H show the known-truth simulation, read from right to left: latent
+source-truth trajectories are passed through the observation layer to
+generate simulated score panels, and recovery tests compare estimated
+dimensions and blocks with the known latent structure.}
+
+\end{figure}%
+
+\section{Expressive Affective Dynamics as an Oscillator Measurement
+Model}\label{expressive-affective-dynamics-as-an-oscillator-measurement-model}
+
+Affective-dynamics research treats emotion as a time-varying process
+rather than as a static score. Across common approaches, the relevant
+features include average intensity, variability, instability, inertia,
+transitions between states, and return after perturbation
+(\citeproc{ref-hollensteinStateSpaceGrids2007}{Hollenstein, 2007};
+\citeproc{ref-houbenRelationShorttermEmotion2015}{Houben et al., 2015};
+\citeproc{ref-kuppensEmotionDynamics2017}{Kuppens \& Verduyn, 2017}).
+For video-derived expressive behavior, the same logic applies to visible
+affect. A short clip can contain low expressivity, brief expressive
+episodes, gradual recovery, persistent activation, or alternation
+between expressive regimes. Modeling expressive affect therefore
+requires a representation that can describe both the level of a latent
+expressive process and its tendency to persist, change direction, or
+return toward equilibrium.
+
+An oscillator model provides a compact way to represent these features
+once latent variables are understood as theory-guided expressive
+dimensions distinct from the observed emotion labels themselves.
+Affective structure can be specified in several defensible ways:
+core-affect and circumplex models organize affect around valence and
+arousal; PAD models add dominance or control; and Plutchik-style
+accounts arrange emotion families around opponent tendencies such as
+joy--sadness, trust--disgust, fear--anger, and anticipation--surprise
+(\citeproc{ref-plutchikNatureEmotions2001}{Plutchik, 2001};
+\citeproc{ref-russellCircumplexModel1980}{Russell, 1980},
+\citeproc{ref-russellCoreAffect2003}{2003};
+\citeproc{ref-russellMehrabianThreeFactor1977}{Russell \& Mehrabian,
+1977}). The same logic has a long history in work on facial expression,
+where visible expressions are often interpreted through dimensions such
+as pleasantness, activation, attention, or rejection rather than only
+through mutually exclusive categories
+(\citeproc{ref-schlosbergThreeDimensions1954}{Schlosberg, 1954}). For
+FER-like video data, the implication is measurement-theoretic: scores
+for labels such as happiness, amusement, anger, fear, disgust, sadness,
+surprise, or calmness can be treated as fallible indicators of latent
+expressive tendencies, with the grouping chosen by the substantive
+theory and target setting. LOMM adapts the oscillator tradition to this
+problem by generating latent expressive trajectories first and then
+generating observed emotion-label score series from an explicit
+measurement layer. The model therefore has two integrated parts: a
+latent oscillator process for expressive dynamics and a measurement
+model adapted from the direct autoregressive factor score model
+(\citeproc{ref-golino2020modeling}{H. Golino et al., 2022};
+\citeproc{ref-nesselroade2013dynamic}{Nesselroade et al., 2013}).
+
+Following Ollero et al. (\citeproc{ref-ollero2023Characterizing}{2023}),
+LOMM treats each latent expressive dimension as a continuous-time
+second-order state process. Let \(i=1,\ldots,V\) index videos, \(t\)
+index time, and \(f=1,\ldots,m\) index the latent expressive dimensions
+selected for a simulation. For video \(i\), \(x_{if}(t)\) is the latent
+level of dimension \(f\), and \(v_{if}(t)=\dot{x}_{if}(t)\) is its
+instantaneous rate of change. The implemented latent process is
+
+\begin{equation}
+\frac{\mathrm{d}}{\mathrm{d} t}
+\begin{bmatrix}
+x_{if}(t) \\
+v_{if}(t)
+\end{bmatrix}
+=
+\begin{bmatrix}
+0 & 1 \\
+\eta_f & \zeta_f
+\end{bmatrix}
+\begin{bmatrix}
+x_{if}(t) \\
+v_{if}(t)
+\end{bmatrix}
++
+\begin{bmatrix}
+0 \\
+q_{if}(t)
+\end{bmatrix},
+\qquad
+q_{if}(t)\sim\mathcal{N}(0,\sigma_{qf}^{2}),
+\label{eq:lomm-latent}
+\end{equation}
+
+or equivalently,
+\(\ddot{x}_{if}(t)=\eta_f x_{if}(t)+\zeta_f \dot{x}_{if}(t)+q_{if}(t)\).
+This is an uncoupled multivariate system: \(\eta_f\), \(\zeta_f\), and
+\(\sigma_{qf}\) may vary by factor, but the model used here does not
+include off-diagonal dynamic effects in which one latent expressive
+dimension directly changes the acceleration of another. We therefore
+interpret \(\eta_f\) as position feedback and \(\zeta_f\) as velocity
+feedback. Under this sign convention, negative \(\eta_f\) pulls a
+displaced latent trajectory back toward its equilibrium level; stronger
+negative values imply stronger restoring acceleration. Negative
+\(\zeta_f\) attenuates velocity over time, \(\zeta_f=0\) removes
+velocity feedback, and positive \(\zeta_f\) can sustain or amplify
+ongoing change over the finite interval being simulated. The innovation
+\(q_{if}(t)\) is a factor-specific shock process that perturbs the
+latent trajectory. In the simulations reported here, the continuous-time
+system is advanced with the exact linear transition matrix and
+initialized with \(x_{if}(1)=0.25\) and \(v_{if}(1)=2\).
+
+For simulation-based evaluation, LOMM defines scenario conditions at two
+levels. First, the factor-specific parameters \(\eta_f\), \(\zeta_f\),
+and \(\sigma_{qf}\) set the dynamical regime: negative velocity feedback
+produces damped return, zero velocity feedback removes damping, and
+positive velocity feedback can sustain or amplify change over the finite
+simulated interval. Second, time-varying activity weights determine
+which latent dimension dominates the generated score series. In
+single-regime scenarios, one dimension has higher activity across the
+full sequence; in switching scenarios, the active dimension changes
+after sampled dwell intervals; and in low-expression scenarios, all
+dimensions remain close to background activity. Formally, the trajectory
+passed to the measurement model is
+\(\tilde{x}_{if}(t)=a_{if}(t)x_{if}(t)\), where \(a_{if}(t)\) is a
+scenario-defined activity weight. This design lets the simulation vary
+damping, dominance, switching, and volatility while keeping the
+source-of-truth latent dimensionality and measurement blocks known.
+
+The observable FER-like score vector is generated from the
+scenario-scaled latent trajectories through a block measurement model.
+For video \(i\), if each latent dimension has \(k\) observed indicators,
+then \(p=mk\) and
+
+\begin{equation}
+\mathbf{y}_{it}=\mathbf{\Lambda}_i\,\tilde{\mathbf{x}}_{it}+\boldsymbol{\varepsilon}_{it},
+\qquad
+\boldsymbol{\varepsilon}_{it}\sim\mathcal{N}(\mathbf{0},\mathbf{\Sigma}_i).
+\label{eq:lomm-measurement}
+\end{equation}
+
+Each observed score loads on exactly one latent dimension: for indicator
+\(j\) in block \(B_f\), \((\Lambda_i)_{jf}=\lambda+u_{ij}\) with
+\(u_{ij}\sim\mathrm{Unif}(-0.15,0.15)\), and all off-block loadings are
+zero. The measurement-error covariance matrix is diagonal,
+\(\mathbf{\Sigma}_i=\mathrm{diag}(\sigma^2_{\varepsilon,i1},\ldots,\sigma^2_{\varepsilon,ip})\),
+with \(\sigma^2_{\varepsilon,ij}=s^2_{\varepsilon}+r_{ij}\) and
+\(r_{ij}\sim\mathrm{Unif}(-0.01,0.01)\). In the simulation grid,
+\(s_{\varepsilon}\) is reported as the measurement-error standard
+deviation, and \(s^2_{\varepsilon}\) enters the diagonal covariance
+matrix. Thus LOMM simulates measured expressive factors and their
+observed indicator blocks; neutrality is not part of the source-truth
+structure in the simulation.
+
+As a concrete three-factor example, a Plutchik-informed specification
+could set \(m=3\) for affiliative/approach expression, threat/defensive
+expression, and orienting/novelty expression
+(\citeproc{ref-plutchikNatureEmotions2001}{Plutchik, 2001}). FER-like
+indicators related to joy, trust, amusement, or smiling would form one
+block; indicators related to anger, fear, or disgust would form a second
+block; and surprise- or anticipation-related indicators would form a
+third. The example is not a required taxonomy. It illustrates the
+measurement logic of LOMM: the researcher states a theory-guided latent
+organization, the simulator generates known latent trajectories under
+that organization, and the observed emotion-label scores are noisy
+indicators whose loading strength and measurement error are substantive
+simulation conditions
+(\citeproc{ref-kankaanpaa2026multipleindicator}{Kankaanpää et al.,
+2026}).
+
+The same three-factor example is shown in Figure~\ref{fig-dlosim} to
+make the role of the latent shock term visible.
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/lomm_three_factor_example.pdf}
+
+}
+
+\caption{\label{fig-dlosim}Three-factor LOMM example for
+Plutchik-informed latent expressive dimensions. The left panel shows
+smooth reference trajectories without dynamic shocks; the right panel
+shows trajectories generated by the implemented linear oscillator
+process with factor-specific position feedback, velocity feedback, and
+innovation variance.}
+
+\end{figure}%
+
+Figure~\ref{fig-dlosim} highlights the role of the innovation variance,
+\(\sigma_q^2\), in LOMM. The reference panel shows the conceptual latent
+ordering without dynamic shocks: affiliative expression rises quickly
+and settles above the threat and orienting trajectories. The simulated
+oscillator panel keeps this same structure, but nonzero factor-specific
+\(\sigma_q\) perturbs each latent process at each time point, producing
+local peaks, reversals, and irregular fluctuations around the underlying
+trajectory. After approximately time point 100, affiliative expression
+(blue) remains the dominant latent tendency, while threat (orange)
+fluctuates at a moderate level and orienting (green) stays lower with
+shorter local excursions. Thus, \(\sigma_q\) is the mechanism that turns
+a smooth conceptual model into latent score series that better resemble
+the uneven temporal structure of FER-like video data, without adding a
+neutrality trajectory or cross-factor coupling.
+
+\section{Method}\label{method}
+
+The analyses follow the workflow in Figure~\ref{fig-pipeline}. We first
+use empirical video scores to define realism targets for FER-like score
+series (Panels A--C). We then translate those targets into LOMM scenario
+conditions (Panel D) and evaluate dimensional-recovery methods on
+simulated panels for which the latent dimensional structure and
+measurement blocks are known (Panels E--H).
+
+\subsection{Empirical Calibration and Realism
+Targets}\label{empirical-calibration-and-realism-targets}
+
+Figure~\ref{fig-mafwvideo} shows the empirical scoring target that
+motivates the simulation study. The figure uses one clip from MAFW, a
+dataset designed for dynamic facial expression recognition in the wild
+(\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}), whereas the realism
+check uses a 100-clip calibration sample scored with the same zero-shot
+FER-like procedure. Each sampled frame is represented by a fixed set of
+prompt-defined score channels: anger, disgust, fear, happiness, neutral,
+sadness, surprise, contempt, anxiety, helplessness, and disappointment.
+Within each clip, short missing runs are interpolated, frames with
+complete usable scores are retained, and clipped score vectors are
+renormalized so that frame-level channels can be compared as
+probability-like outputs. These prompt-specific classifier outputs
+provide empirical targets for the LOMM observation layer through their
+temporal persistence, variability, and co-fluctuation.
+
+The selected frames and score outputs from the same MAFW clip illustrate
+the measurement problem (Panels A and B): different frames receive
+different scores across labels such as helplessness, fear, disgust,
+sadness, anxiety, and disappointment. The frame-level trajectories show
+that the highest mean channels change in bursts rather than as smooth
+curves (Panel C). The single-video DynEGA network applies Dynamic
+Exploratory Graph Analysis to the same clip's non-neutral score
+trajectories (Panel D). In this illustration, the method returns three
+communities among ten score channels, motivating the
+dimensional-recovery problem later studied under known truth.
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/mafw_video_dynega_example.pdf}
+
+}
+
+\caption{\label{fig-mafwvideo}Single-video empirical illustration from
+the MAFW dataset. Panel A shows selected frames from one MAFW clip;
+Panel B shows zero-shot FER-like scores for the selected frames; Panel C
+shows smoothed frame-level trajectories for the highest mean score
+channels; Panel D shows a Dynamic EGA network estimated from the same
+clip's non-neutral score trajectories.}
+
+\end{figure}%
+
+For the empirical realism check, empirical and simulated panels are
+summarized at two levels. Observable-channel metrics are computed
+directly from the FER-like score series within each clip.
+Community-score metrics are computed after applying pooled DynEGA to the
+score panel and extracting score summaries for the recovered
+communities. This distinction matters because a simulated panel can
+approximate the observable score channels while still producing a
+different lower-dimensional geometry, or conversely match the coarse
+latent organization while retaining imperfect channel-level amplitude
+behavior.
+
+The primary realism targets include channel-level IQR, derivative IQR,
+temporal complexity, and dimensional spread. Channel IQR indexes score
+dispersion; derivative IQR indexes the typical scale of local
+frame-to-frame movement; lag-1 autocorrelation indexes local
+persistence; run-length entropy indexes directional-regime complexity;
+spectral entropy indexes spectral complexity; and effective rank indexes
+multivariate dimensional spread. For each metric, empirical and
+simulated distributions are compared using a scaled median difference
+and a scaled one-dimensional Wasserstein distance, with the larger
+discrepancy used for classification. We use the same threshold rule
+across metrics: Pass for scaled discrepancy \(\leq 0.33\), Partial for
+scaled discrepancy \(\leq 1.00\), and Fail for scaled discrepancy
+\(> 1.00\). These criteria are simulation-construction checks, not
+external validation of the scoring model or its emotion labels.
+
+\subsection{Scenario Selection}\label{scenario-selection}
+
+Scenario selection links the empirical calibration targets to the
+simulation design. We group the manipulated conditions into three
+families (Panel D). The dynamics family varies the position feedback,
+velocity feedback, and innovation variance parameters, \(\eta_f\),
+\(\zeta_f\), and \(\sigma_{qf}\). The activity family varies whether one
+latent expressive dimension dominates across the full sequence, whether
+dominance switches after sampled dwell intervals, or whether all
+dimensions remain close to low-expression background activity. The
+measurement family varies the block loading matrix
+\(\mathbf{\Lambda}_i\) and measurement-error covariance matrix
+\(\mathbf{\Sigma}_i\) that generate the observed FER-like score panels.
+
+The primary emotion-dynamics simulation uses six scenario families
+crossed with two-, three-, and four-dimensional latent source
+structures. Four families represent generic expression regimes:
+low-expression single dominance, high-expression single dominance,
+high-expression switching, and high-expression fast-switching
+volatility. Two additional families use the empirical calibration logic
+more directly, one with ranked persistent dynamics and one with broader
+switching geometry. In all cases, the number of observed channels is
+\(p=mk\), where \(m\) is the number of latent dimensions and \(k\) is
+the number of observed indicators per dimension. The primary design uses
+\(N=50\) or \(100\) videos, \(T=100\) time points, \(k=4\) observed
+indicators per latent dimension, measurement-error standard deviations
+of \(0.125\), \(0.25\), and \(0.50\), loadings of \(0.4\), \(0.6\), and
+\(0.8\), and three replications per structural cell. Two sensitivity
+conditions hold the signal settings fixed while increasing the number of
+indicators to \(k=6\) or the sequence length to \(T=300\).
+
+For each simulated video, LOMM first generates latent trajectories from
+the scenario-specific dynamic parameters. The activity schedule then
+scales those trajectories: non-switching scenarios keep one active
+dimension for the full sequence, rotating the dominant dimension across
+videos, whereas switching scenarios sample dwell intervals and change
+the active dimension over time. The measurement layer is applied to the
+activity-scaled latent trajectories. Measurement error is reported as a
+standard deviation, with the corresponding variance entering the
+diagonal measurement-error covariance before small item-level variance
+jitter is added. The simulation design evaluates dimensional recovery
+under controlled combinations of dynamics, activity regimes, and
+measurement quality.
+
+\subsection{Known-Truth Dimensional-Recovery
+Simulation}\label{known-truth-dimensional-recovery-simulation}
+
+The simulation begins with latent trajectories and the known number of
+latent expressive dimensions (Panel E). The LOMM observation layer maps
+each observed score channel to one latent dimension through the block
+loading matrix and adds item-level measurement error (Panel F),
+producing a simulated FER-like score panel (Panel G). The final step is
+the dimensional-recovery test, where the estimated number of dimensions
+and item memberships are compared against the known latent structure
+(Panel H).
+
+We compare Dynamic Exploratory Graph Analysis {[}DynEGA; H. Golino et
+al. (\citeproc{ref-golino2020modeling}{2022}){]} with GraphicalVAR
+(\citeproc{ref-epskampggm}{Epskamp et al., 2018};
+\citeproc{ref-graphicalVAR2024}{Epskamp, 2024}) and GIMME
+(\citeproc{ref-gates2012group}{Gates \& Molenaar, 2012};
+\citeproc{ref-lane2019uncovering}{Lane et al., 2019}) because they
+represent adjacent but distinct approaches to intensive longitudinal
+structure. DynEGA is the focal dimensional-recovery method: it estimates
+groups of variables whose changes are coordinated over time.
+GraphicalVAR is a dynamic-network comparator that separates lagged
+temporal relations from contemporaneous partial associations. GIMME is
+an idiographic time-series framework that searches for relations that
+are common across individuals, shared by subgroups, or unique to
+individuals. In the present simulation, DynEGA tests whether a method
+designed for dimensional recovery can recover the known score blocks
+directly, GraphicalVAR tests whether a dynamic-network representation
+yields a similar partition after community detection, and GIMME tests
+whether a more flexible person-specific time-series framework is
+feasible under the same measurement conditions.
+
+DynEGA combines time-delay embedding and derivative estimation from
+dynamical systems with exploratory graph analysis for dimensionality
+assessment (\citeproc{ref-glla2010}{Boker et al., 2010};
+\citeproc{ref-golino2019investigating}{H. Golino et al., 2020};
+\citeproc{ref-golino2017ega1}{H. F. Golino \& Epskamp, 2017}). We apply
+DynEGA to the stacked video panel with video identity supplied as the
+grouping variable. The embedding dimension is selected by minimizing the
+Total Entropy Fit Index (TEFI) over candidate values
+(\citeproc{ref-golino2019entropy}{H. Golino et al., 2021}), using
+\(n_\mathrm{embed}\in\{5,10,15,\lfloor T/4\rfloor,\lfloor T/2\rfloor\}\)
+where admissible. The estimated DynEGA population network is then
+partitioned into communities, which are interpreted as recovered groups
+of score channels. The primary specification uses Louvain community
+detection (\citeproc{ref-blondel2008fast}{Blondel et al., 2008}) and the
+expand rule for unidimensional solutions; Leiden
+(\citeproc{ref-traag2019leiden}{Traag et al., 2019}) and Walktrap
+(\citeproc{ref-pons2006walktrap}{Pons \& Latapy, 2005}) are retained as
+community-detection sensitivity specifications.
+
+GraphicalVAR and GIMME return estimated time-series structures, which we
+convert into dimensional partitions using the same community-detection
+logic. For GraphicalVAR, we estimate a multilevel graphical VAR model on
+the simulated score panel and use the estimated contemporaneous
+partial-correlation matrix as the structural matrix. For GIMME, we fit
+the VAR specification to the video-level time series, extract the
+contemporaneous block from the person-specific \(\boldsymbol{\Psi}\)
+matrices, and average those blocks across videos to obtain a common
+structural matrix. In both cases, the diagonal is ignored and the
+resulting weighted matrix is treated as an undirected graph. Positive
+edge weights define the primary graph, with absolute weights used only
+when no positive edges are available. Louvain, Leiden, and Walktrap are
+then applied to this single structural matrix, so the
+community-detection variants represent alternative partitions of the
+same fitted time-series structure rather than separate model fits.
+
+All three methods are evaluated as dimensional-recovery estimators under
+known truth. GraphicalVAR is evaluated as the main network comparator
+across the primary design. GIMME is evaluated as a bounded feasibility
+and sensitivity comparator because complete factorial estimation is
+computationally unstable in this setting. Performance is summarized
+using dimensional hit rate, assignment accuracy for observed score
+channels, matched-score correlation, matched-score normalized root mean
+squared error (NRMSE), runtime, and failure or timeout accounting.
+Dimensional hit rate is the proportion of method rows in which the
+method returns the correct number of latent dimensions. Assignment
+accuracy asks whether observed score channels are assigned to the
+correct latent blocks after optimal matching of estimated communities to
+true blocks. For score-based metrics, observed variables are
+standardized within the full panel and community scores are computed
+from the first principal component of each estimated block, with row
+means used when a principal-component score cannot be estimated.
+Matched-score correlation and matched-score NRMSE then compare these
+recovered score summaries with the known latent trajectories after
+sign-invariant matching between estimated communities and source
+dimensions. Runtime is recorded for each model fit, and non-converged
+fits, errors, and predefined timeouts remain in the denominators.
+
+\section{Results}\label{results}
+
+Results are organized around four questions that follow the workflow in
+Figure~\ref{fig-pipeline}. We first ask whether the calibrated LOMM
+generator produces FER-like score panels with empirical temporal and
+dimensional signatures. We then evaluate whether dimensional-recovery
+methods recover the known latent structure, examine how recovery changes
+with measurement quality, and report the computational feasibility of
+the compared methods.
+
+\subsection{Empirical Realism Results}\label{empirical-realism-results}
+
+Before evaluating dimensional-recovery methods, we asked whether the
+calibrated LOMM generator produced FER-like score panels that were
+sufficiently close to empirical panels for simulation construction.
+Figure~\ref{fig-empirical-realism} summarizes this check at two readout
+levels: the observed score channels and the lower-dimensional community
+scores extracted from the pooled DynEGA solution. The comparison
+evaluates selected distributional, temporal, spectral, and dimensional
+signatures of the empirical MAFW score panels, providing a
+simulation-construction check on the simulated panels.
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure4_empirical_realism.pdf}
+
+}
+
+\caption{\label{fig-empirical-realism}Empirical realism check for
+LOMM-generated FER-like panels. Panel A shows pass, partial, and fail
+classifications for the six realism targets at two readout levels:
+observed score channels and DynEGA community scores. Values are the
+larger of the scaled median difference and scaled Wasserstein distance.
+Panel B shows the two discrepancy components separately; dashed
+reference lines mark the pass threshold of 0.33 and fail threshold of
+1.00.}
+
+\end{figure}%
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1328}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1484}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1328}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0938}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1562}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1484}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0625}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Readout
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Metric
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Empirical median
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+LOMM median
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Scaled median diff.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Scaled Wasserstein
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Max discrepancy
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Status
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Channels & Channel IQR & 0.020 & 0.064 & 0.76 & 1.05 & 1.05 & Fail \\
+Channels & Derivative IQR & 0.014 & 0.014 & 0.00 & 0.28 & 0.28 & Pass \\
+Channels & Lag-1 ACF & 0.521 & 0.609 & 0.28 & 0.22 & 0.28 & Pass \\
+Channels & Run-length entropy & 0.785 & 0.742 & 0.33 & 0.32 & 0.33 &
+Pass \\
+Channels & Spectral entropy & 0.755 & 0.693 & 0.37 & 0.43 & 0.43 &
+Partial \\
+Channels & Effective rank & 5.114 & 6.139 & 0.76 & 0.66 & 0.76 &
+Partial \\
+Community scores & Channel IQR & 0.247 & 0.843 & 1.42 & 1.43 & 1.43 &
+Fail \\
+Community scores & Derivative IQR & 0.159 & 0.280 & 0.47 & 0.51 & 0.51 &
+Partial \\
+Community scores & Lag-1 ACF & 0.540 & 0.736 & 0.72 & 0.53 & 0.72 &
+Partial \\
+Community scores & Run-length entropy & 0.785 & 0.748 & 0.27 & 0.26 &
+0.27 & Pass \\
+Community scores & Spectral entropy & 0.751 & 0.641 & 0.66 & 0.64 & 0.66
+& Partial \\
+Community scores & Effective rank & 2.371 & 2.812 & 0.78 & 0.79 & 0.79 &
+Partial \\
+\end{longtable}
+
+At the observed-channel level, the generator passed the derivative-IQR,
+lag-1 autocorrelation, and run-length entropy checks. Spectral entropy
+and effective rank were partial matches, indicating that the simulated
+panels were close to the empirical panels in spectral complexity and
+multivariate dimensional spread but not within the strictest threshold.
+The only failed check was channel IQR, showing that the simulated
+observed channels remained more dispersed than the empirical score
+channels.
+
+The community-score readout showed the same broad pattern with stronger
+amplitude mismatch. Run-length entropy passed, derivative IQR, lag-1
+autocorrelation, spectral entropy, and effective rank were partial
+matches, and channel IQR failed. The retained Louvain community readout
+returned three communities with the same 6-3-2 channel-size pattern in
+the empirical and simulated panels, so the coarse dimensional
+organization matched in this readout even though the marginal amplitude
+of the community scores was too large. Taken together, these results
+support using the generator for dimensional-recovery simulation while
+keeping the amplitude and dispersion mismatch explicit as a limitation
+of the current calibration.
+
+\subsection{Simulation Recovery
+Results}\label{simulation-recovery-results}
+
+The method-comparison results use the matched bounded subset in which
+DynEGA, GraphicalVAR, and GIMME can be compared directly. This subset
+includes Scenarios A--C with two- and three-dimensional source
+structures, yielding 162 matched structural cells and 486 method rows
+per method. Table~\ref{tbl-method-overall} summarizes what each method
+did overall in this comparable subset, using dimensional hit rate,
+block-assignment accuracy, matched-score correlation, matched-score
+NRMSE, and median runtime.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0956}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1985}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1250}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0882}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0956}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1103}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0588}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0882}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1397}}@{}}
+
+\caption{\label{tbl-method-overall}Overall method behavior in the
+matched bounded comparison subset. The subset includes Scenarios A--C
+with two- and three-dimensional source structures. Hit rate is recovery
+of the known number of latent dimensions; Assignment is optimal
+block-assignment accuracy; Score r and Score NRMSE compare matched
+recovered score summaries with the known latent trajectories.}
+
+\tabularnewline
+
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Method
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Scope
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Structural cells
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Method rows
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Hit rate (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Assignment (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Score r
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Score NRMSE
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Median runtime (s)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+DynEGA & Matched bounded comparison & 162 & 486 & 98.8 & 99.5 & 0.659 &
+0.844 & 0.8 \\
+GraphicalVAR & Matched bounded comparison & 162 & 486 & 85.8 & 94.6 &
+0.655 & 0.841 & 40.0 \\
+GIMME & Matched bounded comparison & 162 & 486 & 40.7 & 74.3 & 0.629 &
+0.844 & 161.0 \\
+
+\end{longtable}
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure5_dimension_recovery.pdf}
+
+}
+
+\caption{\label{fig-dimension-recovery}Dimensional hit rate in the
+matched bounded method-comparison subset. Panel A shows overall hit rate
+with 95\% cluster-bootstrap intervals across matched structural cells.
+Panel B shows scenario-specific hit rate for Scenarios A--C. Panel C
+shows paired hit-rate differences between DynEGA and each comparator,
+using the same matched structural cells; positive values favor DynEGA.}
+
+\end{figure}%
+
+DynEGA showed the strongest structural recovery in the matched
+comparison subset, recovering the correct number of latent dimensions in
+98.8\% of method rows and assigning observed channels to the correct
+blocks with 99.5\% accuracy. GraphicalVAR also recovered dimensionality
+in most method rows, with an 85.8\% hit rate and 94.6\% assignment
+accuracy, but required a much longer median runtime. GIMME showed weaker
+structural recovery in this bounded feasible subset, with a 40.7\% hit
+rate and 74.3\% assignment accuracy. The matched-score correlations and
+NRMSE values were similar across methods, indicating that the largest
+differences were in structural dimensional recovery and computational
+feasibility rather than in the average correlation between recovered
+score summaries and source trajectories.
+
+Figure~\ref{fig-dimension-recovery} shows the same pattern for
+dimensional hit rate. DynEGA was near ceiling across Scenarios A--C,
+whereas GraphicalVAR improved from Scenario A to Scenario C and GIMME
+remained lower across all three scenarios. In paired contrasts, DynEGA
+exceeded GraphicalVAR overall by 13.0 percentage points and exceeded
+GIMME by 58.0 percentage points. The DynEGA--GraphicalVAR difference was
+largest in Scenarios A and B and smallest in Scenario C, where the
+interval crossed zero. The main simulation result is that the method
+designed for dynamic dimensional recovery recovered the known number of
+latent dimensions more consistently and with substantially lower runtime
+in the matched comparison subset.
+
+In the full DynEGA grid, the descriptive partial-\(\eta^2\) screen
+identified scenario family as the largest source of dimensional hit-rate
+variation (\(\eta_p^2 = .227\)). Measurement-error standard deviation
+and loading strength had smaller effects on hit rate
+(\(\eta_p^2 = .039\) and \(\eta_p^2 = .015\), respectively), but much
+larger effects on matched-score correlation (\(\eta_p^2 = .565\) and
+\(\eta_p^2 = .240\)). Because scenario differences are already shown in
+Figure~\ref{fig-dimension-recovery}, the next comparison focuses on the
+two measurement-quality factors that directly alter the observed
+FER-like panels: loading strength and measurement error.
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure6_factor_effects.pdf}
+
+}
+
+\caption{\label{fig-factor-effects}Dimensional hit rate stratified by
+measurement-error standard deviation and loading strength in the matched
+bounded comparison subset. Columns show loading strength; lines and
+symbols show methods. Error bars are Wilson 95\% confidence intervals
+computed from all method rows in each stratum.}
+
+\end{figure}%
+
+Figure~\ref{fig-factor-effects} shows how method differences changed
+across measurement quality. DynEGA remained near ceiling for dimensional
+hit rate across most loading and error combinations. GraphicalVAR was
+more sensitive to the measurement layer: its hit rate was weakest when
+loadings were low and measurement error was high, and improved when
+observed channels carried a stronger signal from their source
+dimensions. GIMME remained lower on hit rate across most strata,
+especially under weak-loading and high-error conditions.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1048}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1048}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0726}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1532}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1613}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.2016}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0806}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1210}}@{}}
+
+\caption{\label{tbl-conditional-score-correlations}Conditional
+matched-score correlations after correct dimensional recovery.
+Correlations use only rows in which the corresponding method recovered
+the correct number of dimensions. The conditional r range and widest CI
+are computed across the loading-by-measurement-error strata shown in
+Figure 6.}
+
+\tabularnewline
+
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Method
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Correct rows
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Hit rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Mean conditional r
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Conditional r range
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Correct rows per stratum
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Widest CI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Missing strata
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+DynEGA & 480/486 & 98.8\% & 0.700 & 0.383-0.871 & 48-54 & 0.491 & 0 \\
+GraphicalVAR & 417/486 & 85.8\% & 0.731 & 0.447-0.871 & 9-54 & 0.857 &
+0 \\
+GIMME & 198/486 & 40.7\% & 0.791 & 0.681-0.822 & 6-48 & 0.961 & 2 \\
+
+\end{longtable}
+
+Table~\ref{tbl-conditional-score-correlations} shows why matched-score
+correlations should be interpreted as a conditional diagnostic rather
+than a primary method-ranking criterion. Mean conditional correlations
+were broadly comparable across methods. These estimates were supported
+by very different denominators: DynEGA contributed 480 of 486 possible
+rows, GraphicalVAR contributed 417 of 486 but only 9 correctly recovered
+rows in its weakest measurement stratum, and GIMME contributed 198 of
+486 with two strata missing entirely. Thus, the conditional correlation
+means show that successful recoveries can yield similar score summaries,
+while GraphicalVAR and especially GIMME often failed before this
+score-recovery metric could be evaluated.
+
+\subsection{Computational Feasibility}\label{computational-feasibility}
+
+Computational feasibility was evaluated separately from recovery
+accuracy because the methods differed in both recovery behavior and
+scalability across the simulation design.
+Figure~\ref{fig-runtime-feasibility} summarizes runtime in the common
+base design, and the text below accounts for full-grid completion,
+timeouts, errors, and bounded stopping. This distinction is important
+for interpreting the comparator results: GraphicalVAR and GIMME are
+informative bounded comparisons with more limited scalability across the
+full LOMM grid.
+
+\begin{figure}
+
+\centering{
+
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure7_runtime_feasibility.pdf}
+
+}
+
+\caption{\label{fig-runtime-feasibility}Runtime of the compared methods
+in the common base design. Points show median runtime per successful fit
+and intervals show the interquartile range. GIMME was not run for
+four-dimensional source structures in the bounded comparison.}
+
+\end{figure}%
+
+In the common base design, DynEGA had median runtimes below 1.2 s across
+two-, three-, and four-dimensional source structures (0.74, 0.94, and
+1.10 s). GraphicalVAR required 27.8, 53.3, and 128.1 s for the same
+conditions, corresponding to 37.4, 56.7, and 116.3 times the DynEGA
+runtime. GIMME required 107.6 and 234.2 s in the two- and
+three-dimensional base conditions, corresponding to 145.0 and 249.2
+times the DynEGA runtime, and was not run for four-dimensional
+structures.
+
+The status accounting clarifies why the primary method comparison uses a
+matched bounded subset. DynEGA completed all 3,402 planned method rows
+without errors or timeouts, covering the full base grid and the
+larger-sample, longer-series, and more-indicator extensions.
+GraphicalVAR completed 2,268 rows and produced no estimator errors, but
+12 rows timed out at the 900-s limit in the four-dimensional
+ranked-persistence base condition. After this timeout boundary, the
+remaining ranked-persistence rows, the broad-geometry calibration
+family, and the longer-series and more-indicator sensitivity blocks were
+not attempted for GraphicalVAR. GIMME completed 672 rows and produced no
+timeouts in the staged run, but 18 rows ended in post-estimation errors.
+These were not numerical timeouts; the fitted models returned no usable
+person-level \(\boldsymbol{\Psi}\) matrices from which contemporaneous
+structures could be extracted. Because each failed fit is evaluated with
+three community-detection variants, the 18 error rows correspond to six
+failed structure fits. The GIMME ladder therefore stopped before the
+four-dimensional, larger-sample, longer-series, and more-indicator
+extensions. Thus, the simulation results point to two related
+conclusions: DynEGA had the strongest dimensional hit rate in the shared
+comparison subset, and it was the only method computationally light
+enough to cover the broader design grid used for sensitivity checks.
+
+\section{Discussion}\label{discussion}
+
+This study introduced LOMM as a known-truth framework for studying
+dimensional recovery in FER-like video score series. The central
+contribution is a clean separation among three components that empirical
+video analyses often combine in a single observed panel: latent
+expressive dynamics, the measurement layer that turns those dynamics
+into score channels, and the recovery method used to infer
+lower-dimensional structure. This separation gives researchers a way to
+evaluate recovery methods before applying them to empirical videos where
+the latent structure is unknown.
+
+The empirical realism check supports a qualified use of the generator
+for simulation design. The simulated panels reproduced several temporal
+signatures of the empirical FER-like score panels, including local
+persistence, typical movement scale, and directional-regime complexity.
+Spectral complexity and effective rank were partial matches, indicating
+reasonable but incomplete correspondence in frequency structure and
+dimensional spread. Channel IQR failed at both the observed-channel and
+community-score readouts, showing that the current calibration still
+produces larger amplitude dispersion than the empirical panels. These
+results position LOMM as a simulation generator with explicit realism
+limits: it captures selected temporal and dimensional properties of
+FER-like video data while preserving the amplitude mismatch as a visible
+constraint on interpretation.
+
+In the known-truth simulation, the main method difference was
+structural. DynEGA recovered the correct number of latent dimensions in
+nearly all rows of the matched comparison subset and showed high
+block-assignment accuracy. GraphicalVAR recovered dimensionality in many
+conditions, especially when the measurement signal was stronger, and it
+became more sensitive to the observation layer as loadings weakened and
+measurement error increased. GIMME showed lower dimensional hit rates in
+the subset where it could be evaluated and was retained as a bounded
+feasibility comparator. The simulation therefore favors methods whose
+estimation target is aligned with dynamic dimensional recovery, with
+DynEGA showing the most consistent recovery of the known latent
+structure in this design.
+
+The score-recovery results clarify how the measurement layer affects
+interpretation. Conditional matched-score correlations were broadly
+comparable across methods after the correct number of dimensions had
+already been recovered. This makes score correlation a useful diagnostic
+of successful recoveries, while limiting its value as the primary basis
+for ranking methods. The denominator matters: GraphicalVAR and
+especially GIMME contributed fewer correctly recovered rows in weak
+measurement conditions, so similar conditional correlations rested on
+less reliable recovery pathways. The more informative result is that
+lower loadings and higher measurement error reduced dimensional hit
+rates for the comparator methods more than for DynEGA.
+
+Computational feasibility is also part of the methodological result. A
+simulation study must establish which method recovers the known
+structure and which method can be run across the design needed to
+evaluate dimensionality, measurement quality, and scenario differences.
+DynEGA completed the full planned grid without errors or timeouts.
+GraphicalVAR was much slower and reached a repeated timeout boundary,
+while GIMME produced post-estimation errors in the staged run and was
+therefore treated as a bounded comparator. Reporting these limits keeps
+the method comparison tied to both statistical recovery and practical
+feasibility.
+
+Several limitations follow directly from this design. FER-like scores
+remain model-derived observations of visible expression, so the realism
+check evaluates selected statistical signatures rather than the validity
+of emotion labels or exact empirical trajectories. The present LOMM
+implementation uses a block measurement structure and provides a
+controlled simulation rather than a full latent geometry for real
+affective systems. The channel-IQR mismatch shows that amplitude
+calibration remains incomplete, and GIMME could not be evaluated as a
+full-grid peer. Future work should test richer measurement structures,
+additional empirical scoring systems, and empirical applications where
+known-truth simulation results guide substantive validation of
+video-derived affective dynamics.
+
+\newpage
+
+\section{References}\label{references}
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+\phantomsection\label{refs}
+\begin{CSLReferences}{1}{0}
+\bibitem[\citeproctext]{ref-arriaga2017Realtimea}
+Arriaga, O., Valdenegro-Toro, M., \& Plöger, P. (2017). \emph{Real-time
+{Convolutional Neural Networks} for {Emotion} and {Gender
+Classification}} (arXiv:1710.07557). {arXiv}.
+\url{https://doi.org/10.48550/arXiv.1710.07557}
+
+\bibitem[\citeproctext]{ref-barrett2019Emotionalb}
+Barrett, L. F., Adolphs, R., Marsella, S., Martinez, A. M., \& Pollak,
+S. D. (2019). Emotional {Expressions Reconsidered}: {Challenges} to
+{Inferring Emotion From Human Facial Movements}. \emph{Psychological
+Science in the Public Interest}, \emph{20}(1), 1--68.
+\url{https://doi.org/10.1177/1529100619832930}
+
+\bibitem[\citeproctext]{ref-blondel2008fast}
+Blondel, V. D., Guillaume, J.-L., Lambiotte, R., \& Lefebvre, E. (2008).
+Fast unfolding of communities in large networks. \emph{Journal of
+Statistical Mechanics: Theory and Experiment}, \emph{2008}(10), P10008.
+\url{https://doi.org/10.1088/1742-5468/2008/10/P10008}
+
+\bibitem[\citeproctext]{ref-boker2015Adaptive}
+Boker, S. M. (2015). Adaptive equilibrium regulation: {A} balancing act
+in two timescales. \emph{Journal for Person-Oriented Research},
+\emph{1}(1-2), 99--109. \url{https://doi.org/10.17505/jpor.2015.10}
+
+\bibitem[\citeproctext]{ref-glla2010}
+Boker, S. M., Deboek, P. R., Edler, C., \& Keel, P. (2010). Generalized
+local linear approximation of derivatives from time series. In S. M.
+Chow, E. Ferrer, \& F. Hsieh (Eds.), \emph{The notre dame series on
+quantitative methodology. Statistical methods for modeling human
+dynamics: An interdisciplinary dialogue} (pp. 161--178).
+Routledge/Taylor \& Francis Group.
+
+\bibitem[\citeproctext]{ref-boker2002Method}
+Boker, S. M., \& Nesselroade, J. R. (2002). A {Method} for {Modeling}
+the {Intrinsic Dynamics} of {Intraindividual Variability}: {Recovering}
+the {Parameters} of {Simulated Oscillators} in {Multi-Wave Panel Data}.
+\emph{Multivariate Behavioral Research}, \emph{37}(1), 127--160.
+\url{https://doi.org/10.1207/S15327906MBR3701_06}
+
+\bibitem[\citeproctext]{ref-graphicalVAR2024}
+Epskamp, S. (2024). \emph{graphicalVAR: Graphical VAR for experience
+sampling data}. \url{https://CRAN.R-project.org/package=graphicalVAR}
+
+\bibitem[\citeproctext]{ref-epskampggm}
+Epskamp, S., Waldorp, L. J., Mõttus, R., \& Borsboom, D. (2018). The
+gaussian graphical model in cross-sectional and time-series data.
+\emph{Multivariate Behavioral Research}, \emph{53}(4), 453--480.
+\url{https://doi.org/10.1080/00273171.2018.1454823}
+
+\bibitem[\citeproctext]{ref-ezerceli2022Convolutional}
+Ezerceli, Ö., \& Eskil, M. T. (2022). Convolutional {Neural Network}
+({CNN}) {Algorithm Based Facial Emotion Recognition} ({FER}) {System}
+for {FER-2013 Dataset}. \emph{2022 {International Conference} on
+{Electrical}, {Computer}, {Communications} and {Mechatronics
+Engineering} ({ICECCME})}, 1--6.
+\url{https://doi.org/10.1109/ICECCME55909.2022.9988371}
+
+\bibitem[\citeproctext]{ref-foteinopoulou2023EmoCLIP}
+Foteinopoulou, N. M., \& Patras, I. (2023). \emph{{EmoCLIP}: {A
+Vision-Language Method} for {Zero-Shot Video Facial Expression
+Recognition}} (arXiv:2310.16640). {arXiv}.
+\url{https://doi.org/10.48550/arXiv.2310.16640}
+
+\bibitem[\citeproctext]{ref-gates2012group}
+Gates, K. M., \& Molenaar, P. C. M. (2012). Group search algorithm
+recovers effective connectivity maps for individuals in homogeneous and
+heterogeneous samples. \emph{NeuroImage}, \emph{63}(1), 310--319.
+\url{https://doi.org/10.1016/j.neuroimage.2012.06.026}
+
+\bibitem[\citeproctext]{ref-golino2017ega1}
+Golino, H. F., \& Epskamp, S. (2017). Exploratory graph analysis: A new
+approach for estimating the number of dimensions in psychological
+research. \emph{PloS One}, \emph{12}(6), e0174035.
+\url{https://doi.org/10.1371/journal.pone.0174035}
+
+\bibitem[\citeproctext]{ref-golino2020modeling}
+Golino, H., Christensen, A. P., Moulder, R., Kim, S., \& Boker, S. M.
+(2022). Modeling latent topics in social media using dynamic exploratory
+graph analysis: The case of the right-wing and left-wing trolls in the
+2016 US elections. \emph{Psychometrika}, \emph{87}(1), 156--187.
+
+\bibitem[\citeproctext]{ref-golino2019entropy}
+Golino, H., Moulder, R., Shi, D., Christensen, A. P., Garrido, L. E.,
+Nieto, M. D., Nesselroade, J., Sadana, R., Thiyagarajan, J. A., \&
+Boker, S. M. (2021). Entropy fit indices: New fit measures for assessing
+the structure and dimensionality of multiple latent variables.
+\emph{Multivariate Behavioral Research}, \emph{56}(6), 874--902.
+\url{https://doi.org/10.1080/00273171.2020.1779642}
+
+\bibitem[\citeproctext]{ref-golino2019investigating}
+Golino, H., Shi, D., Garrido, L. E., Christensen, A. P., Nieto, M. D.,
+Sadana, R., Thiyagarajan, J. A., \& Martinez-Molina, A. (2020).
+Investigating the performance of exploratory graph analysis and
+traditional techniques to identify the number of latent factors: A
+simulation and tutorial. \emph{Psychological Methods}, \emph{25}(3),
+292--230. \url{https://doi.org/10.1037/met0000255}
+
+\bibitem[\citeproctext]{ref-goodfellow2013Challenges}
+Goodfellow, I. J., Erhan, D., Carrier, P. L., Courville, A., Mirza, M.,
+Hamner, B., Cukierski, W., Tang, Y., Thaler, D., Lee, D.-H., Zhou, Y.,
+Ramaiah, C., Feng, F., Li, R., Wang, X., Athanasakis, D., Shawe-Taylor,
+J., Milakov, M., Park, J., \ldots{} Bengio, Y. (2013). \emph{Challenges
+in {Representation Learning}: {A} report on three machine learning
+contests} (arXiv:1307.0414). {arXiv}.
+\url{https://doi.org/10.48550/arXiv.1307.0414}
+
+\bibitem[\citeproctext]{ref-halamovaAutomatedFacialExpression2023}
+Halamová, J., Kanovský, M., Brockington, G., \& Strnádelová, B. (2023).
+Automated facial expression analysis of participants self-criticising
+via the two-chair technique: Exploring facial behavioral markers of
+self-criticism. \emph{Frontiers in Psychology}, \emph{14}.
+\url{https://doi.org/10.3389/fpsyg.2023.1138916}
+
+\bibitem[\citeproctext]{ref-hoemann2020Contextaware}
+Hoemann, K., Khan, Z., Feldman, M. J., Nielson, C., Devlin, M., Dy, J.,
+Barrett, L. F., Wormwood, J. B., \& Quigley, K. S. (2020). Context-aware
+experience sampling reveals the scale of variation in affective
+experience. \emph{Scientific Reports}, \emph{10}(1), 12459.
+\url{https://doi.org/10.1038/s41598-020-69180-y}
+
+\bibitem[\citeproctext]{ref-holidayMultimodalEmotionPerspective2023}
+Holiday, S., Hayes, J. L., Park, H., Lyu, Y., \& Zhou, Y. (2023). A
+multimodal emotion perspective on social media influencer marketing: The
+effectiveness of influencer emotions, network size, and branding on
+consumer brand engagement using facial expression and linguistic
+analysis. \emph{Journal of Interactive Marketing}, \emph{58}(4),
+414--439. \url{https://doi.org/10.1177/10949968231171104}
+
+\bibitem[\citeproctext]{ref-hollensteinStateSpaceGrids2007}
+Hollenstein, T. (2007). State space grids: Analyzing dynamics across
+development. \emph{International Journal of Behavioral Development},
+\emph{31}(4), 384--396. \url{https://doi.org/10.1177/0165025407077765}
+
+\bibitem[\citeproctext]{ref-houbenRelationShorttermEmotion2015}
+Houben, M., Van Den Noortgate, W., \& Kuppens, P. (2015). The relation
+between short-term emotion dynamics and psychological well-being: A
+meta-analysis. \emph{Psychological Bulletin}, \emph{141}(4), 901--930.
+\url{https://doi.org/10.1037/a0038822}
+
+\bibitem[\citeproctext]{ref-kankaanpaa2026multipleindicator}
+Kankaanpää, R., Ron, J. de, Hoekstra, R. H. A., \& Bork, R. van. (2026).
+Comparing multiple-indicator approaches to account for measurement error
+in dynamic networks. \emph{Cognitive Therapy and Research}.
+\url{https://doi.org/10.1007/s10608-026-10719-0}
+
+\bibitem[\citeproctext]{ref-kuppensEmotionDynamics2017}
+Kuppens, P., \& Verduyn, P. (2017). Emotion dynamics. \emph{Current
+Opinion in Psychology}, \emph{17}, 22--26.
+\url{https://doi.org/10.1016/j.copsyc.2017.06.004}
+
+\bibitem[\citeproctext]{ref-lane2019uncovering}
+Lane, S. T., Gates, K. M., Pike, H. K., Beltz, A. M., \& Wright, A. G.
+C. (2019). Uncovering general, shared, and unique temporal patterns in
+ambulatory assessment data. \emph{Psychological Methods}, \emph{24}(1),
+54--69. \url{https://doi.org/10.1037/met0000192}
+
+\bibitem[\citeproctext]{ref-li2023CLIPER}
+Li, H., Niu, H., Zhu, Z., \& Zhao, F. (2023). \emph{{CLIPER}: {A Unified
+Vision-Language Framework} for {In-the-Wild Facial Expression
+Recognition}} (arXiv:2303.00193). {arXiv}.
+\url{https://doi.org/10.48550/arXiv.2303.00193}
+
+\bibitem[\citeproctext]{ref-liDecodingGroupEmotional2024}
+Li, Q., Liu, Z., Zhang, Z., Wang, Q., \& Ma, M. (2024). Decoding group
+emotional dynamics in a web-based collaborative environment: A novel
+framework utilizing multi-person facial expression recognition.
+\emph{International Journal of Human-Computer Interaction}, 1--19.
+\url{https://doi.org/10.1080/10447318.2024.2338614}
+
+\bibitem[\citeproctext]{ref-li2022Deep}
+Li, S., \& Deng, W. (2022). Deep {Facial Expression Recognition}: {A
+Survey}. \emph{IEEE Transactions on Affective Computing}, \emph{13}(3),
+1195--1215. \url{https://doi.org/10.1109/TAFFC.2020.2981446}
+
+\bibitem[\citeproctext]{ref-liu_mafw_2022}
+Liu, Y., Dai, W., Feng, C., Wang, W., Yin, G., Zeng, J., \& Shan, S.
+(2022). {MAFW}: A large-scale, multi-modal, compound affective database
+for dynamic facial expression recognition in the wild. \emph{Proceedings
+of the 30th ACM International Conference on Multimedia}, 24--32.
+\url{https://doi.org/10.1145/3503161.3548190}
+
+\bibitem[\citeproctext]{ref-manelisbaramComparingThreeAlgorithms2025}
+Manelis-Baram, L., Barami, T., Ilan, M., Meiri, G., Menashe, I., Soskin,
+E., Sofer, C., \& Dinstein, I. (2025). Comparing three algorithms of
+automated facial expression analysis in autistic children: Different
+sensitivities but consistent proportions. \emph{Molecular Autism},
+\emph{16}(1). \url{https://doi.org/10.1186/s13229-025-00685-x}
+
+\bibitem[\citeproctext]{ref-mckeownAreFacialExpression2024}
+McKeown, G., \& Allison, B. (2024). Are facial expression technologies
+tools for emotion recognition or social interaction analysis, or both?
+\emph{Proceedings of the 11th International Conference on Affective
+Computing and Intelligent Interaction, ACII 2023, International
+Conference on Affective Computing and Intelligent Interaction (ACII):
+Proceedings}.
+
+\bibitem[\citeproctext]{ref-mehu2015Emotion}
+Mehu, M., \& Scherer, K. R. (2015). Emotion categories and dimensions in
+the facial communication of affect: {An} integrated approach.
+\emph{Emotion}, \emph{15}(6), 798--811.
+\url{https://doi.org/10.1037/a0039416}
+
+\bibitem[\citeproctext]{ref-meng2017IdentityAware}
+Meng, Z., Liu, P., Cai, J., Han, S., \& Tong, Y. (2017). Identity-{Aware
+Convolutional Neural Network} for {Facial Expression Recognition}.
+\emph{2017 12th {IEEE International Conference} on {Automatic Face} \&
+{Gesture Recognition} ({FG} 2017)}, 558--565.
+\url{https://doi.org/10.1109/FG.2017.140}
+
+\bibitem[\citeproctext]{ref-nesselroade2013dynamic}
+Nesselroade, J. R., McArdle, J. J., Aggen, S. H., \& Meyers, J. M.
+(2013). Dynamic factor analysis models for representing process in
+multivariate time-series. In \emph{Modeling intraindividual variability
+with repeated measures data} (pp. 235--265). Psychology Press.
+
+\bibitem[\citeproctext]{ref-ollero2023Characterizing}
+Ollero, M. J. F., Estrada, E., Hunter, M. D., \& Cáncer, P. F. (2023).
+Characterizing affect dynamics with a damped linear oscillator model:
+{Theoretical} considerations and recommendations for individual-level
+applications. \emph{Psychological Methods}.
+\url{https://doi.org/10.1037/met0000615}
+
+\bibitem[\citeproctext]{ref-plutchikNatureEmotions2001}
+Plutchik, R. (2001). The nature of emotions. \emph{American Scientist},
+\emph{89}(4), 344--350. \url{https://doi.org/10.1511/2001.4.344}
+
+\bibitem[\citeproctext]{ref-pons2006walktrap}
+Pons, P., \& Latapy, M. (2005). Computing communities in large networks
+using random walks. In Pi. Yolum, T. Güngör, F. Gürgen, \& C. Özturan
+(Eds.), \emph{Computer and information sciences - ISCIS 2005} (pp.
+284--293). Springer Berlin Heidelberg.
+\url{https://doi.org/10.1007/11569596_31}
+
+\bibitem[\citeproctext]{ref-russellCircumplexModel1980}
+Russell, J. A. (1980). A circumplex model of affect. \emph{Journal of
+Personality and Social Psychology}, \emph{39}(6), 1161--1178.
+\url{https://doi.org/10.1037/h0077714}
+
+\bibitem[\citeproctext]{ref-russellCoreAffect2003}
+Russell, J. A. (2003). Core affect and the psychological construction of
+emotion. \emph{Psychological Review}, \emph{110}(1), 145--172.
+\url{https://doi.org/10.1037/0033-295X.110.1.145}
+
+\bibitem[\citeproctext]{ref-russellMehrabianThreeFactor1977}
+Russell, J. A., \& Mehrabian, A. (1977). Evidence for a three-factor
+theory of emotions. \emph{Journal of Research in Personality},
+\emph{11}(3), 273--294.
+\url{https://doi.org/10.1016/0092-6566(77)90037-X}
+
+\bibitem[\citeproctext]{ref-schlosbergThreeDimensions1954}
+Schlosberg, H. (1954). Three dimensions of emotion. \emph{Psychological
+Review}, \emph{61}(2), 81--88. \url{https://doi.org/10.1037/h0054570}
+
+\bibitem[\citeproctext]{ref-stewart2009Presidential}
+Stewart, P. A., Waller, B. M., \& Schubert, J. N. (2009). Presidential
+speechmaking style: {Emotional} response to micro-expressions of facial
+affect. \emph{Motivation and Emotion}, \emph{33}(2), 125--135.
+\url{https://doi.org/10.1007/s11031-009-9129-1}
+
+\bibitem[\citeproctext]{ref-tomasevic2026TransforEmotion}
+Tomašević, A., Golino, H., \& Christensen, A. (2026). {transforEmotion}:
+An open-source {R} package for emotion analysis using transformer-based
+generative {AI} models. \emph{Computational Communication Research},
+\emph{8}(2), 1. \url{https://doi.org/10.5117/CCR2026.2.2.TOMA}
+
+\bibitem[\citeproctext]{ref-tong2005Use}
+Tong, E. M. W., Bishop, G. D., Enkelmann, H. C., Why, Y. P., Diong, S.
+M., Khader, M., \& Ang, J. (2005). The {Use} of {Ecological Momentary
+Assessment} to {Test Appraisal Theories} of {Emotion}. \emph{Emotion},
+\emph{5}(4), 508--512. \url{https://doi.org/10.1037/1528-3542.5.4.508}
+
+\bibitem[\citeproctext]{ref-traag2019leiden}
+Traag, V. A., Waltman, L., \& Eck, N. J. van. (2019). From louvain to
+leiden: Guaranteeing well-connected communities. \emph{Scientific
+Reports}, \emph{9}(1), 5233.
+\url{https://doi.org/10.1038/s41598-019-41695-z}
+
+\bibitem[\citeproctext]{ref-wang2022Rethinking}
+Wang, W., Sebe, N., \& Lepri, B. (2022). \emph{Rethinking the {Learning
+Paradigm} for {Facial Expression Recognition}} (arXiv:2209.15402).
+{arXiv}. \url{https://arxiv.org/abs/2209.15402}
+
+\end{CSLReferences}
+
+\endgroup
+
+
+
+
+\end{document}

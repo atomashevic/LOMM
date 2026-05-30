@@ -1,23 +1,27 @@
-# DLO Revision Benchmark
+# LOMM Manuscript Simulation Workspace
 
-This repository contains the cleaned revision workspace for the Behavior Research Methods revise-and-resubmit on dynamic latent oscillator simulation and dimensionality recovery for video emotion time series.
+This repository is the cleaned RR manuscript workspace for the Latent Oscillator Measurement Model (LOMM) paper. The visible tree is organized around the current manuscript, the scripts that reproduce its figures and tables, and the active simulation evidence bundles used by those scripts.
 
-The revision source of truth is the lab note `~/lab/methods/dlo-paper-rr.md`. That note sets the current paper direction: remove the tutorial framing, foreground the generalized DLO simulation framework, benchmark DynEGA against defensible alternatives, and use empirical OAI-large time-series checks as a cautious realism argument.
+## Active Manuscript
 
-## Clean Contents
+- `paper/Paper_emotion_dynamics_HGolino_RR.qmd`: current RR manuscript source.
+- `paper/Paper_emotion_dynamics_HGolino_RR.pdf`: rendered manuscript PDF.
+- `paper/response_letter.tex` and `paper/response_letter.pdf`: current response letter.
+- `paper/references.bib` and `paper/apa.csl`: manuscript bibliography and citation style.
+- `paper/figures/` and `paper/tables/`: manuscript-facing generated assets.
 
-- `extract.r`: core DLO simulation, empirical-target, and estimator helpers.
-- `run_method_benchmark.R`: revision benchmark grid and method runners.
-- `run_dynega_full_suite.R`, `run_graphicalvar_full_suite.R`, `run_gimme_full_suite.R`: method-specific benchmark entrypoints.
-- `summarize_full_suite_results.R`: combines method outputs into the final revision summary tables.
-- `plot_revision_first_benchmark_figures.R`: regenerates the revision figure bundle.
-- `run_empirical_mafw_sample_pipeline.R` and `make_oai_large_similarity_overview.py`: empirical OAI-large realism check.
-- `benchmark_outputs_revision_summary/`: finalized combined benchmark tables.
-- `comparison_revision_first_benchmark/`: finalized benchmark figures.
-- `reports/revision_benchmark_report.tex` and `.pdf`: compact results scaffold for the manuscript revision.
-- `paper/`: manuscript-facing working notes and source readouts from the earlier simulation scripts.
+Legacy drafts, old readouts, older reports, and obsolete bibliography backups were moved to `archive/2026-05-30-manuscript-tidy/old-manuscript-backup/`.
 
-Older smoke runs, failed probes, exploratory plots, intermediate `.rds` files, and superseded output directories were moved to `archive/2026-05-02-pre-rr-tidy/` and are intentionally ignored by Git.
+## Clean Layout
+
+- `extract.r`: core LOMM simulation, empirical-target, and estimator helpers.
+- `scripts/simulations/`: active simulation runners and method-comparison entrypoints.
+- `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
+- `scripts/empirical/`: empirical MAFW/OAI realism and diagnostic scripts.
+- `scripts/reports/`: summary builders retained for audit/regeneration.
+- `scripts/legacy/`: retained exploratory scripts that are not part of the active manuscript run map.
+- `simulation_outputs/`: active simulation and empirical evidence bundles read by manuscript scripts.
+- `archive/2026-05-30-manuscript-tidy/`: dated cleanup archive with `archive_manifest.tsv`.
 
 ## Main Commands
 
@@ -27,27 +31,25 @@ Load the core implementation without running the expensive extract pipeline:
 Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
 ```
 
-Run the method-specific revision benchmarks:
+Regenerate manuscript-facing figures and tables:
 
 ```bash
-BENCHMARK_WORKERS=4 BENCHMARK_CHECKPOINT_EACH=1 Rscript run_dynega_full_suite.R
-BENCHMARK_GRAPHICALVAR_WORKERS=24 BENCHMARK_GRAPHICALVAR_TIMEOUT_SEC=600 BENCHMARK_CHECKPOINT_EACH=1 Rscript run_graphicalvar_full_suite.R
-BENCHMARK_GIMME_WORKERS=8 BENCHMARK_GIMME_TIMEOUT_SEC=360 BENCHMARK_CHECKPOINT_EACH=1 Rscript run_gimme_full_suite.R
+Rscript scripts/figures/plot_lomm_pipeline_overview.R
+Rscript scripts/figures/plot_empirical_realism_results.R
+Rscript scripts/figures/plot_method_recovery_results.R
+Rscript scripts/figures/plot_factor_effects_results.R
+Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
-Regenerate the final combined summary and figures:
+Rebuild the manuscript and response letter:
 
 ```bash
-Rscript summarize_full_suite_results.R
-Rscript plot_revision_first_benchmark_figures.R
+quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
+pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
 ```
 
-Rebuild the report from the repository root:
+See `scripts/README.md` for the full production map.
 
-```bash
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory=reports reports/revision_benchmark_report.tex
-```
+## Terminology
 
-## Current Results
-
-The finalized benchmark contains 1,920 full-grid rows each for DynEGA and GraphicalVAR, plus a 120-row bounded GIMME feasibility run. DynEGA completed all rows and recovered the correct dimensionality in 97.4% of rows. GraphicalVAR had similar score recovery but was much slower and had 48 timeouts. GIMME is retained only as a bounded feasibility comparator because timeouts dominate the all-row result.
+Visible project documentation now uses "simulation" for the active manuscript workflow. Some internal environment variables and archived historical files still use `BENCHMARK` or `benchmark` for provenance and backward compatibility with existing R runner logic.

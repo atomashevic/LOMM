@@ -1,2 +1,0 @@
-"fit_method_compare","method_family","n_fits","n_ok_fits","n_timeout_fits","n_error_fits","fit_success_rate","fit_runtime_mean","fit_runtime_median","fit_runtime_max"
-"GIMME structure fit","gimme",120,21,96,3,0.175,364.270241666667,360.5675,600.586
