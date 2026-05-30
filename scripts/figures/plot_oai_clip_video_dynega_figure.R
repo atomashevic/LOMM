@@ -11,8 +11,6 @@ library(dplyr)
 library(ggplot2)
 library(grid)
 library(igraph)
-library(jpeg)
-library(png)
 library(tidyr)
 
 read_char <- function(name, default) {
@@ -48,14 +46,11 @@ frame_scores_path <- read_char(
   "OAI_CLIP_FIGURE_FRAME_SCORES",
   "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/frame_scores.csv"
 )
-frame_dir <- read_char(
-  "OAI_CLIP_FIGURE_FRAME_DIR",
-  "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/_tmp"
-)
 output_dir <- read_char(
   "OAI_CLIP_FIGURE_OUTPUT_DIR",
   file.path(repo_root, "simulation_outputs", "video_dynega_example")
 )
+manuscript_pdf_path <- read_char("OAI_CLIP_FIGURE_MANUSCRIPT_PDF", "")
 n_embed <- as.integer(read_num("OAI_CLIP_FIGURE_N_EMBED", 3))
 edge_threshold <- read_num("OAI_CLIP_FIGURE_EDGE_THRESHOLD", 0.08)
 smooth_window <- as.integer(read_num("OAI_CLIP_FIGURE_SMOOTH_WINDOW", 7))
@@ -121,9 +116,6 @@ smooth_series <- function(x, window) {
 if (!file.exists(frame_scores_path)) {
   stop("Missing frame scores: ", frame_scores_path, call. = FALSE)
 }
-if (!dir.exists(frame_dir)) {
-  stop("Missing frame directory: ", frame_dir, call. = FALSE)
-}
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -176,15 +168,6 @@ selected_frames$profile_label <- selected_frame_labels[
   seq_len(min(length(selected_frame_labels), nrow(selected_frames)))
 ]
 selected_frames$profile_label[is.na(selected_frames$profile_label)] <- ""
-selected_frames$image_path <- file.path(
-  frame_dir,
-  sprintf("%s-frame-%d.jpg", clip_stem, selected_frames$frame_index - 1L)
-)
-
-missing_images <- selected_frames$image_path[!file.exists(selected_frames$image_path)]
-if (length(missing_images) > 0L) {
-  stop("Missing extracted frame images: ", paste(missing_images, collapse = ", "), call. = FALSE)
-}
 
 bar_y_max <- max(0.65, max(as.matrix(selected_frames[, emotion_cols, drop = FALSE]), na.rm = TRUE) * 1.06)
 bar_y_breaks <- pretty(c(0, bar_y_max), n = 4)
@@ -241,25 +224,6 @@ utils::write.csv(
   row.names = FALSE
 )
 
-make_image_panel <- function(path, frame_index, profile_label) {
-  image <- jpeg::readJPEG(path)
-  ggdraw() +
-    draw_grob(
-      rasterGrob(image, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE),
-      x = 0, y = 0, width = 1, height = 1
-    ) +
-    draw_label(
-      sprintf("Frame %d", frame_index),
-      x = 0.02, y = 0.96, hjust = 0, vjust = 1,
-      size = 8.5, color = "white", fontface = "bold", fontfamily = base_family
-    ) +
-    draw_label(
-      profile_label,
-      x = 0.02, y = 0.84, hjust = 0, vjust = 1,
-      size = 7.5, color = "white", fontface = "bold", fontfamily = base_family
-    )
-}
-
 make_bar_panel <- function(row, show_y_axis = FALSE) {
   scores <- data.frame(
     emotion = factor(emotion_cols, levels = emotion_cols),
@@ -279,7 +243,12 @@ make_bar_panel <- function(row, show_y_axis = FALSE) {
       breaks = bar_y_breaks,
       expand = expansion(mult = c(0, 0.02))
     ) +
-    labs(x = NULL, y = "Frame score") +
+    labs(
+      x = NULL,
+      y = "Frame score",
+      title = sprintf("Frame %d", row$frame_index[[1]]),
+      subtitle = row$profile_label[[1]]
+    ) +
     theme_classic(base_size = 7.5, base_family = base_family) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 6.3),
@@ -288,6 +257,8 @@ make_bar_panel <- function(row, show_y_axis = FALSE) {
       axis.line = element_line(linewidth = 0.25),
       axis.ticks = element_line(linewidth = 0.25),
       panel.grid = element_blank(),
+      plot.title = element_text(size = 8.5, face = "bold", margin = margin(b = 1)),
+      plot.subtitle = element_text(size = 7.0, margin = margin(b = 3)),
       plot.margin = margin(2, 4, 2, 4)
     )
 
@@ -304,13 +275,6 @@ make_bar_panel <- function(row, show_y_axis = FALSE) {
   panel
 }
 
-image_panels <- lapply(seq_len(nrow(selected_frames)), function(idx) {
-  make_image_panel(
-    selected_frames$image_path[[idx]],
-    selected_frames$frame_index[[idx]],
-    selected_frames$profile_label[[idx]]
-  )
-})
 bar_panels <- lapply(seq_len(nrow(selected_frames)), function(idx) {
   make_bar_panel(selected_frames[idx, , drop = FALSE], show_y_axis = idx == 1L)
 })
@@ -482,20 +446,17 @@ make_section_header <- function(label, title) {
     )
 }
 
-image_row <- plot_grid(plotlist = image_panels, nrow = 1, align = "h", axis = "tb")
 bar_row <- plot_grid(plotlist = bar_panels, nrow = 1, align = "h", axis = "tb")
 
 figure_body <- plot_grid(
-  make_section_header("A", "Example video clip from MAFW dataset"),
-  image_row,
-  make_section_header("B", "Selected-frame OpenAI CLIP emotion scores"),
+  make_section_header("A", "Selected-frame OpenAI CLIP emotion scores"),
   bar_row,
-  make_section_header("C", "Smoothed frame-level emotion trajectories"),
+  make_section_header("B", "Smoothed frame-level emotion trajectories"),
   time_panel,
-  make_section_header("D", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
+  make_section_header("C", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
   network_panel,
   ncol = 1,
-  rel_heights = c(0.12, 0.74, 0.10, 0.78, 0.10, 1.26, 0.10, 1.10)
+  rel_heights = c(0.12, 1.02, 0.10, 1.34, 0.10, 1.18)
 )
 figure <- ggdraw() +
   draw_plot(figure_body, x = 0.016, y = 0.014, width = 0.968, height = 0.972)
@@ -504,10 +465,17 @@ output_stem <- file.path(output_dir, paste0("oai_clip_video_dynega_", clip_stem)
 network_path <- file.path(output_dir, paste0(clip_stem, "_dynega_network.png"))
 ggsave(paste0(output_stem, ".png"), figure, width = figure_width, height = figure_height, dpi = figure_dpi, bg = "white")
 ggsave(paste0(output_stem, ".pdf"), figure, width = figure_width, height = figure_height, bg = "white")
+if (nzchar(manuscript_pdf_path)) {
+  dir.create(dirname(manuscript_pdf_path), recursive = TRUE, showWarnings = FALSE)
+  ggsave(manuscript_pdf_path, figure, width = figure_width, height = figure_height, bg = "white")
+}
 ggsave(network_path, network_panel, width = 5.4, height = 3.0, dpi = figure_dpi, bg = "white")
 
 cat("Saved figure PNG: ", paste0(output_stem, ".png"), "\n", sep = "")
 cat("Saved figure PDF: ", paste0(output_stem, ".pdf"), "\n", sep = "")
+if (nzchar(manuscript_pdf_path)) {
+  cat("Saved manuscript figure PDF: ", manuscript_pdf_path, "\n", sep = "")
+}
 cat("Saved dynEGA network PNG: ", network_path, "\n", sep = "")
 cat("Saved dynEGA edge table: ", file.path(output_dir, paste0(clip_stem, "_dynega_edges.csv")), "\n", sep = "")
 cat("Saved dynEGA membership table: ", file.path(output_dir, paste0(clip_stem, "_dynega_membership.csv")), "\n", sep = "")

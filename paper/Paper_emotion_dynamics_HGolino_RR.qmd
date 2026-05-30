@@ -6,8 +6,9 @@ author:
   - name          : "Aleksandar Tomašević"
     affiliation   : "1"
     corresponding : true    # Define only one corresponding author
-    address       : "Address Here"
-    email         : "atomashevic@ff.uns.ac.rs"
+    address       : "Institute of Physics Belgrade, University of Belgrade, Pregrevica 118, 11080 Belgrade, Serbia"
+    telephone     : "To be supplied before final journal upload"
+    email         : "atomasevic@ipb.ac.rs"
     role:
       - Conceptualization
       - Formal Analysis
@@ -19,7 +20,7 @@ author:
       - Writing - Original Draft Preparation
       - Writing - Review & Editing
   - name          : "Hudson Golino"
-    affiliation   : "1"
+    affiliation   : "2"
     role:
       - Formal Analysis
       - Methodology
@@ -30,7 +31,7 @@ author:
       - Writing - Original Draft Preparation
       - Writing - Review & Editing
   - name          : "Alexander P. Christensen"
-    affiliation   : "2"
+    affiliation   : "3"
     role:
       - Methodology
       - Software
@@ -39,22 +40,20 @@ author:
 
 affiliation:
   - id            : "1"
-    institution   : "Department of Sociology, University of Novi Sad"
+    institution   : "Institute of Physics Belgrade, University of Belgrade"
   - id            : "2"
     institution   : "Department of Psychology, University of Virginia"
   - id            : "3"
     institution   : "Department of Psychology and Human Development, Peabody College, Vanderbilt University"
 
 authornote: |
-   Acknowledgements: The authors did not preregister this study. All data, code, and materials can be found on the \href{LIND}{Open Science Framework}. ORCID: Hudson Golino 0000-0002-1601-1447, Aleksandar Tomasevic 0000-0003-4863-6051, and Alexander P. Christensen 0000-0002-9798-7037.
+   ORCID: Hudson Golino 0000-0002-1601-1447, Aleksandar Tomasevic 0000-0003-4863-6051, and Alexander P. Christensen 0000-0002-9798-7037.
 
 abstract: |
- Automated facial-expression scoring can turn video frames into dense time series of visible affective expression, but the resulting score channels are model-derived measurements whose latent temporal structure is unknown in empirical data. We introduce the Latent Oscillator Measurement Model (LOMM), a generative framework for simulation-based evaluation of dynamic dimensional recovery in facial-expression-recognition-like (FER-like) video score series. LOMM combines second-order latent oscillator dynamics with an explicit measurement layer, allowing researchers to simulate observed score panels under known latent dimensionality, loading strength, measurement error, feedback regime, and activity pattern. We first calibrated the generator against FER-like score panels from the MAFW dataset using empirical realism targets for dispersion, local movement, temporal persistence, directional-regime complexity, spectral complexity, and dimensional spread. The calibrated generator reproduced several temporal and dimensional signatures, although channel-level dispersion remained larger than in the empirical panels. We then used LOMM in a known-truth simulation study comparing Dynamic Exploratory Graph Analysis (DynEGA), GraphicalVAR, and bounded GIMME. DynEGA showed the strongest dimensional hit rate and completed the full design grid. GraphicalVAR recovered dimensionality in many conditions but was slower and more sensitive to the observation layer, whereas GIMME was useful mainly as a bounded feasibility comparator. LOMM therefore provides a controlled way to evaluate dynamic measurement and recovery methods before applying them to empirical video data.
-
-  <!-- https://tinyurl.com/ybremelq -->
+ Automated facial-expression scoring produces dense time series of visible affect from video, giving behavioral researchers new material for modeling emotion dynamics. Because these score channels are outputs of measurement systems, empirical applications need methods whose recovery behavior has been evaluated under known latent structure. We introduce the Latent Oscillator Measurement Model (LOMM), a generative framework for simulation-based evaluation of dynamic dimensional recovery in facial-expression-recognition-like (FER-like) video score series. LOMM combines second-order latent oscillator dynamics with an explicit measurement layer, allowing researchers to generate observed score panels with known dimensionality, loading strength, measurement error, feedback regime, and activity pattern. We calibrated the generator against FER-like score panels from the MAFW dataset using targets for dispersion, local movement, temporal persistence, directional-regime complexity, spectral complexity, and dimensional spread. The calibrated generator reproduced several temporal and dimensional signatures, with a remaining amplitude mismatch in channel-level dispersion. We then used LOMM in a known-truth simulation comparing Dynamic Exploratory Graph Analysis (DynEGA), GraphicalVAR, and bounded GIMME. DynEGA showed the strongest dimensional hit rate, high block-assignment accuracy, and full-grid completion. GraphicalVAR recovered dimensionality in many conditions but was slower and more sensitive to the observation layer. LOMM links generative modeling, empirical realism checks, and known-truth recovery analysis so researchers can evaluate whether dynamic methods recover latent organization, tolerate measurement error, and scale to video-derived behavioral data before substantive interpretation.
 
 keywords          : "Network Psychometrics, Emotion Dynamics, Transformer Models, Complex Systems, Dynamical Systems"
-wordcount         : "X"
+wordcount         : "6,800"
 
 bibliography      : "references.bib"
 csl               : "apa.csl"
@@ -77,6 +76,8 @@ header-includes   :
                     - \usepackage{hyperref}
                     - \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
                     - \usepackage[utf8]{inputenc}
+                    - \usepackage[margin=1in]{geometry}
+                    - \usepackage{lineno}
                     - \usepackage{longtable}
                     - \usepackage{amsmath}
                     # - \def\tightlist
@@ -84,6 +85,8 @@ header-includes   :
                     - \usepackage{mathtools}
                     - \usepackage{booktabs}
                     - \usepackage{longtable}
+                    - \doublespacing
+                    - \linenumbers
 class             : "man"
 format:
   pdf:
@@ -125,7 +128,7 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 
 # Introduction
 
-Recent advancements in deep learning and computer vision have made it increasingly feasible to transform video frames into time series of emotional expression scores [@meng2017IdentityAware; @li2022Deep]. For behavioral-science applications, these tools create a new kind of intensive longitudinal record: high-frequency, model-derived measurements of visible affective expression. These records differ substantially from self-report time series collected through ecological momentary assessment [EMA\; @tong2005Use] or experience sampling methods [ESM\; @hoemann2020Contextaware]. Facial-expression recognition (FER) scores are dense outputs of measurement systems applied to video frames, making them promising for studying the temporal organization of emotional expression at scale. Their use also raises a methodological problem: dynamic models need to separate latent expressive processes from the observed score series used to measure them.
+Recent advancements in deep learning and computer vision have made it increasingly feasible to transform video frames into time series of emotional expression scores [@meng2017IdentityAware; @li2022Deep]. In a facial-expression recognition task, an algorithm maps each image frame or video segment to emotion-label predictions, usually as category probabilities or continuous scores for labels such as happiness, anger, sadness, fear, surprise, disgust, or neutral expression. For behavioral-science applications, these tools create a new kind of intensive longitudinal record: high-frequency, model-derived measurements of visible affective expression. These records differ substantially from self-report time series collected through ecological momentary assessment [EMA\; @tong2005Use] or experience sampling methods [ESM\; @hoemann2020Contextaware]. Facial-expression recognition (FER) scores are dense outputs of measurement systems applied to video frames, making them promising for studying the temporal organization of emotional expression at scale. Their use also raises a methodological problem: dynamic models need to separate latent expressive processes from the observed score series used to measure them.
 
 The substantive motivation comes from video-rich behavioral settings in which visible affect is part of the behavior being studied. Facial expressions are central to human communication [@stewart2009Presidential; @mehu2015Emotion; @barrett2019Emotionalb], but many behavioral-science questions concern how these expressions unfold over time rather than how a single frame should be labeled. In psychotherapy tasks, autism assessments, collaborative work, public communication, and social-media videos, the relevant questions are dynamic: whether expressions return quickly after perturbation, whether affective displays settle into stable or volatile regimes, and whether many observed emotion labels reflect fewer latent expressive dimensions [@kuppensEmotionDynamics2017; @houbenRelationShorttermEmotion2015; @hollensteinStateSpaceGrids2007].
 
@@ -133,11 +136,9 @@ Automated facial-analysis systems now make this kind of work feasible at scale. 
 
 This technical progress also creates a validation problem. FER-like score series are model-derived, multivariate, and error-prone measurements of visible behavior. Their interpretation depends on whether the observed score channels are treated as emotion variables in their own right, as indicators of social interaction, or as noisy indicators of lower-dimensional latent affective processes [@mckeownAreFacialExpression2024]. For dynamic modeling, this distinction has practical consequences: measurement error can change the structure recovered by dynamic-network methods, making it important to separate latent temporal organization from the fallible score series used to observe it [@kankaanpaa2026multipleindicator].
 
-The aim of this paper is to introduce the Latent Oscillator Measurement Model (LOMM), a generative framework that combines latent second-order oscillator dynamics with a measurement model for observed FER score series [@boker2002Method; @boker2015Adaptive; @ollero2023Characterizing]. LOMM models video-derived emotion scores as fallible indicators generated from latent temporal processes. By generating observed FER-like score series from known latent dimensions and trajectories, LOMM supports a validation sequence: simulate score panels under controlled latent-dimensionality, loading, measurement-error, and feedback-regime conditions; compare selected simulated panels with empirical video-derived scores from MAFW, a large-scale, multi-modal, compound affective database for dynamic facial-expression recognition in the wild, as a realism check [@liu_mafw_2022]; and evaluate whether dynamic modeling methods recover the intended latent organization. In this sequence, the realism check is part of simulation design because it asks whether the known-truth generator is close enough to empirical FER-like data for method comparisons to be meaningful.
+The aim of this paper is to introduce the Latent Oscillator Measurement Model (LOMM), a generative simulation model for FER-like emotion score series [@boker2002Method; @boker2015Adaptive; @ollero2023Characterizing]. LOMM first generates latent expressive trajectories from second-order oscillator dynamics and then maps those latent processes into observed emotion-label scores through an explicit measurement layer. In this sense, LOMM is not an empirical estimator of emotion dynamics from a single video; it is a known-truth data-generating model that lets researchers control latent dimensionality, feedback regime, loading strength, measurement error, and activity pattern before testing whether dynamic methods recover the intended structure.
 
-The paper makes three contributions and is organized accordingly. First, it specifies LOMM as an interpretable generative model for FER-like video emotion time series, combining second-order latent affective dynamics with an explicit measurement layer for observed emotion-label scores. Second, it evaluates the empirical realism of the LOMM generator by testing whether simulated panels reproduce selected statistical signatures of video-derived FER-like data. Third, it uses LOMM as a known-truth simulation study for dynamic dimensional recovery, comparing DynEGA with GraphicalVAR and GIMME under controlled measurement and dynamical conditions. We first define the LOMM data-generating model and its measurement component, then describe the empirical FER-like score source and realism checks, present the simulation study, and close by discussing when video-derived emotion traces can support behavioral-science claims about latent affective dynamics.
-
-@fig-pipeline summarizes the full workflow early in the manuscript. The empirical side of the pipeline defines realism targets for FER-like video score series (Panels A--C); scenario selection then translates those targets into LOMM parameters (Panel D); and the simulation study evaluates dimensional recovery against known latent structure (Panels E--H).
+The paper contributes this model and evaluates its use in three linked steps, shown in @fig-pipeline. First, we specify the LOMM data-generating and measurement components for FER-like video score panels. Second, we compare simulated panels with empirical MAFW-derived FER-like score panels to assess whether the generator reproduces selected temporal and dimensional signatures (Panels A--D). Third, we use the resulting known-truth simulations to evaluate dynamic dimensional recovery with DynEGA, GraphicalVAR, and bounded GIMME under controlled measurement and dynamical conditions (Panels E--H). We then close by discussing when video-derived emotion traces can support behavioral-science claims about latent affective dynamics.
 
 ```{r}
 #| label: fig-pipeline
@@ -233,13 +234,13 @@ The analyses follow the workflow in @fig-pipeline. We first use empirical video 
 
 ## Empirical Calibration and Realism Targets
 
-@fig-mafwvideo shows the empirical scoring target that motivates the simulation study. The figure uses one clip from MAFW, a dataset designed for dynamic facial expression recognition in the wild [@liu_mafw_2022], whereas the realism check uses a 100-clip calibration sample scored with the same zero-shot FER-like procedure. Each sampled frame is represented by a fixed set of prompt-defined score channels: anger, disgust, fear, happiness, neutral, sadness, surprise, contempt, anxiety, helplessness, and disappointment. Within each clip, short missing runs are interpolated, frames with complete usable scores are retained, and clipped score vectors are renormalized so that frame-level channels can be compared as probability-like outputs. These prompt-specific classifier outputs provide empirical targets for the LOMM observation layer through their temporal persistence, variability, and co-fluctuation.
+@fig-mafwvideo shows the empirical scoring target that motivates the simulation study. The figure uses one clip from MAFW, a dataset designed for dynamic facial expression recognition in the wild [@liu_mafw_2022], whereas the realism check uses a 100-clip calibration sample scored with the same zero-shot FER-like procedure. To avoid redistributing identifiable frame images in the submission manuscript, the figure represents selected frames through their score profiles rather than through video stills. Each sampled frame is represented by a fixed set of prompt-defined score channels: anger, disgust, fear, happiness, neutral, sadness, surprise, contempt, anxiety, helplessness, and disappointment. Within each clip, short missing runs are interpolated, frames with complete usable scores are retained, and clipped score vectors are renormalized so that frame-level channels can be compared as probability-like outputs. These prompt-specific classifier outputs provide empirical targets for the LOMM observation layer through their temporal persistence, variability, and co-fluctuation.
 
-The selected frames and score outputs from the same MAFW clip illustrate the measurement problem (Panels A and B): different frames receive different scores across labels such as helplessness, fear, disgust, sadness, anxiety, and disappointment. The frame-level trajectories show that the highest mean channels change in bursts rather than as smooth curves (Panel C). The single-video DynEGA network applies Dynamic Exploratory Graph Analysis to the same clip's non-neutral score trajectories (Panel D). In this illustration, the method returns three communities among ten score channels, motivating the dimensional-recovery problem later studied under known truth.
+The selected score profiles from the same MAFW clip illustrate the measurement problem (Panel A): different frames receive different scores across labels such as helplessness, fear, disgust, sadness, anxiety, and disappointment. The frame-level trajectories show that the highest mean channels change in bursts rather than as smooth curves (Panel B). The single-video DynEGA network applies Dynamic Exploratory Graph Analysis to the same clip's non-neutral score trajectories (Panel C). In this illustration, the method returns three communities among ten score channels, motivating the dimensional-recovery problem later studied under known truth.
 
 ```{r}
 #| label: fig-mafwvideo
-#| fig-cap: "Single-video empirical illustration from the MAFW dataset. Panel A shows selected frames from one MAFW clip; Panel B shows zero-shot FER-like scores for the selected frames; Panel C shows smoothed frame-level trajectories for the highest mean score channels; Panel D shows a Dynamic EGA network estimated from the same clip's non-neutral score trajectories."
+#| fig-cap: "Single-video empirical illustration from the MAFW dataset. Panel A shows zero-shot FER-like score profiles for selected frames from one MAFW clip; Panel B shows smoothed frame-level trajectories for the highest mean score channels; Panel C shows a Dynamic EGA network estimated from the same clip's non-neutral score trajectories. Identifiable video stills are omitted from the submission figure."
 #| fig-align: center
 #| out-width: "0.98\\linewidth"
 #| echo: false
@@ -276,6 +277,8 @@ DynEGA combines time-delay embedding and derivative estimation from dynamical sy
 GraphicalVAR and GIMME return estimated time-series structures, which we convert into dimensional partitions using the same community-detection logic. For GraphicalVAR, we estimate a multilevel graphical VAR model on the simulated score panel and use the estimated contemporaneous partial-correlation matrix as the structural matrix. For GIMME, we fit the VAR specification to the video-level time series, extract the contemporaneous block from the person-specific $\boldsymbol{\Psi}$ matrices, and average those blocks across videos to obtain a common structural matrix. In both cases, the diagonal is ignored and the resulting weighted matrix is treated as an undirected graph. Positive edge weights define the primary graph, with absolute weights used only when no positive edges are available. Louvain, Leiden, and Walktrap are then applied to this single structural matrix, so the community-detection variants represent alternative partitions of the same fitted time-series structure rather than separate model fits.
 
 All three methods are evaluated as dimensional-recovery estimators under known truth. GraphicalVAR is evaluated as the main network comparator across the primary design. GIMME is evaluated as a bounded feasibility and sensitivity comparator because complete factorial estimation is computationally unstable in this setting. Performance is summarized using dimensional hit rate, assignment accuracy for observed score channels, matched-score correlation, matched-score normalized root mean squared error (NRMSE), runtime, and failure or timeout accounting. Dimensional hit rate is the proportion of method rows in which the method returns the correct number of latent dimensions. Assignment accuracy asks whether observed score channels are assigned to the correct latent blocks after optimal matching of estimated communities to true blocks. For score-based metrics, observed variables are standardized within the full panel and community scores are computed from the first principal component of each estimated block, with row means used when a principal-component score cannot be estimated. Matched-score correlation and matched-score NRMSE then compare these recovered score summaries with the known latent trajectories after sign-invariant matching between estimated communities and source dimensions. Runtime is recorded for each model fit, and non-converged fits, errors, and predefined timeouts remain in the denominators.
+
+The simulation was designed as a precision and feasibility evaluation rather than as a null-hypothesis power analysis. The grid varies the number of videos, series length, latent dimensionality, indicators per dimension, loading strength, and measurement-error standard deviation to test recovery across practically relevant FER-like panel sizes and measurement conditions. Three replications per structural cell provide repeated known-truth estimates while keeping the full method comparison computationally tractable. Timeouts, failed fits, skipped staged conditions, and post-estimation extraction errors are retained in the reporting denominator because they are part of method behavior in applied simulation workflows.
 
 # Results
 
@@ -424,6 +427,44 @@ Several limitations follow directly from this design. FER-like scores remain mod
 
 
 \newpage
+
+# Declarations
+
+## Funding
+
+The authors received no specific funding for this work.
+
+## Competing interests
+
+The authors declare that they have no competing interests.
+
+## Ethics approval
+
+This study used simulations and secondary, publicly described benchmark materials. It did not involve new recruitment, intervention, or direct collection of human-participant data by the authors.
+
+## Consent to participate
+
+Not applicable.
+
+## Consent for publication
+
+Not applicable.
+
+## Availability of data and materials
+
+The manuscript analyses use simulation outputs and derived FER-like score summaries generated for this study. The version-controlled manuscript, analysis code, figure-generation scripts, simulation scripts, and reproducibility materials are available at \url{https://github.com/atomashevic/dlo-rr}. Raw MAFW video materials are third-party dataset materials and are not redistributed with this repository; access to the original videos is governed by the MAFW dataset providers. A permanent OSF archival record will be added before final journal upload.
+
+## Code availability
+
+All code needed to reproduce the manuscript figures, tables, and simulation summaries is available in the project repository at \url{https://github.com/atomashevic/dlo-rr}. The repository includes the R scripts used for simulation, empirical realism summaries, method-comparison summaries, and manuscript rendering.
+
+## Authors' contributions
+
+Aleksandar Tomasevic contributed conceptualization, formal analysis, methodology, resources, software, validation, visualization, writing the original draft, and reviewing and editing the manuscript. Hudson Golino contributed formal analysis, methodology, resources, software, validation, visualization, writing the original draft, and reviewing and editing the manuscript. Alexander P. Christensen contributed methodology, software, writing the original draft, and reviewing and editing the manuscript.
+
+# Open Practices Statement
+
+The study was not preregistered. Analysis code, simulation code, manuscript source files, generated figure and table inputs, and derived reproducibility materials are available at \url{https://github.com/atomashevic/dlo-rr}. Raw MAFW video data are third-party materials and are not redistributed; the submission figure omits identifiable video stills. A permanent OSF archive will be linked before final journal upload.
 
 # References
 

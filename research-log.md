@@ -1190,3 +1190,25 @@ This is an append-only project log. Add new dated entries at the bottom. Do not 
 - Backed up old manuscript drafts/readouts/reports and archived non-active generated outputs, exploratory diagnostics, local tool state, and older archive material under `archive/2026-05-30-manuscript-tidy/`.
 - Archive manifest: `archive/2026-05-30-manuscript-tidy/archive_manifest.tsv`.
 - Verification commands for this cleanup are the core extract load, manuscript-facing figure/table scripts in `scripts/README.md`, Quarto manuscript render, response-letter PDF build, terminology search, and `git status --short`.
+
+### 2026-05-30 Manuscript metadata and abstract revision
+
+- Updated the RR manuscript author metadata for the IPB email, Aleksandar's IPB/University of Belgrade affiliation, Hudson Golino's UVA affiliation number, and Alexander P. Christensen's Vanderbilt affiliation number.
+- Revised the abstract around the Behavior Research Methods framing: LOMM as a known-truth simulation benchmark for FER-like video score series, with empirical realism checks, dimensional recovery, and computational feasibility stated directly.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; the revised abstract is 216 words and contains no `not just X but Y`-style contrast pattern.
+
+### 2026-05-30 Abstract conclusion refinement
+
+- Removed the standalone "GIMME served as a bounded feasibility comparator" sentence from the abstract.
+- Replaced the closing sentence with a richer Behavior Research Methods conclusion tying LOMM's generator, empirical realism checks, and known-truth recovery analysis to latent-organization recovery, measurement-error tolerance, and scalability for video-derived behavioral data.
+
+### 2026-05-30 BRM submission-readiness pass
+
+- Audited the manuscript against Behavior Research Methods submission requirements and made the submission-facing edits in `paper/Paper_emotion_dynamics_HGolino_RR.qmd`.
+- Replaced front-matter placeholders for corresponding address and manuscript word count, removed the broken Open Science Framework placeholder link from the author note, and moved preregistration/data/code claims into `Declarations` and `Open Practices Statement` sections before References.
+- Added required declaration subsections for funding, competing interests, ethics approval, consent to participate, consent for publication, availability of data and materials, code availability, and authors' contributions.
+- Added BRM formatting directives to the rendered PDF path: one-inch margins through `geometry`, double spacing through `setspace`, and line numbering through `lineno`.
+- Added `paper/brm_submission_title_page.md` as the complete title-page companion for submission metadata. Telephone and permanent OSF archival URL remain pre-upload items because no exact values were present in the repository.
+- Revised the MAFW single-video figure workflow to omit identifiable frame stills from the submission figure. `scripts/figures/plot_oai_clip_video_dynega_figure.R` now produces score-profile, trajectory, and Dynamic EGA panels without requiring extracted frame images; `paper/figures/mafw_video_dynega_example.pdf` was regenerated from that script.
+- Verification: `OAI_CLIP_FIGURE_MANUSCRIPT_PDF=paper/figures/mafw_video_dynega_example.pdf Rscript scripts/figures/plot_oai_clip_video_dynega_figure.R` completed; `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; the abstract check returned 237 words; placeholder search found no `Address Here`, `LIND`, `wordcount: "X"`, or `TODO`; generated TeX contains `\usepackage[margin=1in]{geometry}`, `\doublespacing`, `\linenumbers`, `Declarations`, and `Open Practices Statement` before `References`.
+- Masking note: the current Quarto `article` template still renders author names even with `mask: true`; the title-page companion supports identified submission metadata, but a separate anonymized render would need template or source-level masking if the journal system requires a blind review manuscript.
