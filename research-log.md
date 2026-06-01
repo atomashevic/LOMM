@@ -1242,3 +1242,30 @@ This is an append-only project log. Add new dated entries at the bottom. Do not 
 - Revised the abstract to reflect the new Discussion and appendix framing without naming the target journal in the abstract.
 - Added the known-truth target-alignment interpretation: DynEGA's recovery advantage, GraphicalVAR's sensitivity under weak measurement conditions through partial-correlation attenuation, and GIMME's flexibility but weaker computational feasibility.
 - Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; revised abstract is 239 words; search confirmed the rejected journal-naming phrase `Behavior Research Methods-style` is absent from the manuscript source and generated TeX.
+
+### 2026-06-01 Empirical score retrieval wording
+
+- Revised the empirical calibration setup to focus on how frame-level emotion scores are retrieved: videos are decoded into frames, frames are evaluated against user-specified emotion labels with a transformer-based zero-shot image-classification workflow, and the resulting prompt-score vectors are cleaned and renormalized for FER-like time-series analysis.
+- Cited the transforEmotion software paper for the multimodal zero-shot emotion-analysis workflow and removed manuscript-facing reliance on fixed-seed or model-brand sampling details in this section.
+- Added concise retained-panel sampling information: 100 label-diverse MAFW clips spanning all 11 single-label categories, with usable clip lengths from 17 to 50 frames after quality control.
+- Cleaned the Plutchik example wording to avoid the "not X, it is Y" prose pattern while preserving the taxonomy-flexibility caveat.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; search found no manuscript hits for `fixed seed`, `MAFW_SAMPLE_SEED`, `OpenAI-large`, `oai-large`, `not a required taxonomy`, or `It illustrates`.
+
+### 2026-06-01 Empirical scoring model specification
+
+- Specified that frame-level emotion scores were retrieved with the transforEmotion R package using its `oai-large` vision model, mapped locally to OpenAI CLIP ViT-Large/14 (`openai/clip-vit-large-patch14`).
+- Added the original CLIP citation to the bibliography and cited it alongside the transforEmotion package citation in the empirical calibration setup.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; generated TeX contains the transforEmotion package citation, the `oai-large` model name, the `openai/clip-vit-large-patch14` model identifier, and the Radford et al. CLIP reference.
+
+### 2026-06-01 Comparator method paragraph structure
+
+- Rewrote the GraphicalVAR and GIMME method descriptions as separate same-structure paragraphs matching the DynEGA paragraph: fitted model, structural matrix, graph treatment, primary Louvain partition, and Leiden/Walktrap sensitivity partitions.
+- Removed the opening precision-versus-power sentence from the simulation-grid paragraph.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; generated TeX contains the separate GraphicalVAR and GIMME method paragraphs, and the removed precision-versus-power sentence is absent.
+
+### 2026-06-01 Comparator method substantive explainers
+
+- Retrieved the GraphicalVAR/GGM source paper and GIMME method papers to expand the comparator method descriptions beyond post-processing.
+- Revised the GraphicalVAR paragraph to explain the graphical VAR target: directed lag-1 temporal relations, contemporaneous residual partial associations, and the distinction from between-person associations in multilevel applications.
+- Revised the GIMME paragraph to explain the uSEM/VAR search target: common, subgroup-shared, and individual-specific lagged and contemporaneous paths before extraction of the contemporaneous matrices used for dimensional partitioning.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; generated TeX contains the expanded GraphicalVAR and GIMME method explainers, and the removed precision-versus-feasibility opening sentence remains absent.

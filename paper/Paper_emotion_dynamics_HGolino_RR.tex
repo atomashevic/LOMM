@@ -528,14 +528,14 @@ expression, and orienting/novelty expression
 indicators related to joy, trust, amusement, or smiling would form one
 block; indicators related to anger, fear, or disgust would form a second
 block; and surprise- or anticipation-related indicators would form a
-third. The example is not a required taxonomy. It illustrates the
-measurement logic of LOMM: the researcher states a theory-guided latent
-organization, the simulator generates known latent trajectories under
-that organization, and the classifier-output score channels are noisy
-indicators whose loading strength and measurement error are substantive
-simulation conditions
+third. This specification illustrates the measurement logic of LOMM: the
+researcher states a theory-guided latent organization, the simulator
+generates known latent trajectories under that organization, and the
+classifier-output score channels are noisy indicators whose loading
+strength and measurement error are substantive simulation conditions
 (\citeproc{ref-kankaanpaa2026multipleindicator}{Kankaanpää et al.,
-2026}).
+2026}). Alternative affective taxonomies can be encoded by changing the
+latent block map.
 
 The same three-factor example is shown in Figure~\ref{fig-dlosim} to
 make the role of the latent shock term visible.
@@ -589,18 +589,23 @@ motivates the simulation study. The figure uses one clip from MAFW, a
 dataset designed for dynamic facial expression recognition in the wild
 (\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}), whereas the realism
 check uses a 100-clip calibration sample scored with the same zero-shot
-FER-like procedure. To avoid redistributing identifiable frame images in
-the submission manuscript, the figure represents selected frames through
-their score profiles rather than through video stills. Each sampled
-frame is represented by a fixed set of prompt-defined score channels:
-anger, disgust, fear, happiness, neutral, sadness, surprise, contempt,
-anxiety, helplessness, and disappointment. Within each clip, short
-missing runs are interpolated, frames with complete usable scores are
-retained, and clipped score vectors are renormalized so that frame-level
-channels can be compared as probability-like outputs. These
-prompt-specific classifier outputs provide empirical targets for the
-LOMM observation layer through their temporal persistence, variability,
-and co-fluctuation.
+FER-like procedure. We retrieved frame-level emotion scores with the
+transforEmotion R package
+(\citeproc{ref-tomasevic2026TransforEmotion}{Tomašević et al., 2026}).
+Each sampled video was decoded into frames, and each frame was evaluated
+against user-specified emotion labels with the package's
+\texttt{oai-large} vision model, which maps to OpenAI CLIP ViT-Large/14
+(\texttt{openai/clip-vit-large-patch14})
+(\citeproc{ref-radford2021LearningTransferable}{Radford et al., 2021}).
+The scoring step returns one frame-level score vector over the
+prompt-defined channels used here: anger, disgust, fear, happiness,
+neutral, sadness, surprise, contempt, anxiety, helplessness, and
+disappointment. Within each clip, short missing runs are interpolated,
+frames with complete usable scores are retained, and clipped score
+vectors are renormalized so that frame-level channels can be compared as
+probability-like outputs. These prompt-specific classifier outputs
+provide empirical targets for the LOMM observation layer through their
+temporal persistence, variability, and co-fluctuation.
 
 The selected score profiles from the same MAFW clip illustrate the
 measurement problem (Panel A): different frames receive different scores
@@ -630,6 +635,14 @@ trajectories. Identifiable video stills are omitted from the submission
 figure.}
 
 \end{figure}%
+
+The empirical calibration sample was assembled at the clip level from a
+label-diverse MAFW manifest and then retained after frame-score quality
+control. The retained panel contains 100 clips spanning the 11 MAFW
+single-label categories. After interpolation of short missing runs and
+complete-row filtering, usable clip lengths ranged from 17 to 50 frames,
+with a median of 36.5 usable frames. These retained frame-score panels
+define the empirical distributions used for the realism targets.
 
 For the empirical realism check, empirical and simulated panels are
 summarized at two levels. Observable-channel metrics are computed
@@ -752,21 +765,46 @@ expand rule for unidimensional solutions; Leiden
 (\citeproc{ref-pons2006walktrap}{Pons \& Latapy, 2005}) are retained as
 community-detection sensitivity specifications.
 
-GraphicalVAR and GIMME return estimated time-series structures, which we
-convert into dimensional partitions using the same community-detection
-logic. For GraphicalVAR, we estimate a multilevel graphical VAR model on
-the simulated score panel and use the estimated contemporaneous
-partial-correlation matrix as the structural matrix. For GIMME, we fit
-the VAR specification to the video-level time series, extract the
+GraphicalVAR estimates a graphical vector autoregressive model for
+intensive longitudinal data (\citeproc{ref-epskampggm}{Epskamp et al.,
+2018}; \citeproc{ref-graphicalVAR2024}{Epskamp, 2024}). In this
+framework, the temporal network contains directed lag-1 regression
+parameters, whereas the contemporaneous network contains partial
+correlations among residuals at the same time point after lagged effects
+have been taken into account. In multilevel applications, the model can
+also distinguish within-person temporal and contemporaneous structure
+from between-person associations among stationary means. We fit
+GraphicalVAR to the stacked simulated score panel and use the estimated
+contemporaneous partial-correlation matrix as the structural matrix for
+dimensional partitioning, because the LOMM recovery target is an
+undirected grouping of score channels rather than a directed
+lagged-effect graph. The diagonal is ignored and the resulting weighted
+matrix is treated as an undirected graph. Positive edge weights define
+the primary graph, with absolute weights used only when no positive
+edges are available. Louvain is the primary community-detection
+specification, and Leiden and Walktrap are retained as
+community-detection sensitivity specifications applied to the same
+fitted contemporaneous structure.
+
+GIMME is an automated person-specific time-series modeling approach
+built around unified structural equation modeling and vector
+autoregressive representations (\citeproc{ref-gates2012group}{Gates \&
+Molenaar, 2012}; \citeproc{ref-lane2019uncovering}{Lane et al., 2019}).
+The algorithm searches for lagged and contemporaneous paths that improve
+fit across the sample, retains paths that are common to many
+individuals, and then allows subgroup-shared or individual-specific
+paths so that heterogeneous time-series structures do not have to be
+forced into one pooled model. In this simulation, each video is treated
+as the idiographic time series supplied to GIMME. We fit the VAR
+specification to the video-level score panels, extract the
 contemporaneous block from the person-specific \(\boldsymbol{\Psi}\)
 matrices, and average those blocks across videos to obtain a common
-structural matrix. In both cases, the diagonal is ignored and the
-resulting weighted matrix is treated as an undirected graph. Positive
-edge weights define the primary graph, with absolute weights used only
-when no positive edges are available. Louvain, Leiden, and Walktrap are
-then applied to this single structural matrix, so the
-community-detection variants represent alternative partitions of the
-same fitted time-series structure rather than separate model fits.
+structural matrix for dimensional partitioning. The diagonal is ignored
+and the averaged matrix is treated as an undirected graph. As with
+GraphicalVAR, positive edge weights define the primary graph, with
+absolute weights used only when no positive edges are available. Louvain
+is the primary partition, and Leiden and Walktrap are retained as
+sensitivity partitions of the same fitted GIMME structure.
 
 All three methods are evaluated as dimensional-recovery estimators under
 known truth. GraphicalVAR is evaluated as the main network comparator
@@ -790,17 +828,15 @@ sign-invariant matching between estimated communities and source
 dimensions. Runtime is recorded for each model fit, and non-converged
 fits, errors, and predefined timeouts remain in the denominators.
 
-The simulation was designed as a precision and feasibility evaluation
-rather than as a null-hypothesis power analysis. The grid varies the
-number of videos, series length, latent dimensionality, indicators per
-dimension, loading strength, and measurement-error standard deviation to
-test recovery across practically relevant FER-like panel sizes and
-measurement conditions. Three replications per structural cell provide
-repeated known-truth estimates while keeping the full method comparison
-computationally tractable. Timeouts, failed fits, skipped staged
-conditions, and post-estimation extraction errors are retained in the
-reporting denominator because they are part of method behavior in
-applied simulation workflows.
+The grid varies the number of videos, series length, latent
+dimensionality, indicators per dimension, loading strength, and
+measurement-error standard deviation to test recovery across practically
+relevant FER-like panel sizes and measurement conditions. Three
+replications per structural cell provide repeated known-truth estimates
+while keeping the full method comparison computationally tractable.
+Timeouts, failed fits, skipped staged conditions, and post-estimation
+extraction errors are retained in the reporting denominator because they
+are part of method behavior in applied simulation workflows.
 
 \section{Results}\label{results}
 
@@ -1584,6 +1620,13 @@ using random walks. In Pi. Yolum, T. Güngör, F. Gürgen, \& C. Özturan
 (Eds.), \emph{Computer and information sciences - ISCIS 2005} (pp.
 284--293). Springer Berlin Heidelberg.
 \url{https://doi.org/10.1007/11569596_31}
+
+\bibitem[\citeproctext]{ref-radford2021LearningTransferable}
+Radford, A., Kim, J. W., Hallacy, C., Ramesh, A., Goh, G., Agarwal, S.,
+Sastry, G., Askell, A., Mishkin, P., Clark, J., Krueger, G., \&
+Sutskever, I. (2021). Learning transferable visual models from natural
+language supervision. \emph{Proceedings of the 38th International
+Conference on Machine Learning}, 8748--8763.
 
 \bibitem[\citeproctext]{ref-russellCircumplexModel1980}
 Russell, J. A. (1980). A circumplex model of affect. \emph{Journal of
