@@ -1212,3 +1212,33 @@ This is an append-only project log. Add new dated entries at the bottom. Do not 
 - Revised the MAFW single-video figure workflow to omit identifiable frame stills from the submission figure. `scripts/figures/plot_oai_clip_video_dynega_figure.R` now produces score-profile, trajectory, and Dynamic EGA panels without requiring extracted frame images; `paper/figures/mafw_video_dynega_example.pdf` was regenerated from that script.
 - Verification: `OAI_CLIP_FIGURE_MANUSCRIPT_PDF=paper/figures/mafw_video_dynega_example.pdf Rscript scripts/figures/plot_oai_clip_video_dynega_figure.R` completed; `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; the abstract check returned 237 words; placeholder search found no `Address Here`, `LIND`, `wordcount: "X"`, or `TODO`; generated TeX contains `\usepackage[margin=1in]{geometry}`, `\doublespacing`, `\linenumbers`, `Declarations`, and `Open Practices Statement` before `References`.
 - Masking note: the current Quarto `article` template still renders author names even with `mask: true`; the title-page companion supports identified submission metadata, but a separate anonymized render would need template or source-level masking if the journal system requires a blind review manuscript.
+
+### 2026-05-30 Latent dimension wording revision
+
+- Revised the oscillator-model setup so FER-like channels are described as classifier score outputs or model-output score channels rather than as observed emotion labels.
+- Replaced the old Schlosberg citation in the manuscript prose with a source-level citation placeholder and added modern support from AffectNet, ABAW, and Mehu and Scherer's integrated categories/dimensions account.
+- Clarified that latent expressive tendencies can be named according to the substantive theory, with examples such as valence-arousal, dominance/control, approach-affiliation, threat-defense, and orienting-novelty.
+- Small literature-review checks used `paper-search`/`paper` for AffectNet, ABAW, Mehu and Scherer, and approach-avoidance facial-expression work; Semantic Scholar and Google Scholar searches had intermittent API/key limitations, so AffectNet and ABAW bibliographic details were verified against arXiv/CVPRW/web records.
+
+### 2026-05-30 CLIP-FER latent block example
+
+- Replaced the abstract latent-dimension list in the oscillator-model setup with a concrete CLIP-like FER example: approach-affiliation, threat-defense, and orienting-novelty latent trajectories generating prompt-score blocks for happiness/amusement/trust, anger/fear/disgust/anxiety, and surprise/anticipation/confusion/attention.
+- Clarified the known-truth recovery target: DynEGA sees only the simulated classifier-output score matrix, while LOMM retains the intended latent expressive blocks.
+
+### 2026-05-30 Discussion perturbation framing
+
+- Revised the Discussion around the conceptual conclusion that LOMM turns dynamic dimensional recovery into a controlled perturbation problem: recovering $m$ rank-one dynamic subspaces from noisy, activity-gated, block-measured oscillator traces.
+- Clarified the target-alignment interpretation of method performance: DynEGA is close to the LOMM population object, GraphicalVAR can attenuate common-cause measurement blocks through partial-correlation structure, and GIMME is more flexible but computationally bounded in this design.
+- Reframed matched-score correlations as conditional diagnostics after structural recovery, with DynEGA's main advantage attributed to higher structural recovery probability and lower runtime.
+
+### 2026-05-30 Appendix population perturbation proof
+
+- Added a main-manuscript appendix formalizing the population perturbation view of LOMM recovery.
+- The appendix states the simplified equal-loading/equal-error population model, derives dynamic coordination and partial-correlation block-clique graphs, gives an elementary perturbation margin, links the signal terms to oscillator parameters, and interprets DynEGA, GraphicalVAR, and GIMME under that target-alignment framing.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; the claim-discipline search for `Davis-Kahan`, `proves DynEGA`, `true emotion`, `fully validates`, and `exact software implementation` returned no manuscript hits; generated TeX places Appendix A after References; `sim_outputs*`, `simulation_outputs/`, `paper/figures/`, and `paper/tables/` had no status changes.
+
+### 2026-05-30 Abstract target-alignment revision
+
+- Revised the abstract to reflect the new Discussion and appendix framing without naming the target journal in the abstract.
+- Added the known-truth target-alignment interpretation: DynEGA's recovery advantage, GraphicalVAR's sensitivity under weak measurement conditions through partial-correlation attenuation, and GIMME's flexibility but weaker computational feasibility.
+- Verification: `quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf` completed; revised abstract is 239 words; search confirmed the rejected journal-naming phrase `Behavior Research Methods-style` is absent from the manuscript source and generated TeX.

@@ -18,7 +18,7 @@
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
 \fi
 \usepackage{lmodern}
-\ifPDFTeX\else
+\ifPDFTeX\else  
     % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
@@ -208,33 +208,35 @@ Christensen}
 \begin{document}
 \maketitle
 \begin{abstract}
-Automated facial-expression scoring produces dense time series of
-visible affect from video, giving behavioral researchers new material
-for modeling emotion dynamics. Because these score channels are outputs
-of measurement systems, empirical applications need methods whose
-recovery behavior has been evaluated under known latent structure. We
-introduce the Latent Oscillator Measurement Model (LOMM), a generative
-framework for simulation-based evaluation of dynamic dimensional
-recovery in facial-expression-recognition-like (FER-like) video score
-series. LOMM combines second-order latent oscillator dynamics with an
-explicit measurement layer, allowing researchers to generate observed
-score panels with known dimensionality, loading strength, measurement
-error, feedback regime, and activity pattern. We calibrated the
-generator against FER-like score panels from the MAFW dataset using
-targets for dispersion, local movement, temporal persistence,
+Automated facial-expression scoring can turn video into dense time
+series of visible affect, but these channels are model outputs rather
+than direct observations of latent emotion dynamics. Behavioral
+applications therefore need simulation frameworks that make the latent
+measurement structure known before dynamic methods are interpreted
+substantively. We introduce the Latent Oscillator Measurement Model
+(LOMM), a generative framework for evaluating dynamic dimensional
+recovery in facial-expression-recognition-like video score series. LOMM
+generates second-order latent oscillator trajectories, gates their
+activity over time, and maps them through a block measurement layer into
+noisy observed score panels with known dimensionality, loading strength,
+measurement error, feedback regime, and activity pattern. We calibrated
+the generator against MAFW-derived score panels using targets for
+amplitude dispersion, local movement, temporal persistence,
 directional-regime complexity, spectral complexity, and dimensional
-spread. The calibrated generator reproduced several temporal and
-dimensional signatures, with a remaining amplitude mismatch in
-channel-level dispersion. We then used LOMM in a known-truth simulation
-comparing Dynamic Exploratory Graph Analysis (DynEGA), GraphicalVAR, and
-bounded GIMME. DynEGA showed the strongest dimensional hit rate, high
-block-assignment accuracy, and full-grid completion. GraphicalVAR
-recovered dimensionality in many conditions but was slower and more
-sensitive to the observation layer. LOMM links generative modeling,
-empirical realism checks, and known-truth recovery analysis so
+spread. The calibrated generator reproduced several local temporal and
+dimensional signatures, with a remaining amplitude-dispersion mismatch.
+We then compared Dynamic Exploratory Graph Analysis (DynEGA),
+GraphicalVAR, and bounded GIMME in known-truth simulations. DynEGA
+showed the strongest dimensional hit rate, high block-assignment
+accuracy, and full-grid completion. GraphicalVAR recovered
+dimensionality in many conditions but was slower and more sensitive to
+weak measurement conditions, consistent with partial-correlation
+attenuation of common-cause measurement blocks. GIMME was more flexible
+but computationally less feasible in this design. LOMM links generative
+modeling, empirical realism checks, and known-truth recovery analysis so
 researchers can evaluate whether dynamic methods recover latent
 organization, tolerate measurement error, and scale to video-derived
-behavioral data before substantive interpretation.
+behavioral time series before substantive interpretation.
 \end{abstract}
 
 
@@ -276,7 +278,7 @@ tasks, autism assessments, collaborative work, public communication, and
 social-media videos, the relevant questions are dynamic: whether
 expressions return quickly after perturbation, whether affective
 displays settle into stable or volatile regimes, and whether many
-observed emotion labels reflect fewer latent expressive dimensions
+model-output score channels reflect fewer latent expressive dimensions
 (\citeproc{ref-hollensteinStateSpaceGrids2007}{Hollenstein, 2007};
 \citeproc{ref-houbenRelationShorttermEmotion2015}{Houben et al., 2015};
 \citeproc{ref-kuppensEmotionDynamics2017}{Kuppens \& Verduyn, 2017}).
@@ -328,8 +330,8 @@ series (\citeproc{ref-boker2015Adaptive}{Boker, 2015};
 \citeproc{ref-boker2002Method}{Boker \& Nesselroade, 2002};
 \citeproc{ref-ollero2023Characterizing}{Ollero et al., 2023}). LOMM
 first generates latent expressive trajectories from second-order
-oscillator dynamics and then maps those latent processes into observed
-emotion-label scores through an explicit measurement layer. In this
+oscillator dynamics and then maps those latent processes into FER-like
+classifier score outputs through an explicit measurement layer. In this
 sense, LOMM is not an empirical estimator of emotion dynamics from a
 single video; it is a known-truth data-generating model that lets
 researchers control latent dimensionality, feedback regime, loading
@@ -387,33 +389,44 @@ return toward equilibrium.
 
 An oscillator model provides a compact way to represent these features
 once latent variables are understood as theory-guided expressive
-dimensions distinct from the observed emotion labels themselves.
-Affective structure can be specified in several defensible ways:
-core-affect and circumplex models organize affect around valence and
-arousal; PAD models add dominance or control; and Plutchik-style
-accounts arrange emotion families around opponent tendencies such as
-joy--sadness, trust--disgust, fear--anger, and anticipation--surprise
+dimensions that organize FER model outputs rather than as the classifier
+score labels themselves. Affective structure can be specified in several
+defensible ways: core-affect and circumplex models organize affect
+around valence and arousal; PAD models add dominance or control; and
+Plutchik-style accounts arrange emotion families around opponent
+tendencies such as joy--sadness, trust--disgust, fear--anger, and
+anticipation--surprise
 (\citeproc{ref-plutchikNatureEmotions2001}{Plutchik, 2001};
 \citeproc{ref-russellCircumplexModel1980}{Russell, 1980},
 \citeproc{ref-russellCoreAffect2003}{2003};
 \citeproc{ref-russellMehrabianThreeFactor1977}{Russell \& Mehrabian,
-1977}). The same logic has a long history in work on facial expression,
-where visible expressions are often interpreted through dimensions such
-as pleasantness, activation, attention, or rejection rather than only
-through mutually exclusive categories
-(\citeproc{ref-schlosbergThreeDimensions1954}{Schlosberg, 1954}). For
-FER-like video data, the implication is measurement-theoretic: scores
-for labels such as happiness, amusement, anger, fear, disgust, sadness,
-surprise, or calmness can be treated as fallible indicators of latent
-expressive tendencies, with the grouping chosen by the substantive
-theory and target setting. LOMM adapts the oscillator tradition to this
-problem by generating latent expressive trajectories first and then
-generating observed emotion-label score series from an explicit
-measurement layer. The model therefore has two integrated parts: a
-latent oscillator process for expressive dynamics and a measurement
-model adapted from the direct autoregressive factor score model
-(\citeproc{ref-golino2020modeling}{H. Golino et al., 2022};
-\citeproc{ref-nesselroade2013dynamic}{Nesselroade et al., 2013}).
+1977}). Facial-expression research uses the same distinction between
+category-like outputs and lower-dimensional structure: AffectNet
+annotates facial images with both discrete expression categories and
+continuous valence-arousal ratings, ABAW evaluates valence-arousal
+estimation alongside expression classification and action-unit
+detection, and integrated accounts of facial communication treat emotion
+categories and dimensions as complementary descriptions
+(\citeproc{ref-kolliasABAW2023}{Kollias et al., 2023};
+\citeproc{ref-mehu2015Emotion}{Mehu \& Scherer, 2015};
+\citeproc{ref-mollahosseiniAffectNetDatabase2019}{Mollahosseini et al.,
+2019}). For a CLIP-like FER panel, this measurement logic can be made
+concrete. Frame-level prompt scores for happiness, amusement, trust, or
+smiling can be treated as noisy indicators of an approach-affiliation
+trajectory; anger, fear, disgust, contempt, or anxiety scores can
+indicate a threat-defense trajectory; and surprise, anticipation,
+confusion, or attention scores can indicate an orienting-novelty
+trajectory. LOMM generates the three latent trajectories first, maps
+them through block loadings into classifier-output score channels, and
+then lets the recovery method operate only on the simulated score
+matrix. The known-truth question is therefore whether a method such as
+DynEGA can recover the intended expressive blocks from CLIP-FER-like
+outputs whose labels are model scores rather than direct observations of
+emotion. The model has two integrated parts: a latent oscillator process
+for expressive dynamics and a measurement model adapted from the direct
+autoregressive factor score model (\citeproc{ref-golino2020modeling}{H.
+Golino et al., 2022}; \citeproc{ref-nesselroade2013dynamic}{Nesselroade
+et al., 2013}).
 
 Following Ollero et al. (\citeproc{ref-ollero2023Characterizing}{2023}),
 LOMM treats each latent expressive dimension as a continuous-time
@@ -518,7 +531,7 @@ block; and surprise- or anticipation-related indicators would form a
 third. The example is not a required taxonomy. It illustrates the
 measurement logic of LOMM: the researcher states a theory-guided latent
 organization, the simulator generates known latent trajectories under
-that organization, and the observed emotion-label scores are noisy
+that organization, and the classifier-output score channels are noisy
 indicators whose loading strength and measurement error are substantive
 simulation conditions
 (\citeproc{ref-kankaanpaa2026multipleindicator}{Kankaanpää et al.,
@@ -1169,76 +1182,84 @@ enough to cover the broader design grid used for sensitivity checks.
 \section{Discussion}\label{discussion}
 
 This study introduced LOMM as a known-truth framework for studying
-dimensional recovery in FER-like video score series. The central
-contribution is a clean separation among three components that empirical
-video analyses often combine in a single observed panel: latent
-expressive dynamics, the measurement layer that turns those dynamics
-into score channels, and the recovery method used to infer
-lower-dimensional structure. This separation gives researchers a way to
-evaluate recovery methods before applying them to empirical videos where
-the latent structure is unknown.
+dimensional recovery in FER-like video score series. The strongest
+conceptual result is that LOMM turns dynamic dimensional recovery into a
+controlled perturbation problem. In the population design, \(m\) latent
+oscillator processes generate \(m\) measured score blocks. Within a
+block, observed channels share the same latent level and rate of change
+up to loading differences, activity weights, and measurement error. The
+recovery task is therefore to recover \(m\) rank-one dynamic subspaces
+from noisy, activity-gated, block-measured oscillator traces.
 
-The empirical realism check supports a qualified use of the generator
-for simulation design. The simulated panels reproduced several temporal
-signatures of the empirical FER-like score panels, including local
-persistence, typical movement scale, and directional-regime complexity.
-Spectral complexity and effective rank were partial matches, indicating
-reasonable but incomplete correspondence in frequency structure and
-dimensional spread. Channel IQR failed at both the observed-channel and
-community-score readouts, showing that the current calibration still
-produces larger amplitude dispersion than the empirical panels. These
-results position LOMM as a simulation generator with explicit realism
-limits: it captures selected temporal and dimensional properties of
-FER-like video data while preserving the amplitude mismatch as a visible
-constraint on interpretation.
+This framing clarifies why the method comparison is mainly about target
+alignment. DynEGA is designed to estimate groups of variables whose
+changes are coordinated over time, and this target is close to the
+population object generated by LOMM. In the ideal case, each score block
+forms a coherent dynamic subspace; finite samples, measurement error,
+weak loadings, activity switches, and oscillator amplitude differences
+perturb that block structure. DynEGA's near-ceiling dimensional hit rate
+and high block-assignment accuracy therefore show that the estimated
+dynamic communities remained close enough to the known LOMM blocks
+across most of the simulation grid.
 
-In the known-truth simulation, the main method difference was
-structural. DynEGA recovered the correct number of latent dimensions in
-nearly all rows of the matched comparison subset and showed high
-block-assignment accuracy. GraphicalVAR recovered dimensionality in many
-conditions, especially when the measurement signal was stronger, and it
-became more sensitive to the observation layer as loadings weakened and
-measurement error increased. GIMME showed lower dimensional hit rates in
-the subset where it could be evaluated and was retained as a bounded
-feasibility comparator. The simulation therefore favors methods whose
-estimation target is aligned with dynamic dimensional recovery, with
-DynEGA showing the most consistent recovery of the known latent
-structure in this design.
+GraphicalVAR is a useful comparator because it estimates dynamic network
+structure, but its primary structural matrix is less directly aligned
+with a reflective block measurement model. The contemporaneous
+partial-correlation representation conditions away shared variance among
+indicators. Under a common-cause block structure, this can attenuate the
+within-block edges that define the latent measurement block, even when
+the marginal block signal is strong. This does not imply that
+GraphicalVAR should fail; in the ideal population model, cross-block
+associations remain weak. It does explain why finite-sample noise, lower
+loadings, higher measurement error, and temporal-model estimation can
+more easily disrupt the community partition. The observed pattern--good
+recovery in many conditions but stronger sensitivity to the observation
+layer--is consistent with that alignment difference.
 
-The score-recovery results clarify how the measurement layer affects
-interpretation. Conditional matched-score correlations were broadly
-comparable across methods after the correct number of dimensions had
-already been recovered. This makes score correlation a useful diagnostic
-of successful recoveries, while limiting its value as the primary basis
-for ranking methods. The denominator matters: GraphicalVAR and
-especially GIMME contributed fewer correctly recovered rows in weak
-measurement conditions, so similar conditional correlations rested on
-less reliable recovery pathways. The more informative result is that
-lower loadings and higher measurement error reduced dimensional hit
-rates for the comparator methods more than for DynEGA.
+GIMME addresses a broader problem than the one LOMM makes primary. It
+can represent group-level, subgroup-level, and individual-level
+time-series structure, which makes it attractive for idiographic dynamic
+modeling. In this design, however, that flexibility came with weaker
+dimensional hit rates in the bounded comparison and substantially higher
+computational cost. GIMME therefore contributes mainly as a feasibility
+and sensitivity comparator rather than as a full-grid peer for this
+simulation.
 
-Computational feasibility is also part of the methodological result. A
-simulation study must establish which method recovers the known
-structure and which method can be run across the design needed to
-evaluate dimensionality, measurement quality, and scenario differences.
-DynEGA completed the full planned grid without errors or timeouts.
-GraphicalVAR was much slower and reached a repeated timeout boundary,
-while GIMME produced post-estimation errors in the staged run and was
-therefore treated as a bounded comparator. Reporting these limits keeps
-the method comparison tied to both statistical recovery and practical
-feasibility.
+The score-recovery results reinforce the same interpretation. Once a
+method recovered the correct block structure, matched-score correlations
+and NRMSE values were broadly similar across methods. This is expected
+because a correctly recovered score block has an oracle-like reliability
+determined mainly by loading strength, measurement error, number of
+indicators, and latent amplitude. The larger methodological difference
+was the probability of reaching the correct structure in the first
+place. In this sense, method performance in LOMM decomposes into
+structural recovery probability and conditional score reliability, with
+DynEGA's advantage coming primarily from the first component and from
+much lower runtime.
+
+The empirical realism check sets the boundary on this interpretation.
+The simulated panels reproduced several temporal signatures of the
+empirical FER-like score panels, including local persistence, typical
+movement scale, and directional-regime complexity. Spectral complexity
+and effective rank were partial matches, indicating reasonable but
+incomplete correspondence in frequency structure and dimensional spread.
+Channel IQR failed at both the observed-channel and community-score
+readouts, showing that the current calibration still produces larger
+amplitude dispersion than the empirical panels. This mismatch is
+informative rather than incidental: LOMM can reproduce selected local
+dynamic signatures while still needing a better account of bounded,
+probability-like score amplitudes.
 
 Several limitations follow directly from this design. FER-like scores
 remain model-derived observations of visible expression, so the realism
 check evaluates selected statistical signatures rather than the validity
 of emotion labels or exact empirical trajectories. The present LOMM
-implementation uses a block measurement structure and provides a
-controlled simulation rather than a full latent geometry for real
-affective systems. The channel-IQR mismatch shows that amplitude
-calibration remains incomplete, and GIMME could not be evaluated as a
-full-grid peer. Future work should test richer measurement structures,
-additional empirical scoring systems, and empirical applications where
-known-truth simulation results guide substantive validation of
+implementation uses independent oscillator dimensions, activity-gated
+block loadings, and diagonal measurement error; it does not claim to
+capture the full geometry of real affective systems. Future work should
+test richer measurement structures, bounded or compositional observation
+layers, additional empirical scoring systems, and empirical applications
+where known-truth simulation results guide substantive validation of
 video-derived affective dynamics.
 
 \newpage
@@ -1462,6 +1483,14 @@ Comparing multiple-indicator approaches to account for measurement error
 in dynamic networks. \emph{Cognitive Therapy and Research}.
 \url{https://doi.org/10.1007/s10608-026-10719-0}
 
+\bibitem[\citeproctext]{ref-kolliasABAW2023}
+Kollias, D., Tzirakis, P., Baird, A., Cowen, A., \& Zafeiriou, S.
+(2023). {ABAW}: Valence-arousal estimation, expression recognition,
+action unit detection, and emotional reaction intensity estimation
+challenges. \emph{2023 IEEE/CVF Conference on Computer Vision and
+Pattern Recognition Workshops (CVPRW)}, 5889--5898.
+\url{https://doi.org/10.1109/CVPRW59228.2023.00626}
+
 \bibitem[\citeproctext]{ref-kuppensEmotionDynamics2017}
 Kuppens, P., \& Verduyn, P. (2017). Emotion dynamics. \emph{Current
 Opinion in Psychology}, \emph{17}, 22--26.
@@ -1526,6 +1555,12 @@ Convolutional Neural Network} for {Facial Expression Recognition}.
 {Gesture Recognition} ({FG} 2017)}, 558--565.
 \url{https://doi.org/10.1109/FG.2017.140}
 
+\bibitem[\citeproctext]{ref-mollahosseiniAffectNetDatabase2019}
+Mollahosseini, A., Hasani, B., \& Mahoor, M. H. (2019). {AffectNet}: A
+database for facial expression, valence, and arousal computing in the
+wild. \emph{IEEE Transactions on Affective Computing}, \emph{10}(1),
+18--31. \url{https://doi.org/10.1109/TAFFC.2017.2740923}
+
 \bibitem[\citeproctext]{ref-nesselroade2013dynamic}
 Nesselroade, J. R., McArdle, J. J., Aggen, S. H., \& Meyers, J. M.
 (2013). Dynamic factor analysis models for representing process in
@@ -1566,10 +1601,6 @@ theory of emotions. \emph{Journal of Research in Personality},
 \emph{11}(3), 273--294.
 \url{https://doi.org/10.1016/0092-6566(77)90037-X}
 
-\bibitem[\citeproctext]{ref-schlosbergThreeDimensions1954}
-Schlosberg, H. (1954). Three dimensions of emotion. \emph{Psychological
-Review}, \emph{61}(2), 81--88. \url{https://doi.org/10.1037/h0054570}
-
 \bibitem[\citeproctext]{ref-stewart2009Presidential}
 Stewart, P. A., Waller, B. M., \& Schubert, J. N. (2009). Presidential
 speechmaking style: {Emotional} response to micro-expressions of facial
@@ -1602,6 +1633,376 @@ Paradigm} for {Facial Expression Recognition}} (arXiv:2209.15402).
 \end{CSLReferences}
 
 \endgroup
+
+\newpage
+
+\section{Appendix A: Population Perturbation View of LOMM
+Recovery}\label{appendix-a-population-perturbation-view-of-lomm-recovery}
+
+This appendix formalizes the population argument behind the Discussion.
+The result is not a theorem about the fitted DynEGA algorithm, its
+community-detection implementation, or the exact behavior of
+GraphicalVAR or GIMME software. It is a theorem about the simplified
+LOMM population object that any dynamic dimensional-recovery method
+receives: observed score channels in the same latent block share
+coordinated changes because they are noisy indicators of the same
+activity-scaled oscillator.
+
+\subsection{A.1 Simplified Population
+LOMM}\label{a.1-simplified-population-lomm}
+
+Consider a population LOMM with \(m\) latent dimensions, \(k\) observed
+indicators per dimension, and \(p=mk\) observed score channels. Let
+\(B_1,\ldots,B_m\) denote the true indicator blocks. For indicator
+\(j \in B_f\), assume the equal-loading, equal-error measurement model
+
+\[
+Y_j(t)=\lambda Z_f(t)+\varepsilon_j(t),
+\]
+
+where
+
+\[
+Z_f(t)=a_f(t)X_f(t)
+\]
+
+is the activity-scaled latent oscillator for dimension \(f\),
+\(\lambda>0\), and \(\varepsilon_j(t)\) has mean zero and variance
+\(\psi=s_\varepsilon^2\). Measurement errors are independent across
+indicators and time, and the centered latent processes \(Z_f\) are
+mutually independent with finite variance. The implemented simulation
+allows loading jitter and item-level error jitter, but this symmetric
+case isolates the block geometry that defines the known-truth recovery
+target.
+
+\subsection{A.2 Dynamic Coordination
+Graph}\label{a.2-dynamic-coordination-graph}
+
+Define the lag-\(h\) score change as
+
+\[
+\Delta_hY_j(t)=Y_j(t+h)-Y_j(t),
+\]
+
+and define a population dynamic coordination graph by
+
+\[
+W^\Delta_{j\ell}
+=
+\left|\operatorname{Cor}(\Delta_hY_j,\Delta_hY_\ell)\right|.
+\]
+
+For two distinct indicators \(j,\ell \in B_f\),
+
+\[
+\Delta_hY_j(t)=\lambda \Delta_hZ_f(t)+\Delta_h\varepsilon_j(t),
+\]
+
+so
+
+\[
+\operatorname{Cov}(\Delta_hY_j,\Delta_hY_\ell)
+=
+\lambda^2\operatorname{Var}(\Delta_hZ_f)
+\]
+
+and
+
+\[
+\operatorname{Var}(\Delta_hY_j)
+=
+\lambda^2\operatorname{Var}(\Delta_hZ_f)+2\psi.
+\]
+
+Therefore the within-block dynamic edge is
+
+\[
+w^\Delta_f
+=
+\frac{\theta^\Delta_f}{1+\theta^\Delta_f},
+\qquad
+\theta^\Delta_f
+=
+\frac{\lambda^2\operatorname{Var}(\Delta_hZ_f)}{2\psi}.
+\]
+
+For \(j \in B_f\) and \(\ell \in B_g\) with \(f \neq g\), independence
+of the latent processes and measurement errors gives zero cross-block
+covariance. Thus the population dynamic coordination graph has
+block-clique form:
+
+\[
+W^\Delta
+=
+\operatorname{blockdiag}
+\left(
+w^\Delta_1(J_k-I_k),\ldots,w^\Delta_m(J_k-I_k)
+\right).
+\]
+
+This is the population object most directly aligned with dynamic
+dimensional recovery: variables in the same block share the same latent
+change signal, while variables in different blocks do not.
+
+\subsection{A.3 Partial-Correlation
+Graph}\label{a.3-partial-correlation-graph}
+
+The GraphicalVAR comparator is converted into dimensional partitions by
+applying community detection to a contemporaneous partial-correlation
+matrix. To see how this representation changes the same block structure,
+consider the population covariance matrix inside block \(B_f\). Let
+
+\[
+S_f=\operatorname{Var}(Z_f),
+\qquad
+\theta_f=\frac{\lambda^2S_f}{\psi}.
+\]
+
+The block covariance matrix is
+
+\[
+\Sigma_f
+=
+\lambda^2S_f\mathbf{1}_k\mathbf{1}_k^\top+\psi I_k
+=
+\psi(I_k+\theta_f\mathbf{1}_k\mathbf{1}_k^\top).
+\]
+
+Using the Sherman-Morrison identity,
+
+\[
+\Sigma_f^{-1}
+=
+\psi^{-1}
+\left[
+I_k-
+\frac{\theta_f}{1+k\theta_f}
+\mathbf{1}_k\mathbf{1}_k^\top
+\right].
+\]
+
+The off-diagonal precision entry is
+
+\[
+(\Sigma_f^{-1})_{j\ell}
+=
+-\psi^{-1}\frac{\theta_f}{1+k\theta_f},
+\qquad j\neq \ell,
+\]
+
+and the diagonal precision entry is
+
+\[
+(\Sigma_f^{-1})_{jj}
+=
+\psi^{-1}\frac{1+(k-1)\theta_f}{1+k\theta_f}.
+\]
+
+The absolute partial correlation between two indicators in the same
+block is therefore
+
+\[
+w^P_f
+=
+\frac{\theta_f}{1+(k-1)\theta_f}.
+\]
+
+Because the full covariance matrix is block diagonal under the
+simplified population model, cross-block partial correlations are zero.
+The GraphicalVAR-style population graph preserves the ideal block
+support,
+
+\[
+W^P
+=
+\operatorname{blockdiag}
+\left(
+w^P_1(J_k-I_k),\ldots,w^P_m(J_k-I_k)
+\right),
+\]
+
+but compresses the within-block signal. The corresponding marginal
+common-source edge would be
+
+\[
+w^M_f
+=
+\frac{\theta_f}{1+\theta_f}.
+\]
+
+For the same signal-to-noise ratio \(\theta\),
+
+\[
+\frac{w^P(\theta)}{w^M(\theta)}
+=
+\frac{1+\theta}{1+(k-1)\theta}.
+\]
+
+When \(k>2\) and \(\theta>0\), \(w^P(\theta)<w^M(\theta)\). As
+\(\theta \to \infty\), \(w^P(\theta) \to 1/(k-1)\), whereas
+\(w^M(\theta)\to 1\). Thus partial correlation preserves the ideal block
+support but attenuates the shared-source signal that defines a
+reflective measurement block.
+
+\subsection{A.4 Perturbation Margin}\label{a.4-perturbation-margin}
+
+The preceding graphs are population graphs. Estimated graphs can be
+written as
+
+\[
+\widehat W = W + E,
+\]
+
+where \(E\) includes sampling error, derivative-estimation error,
+model-estimation error, finite-\(T\) and finite-\(N\) error,
+regularization, convergence behavior, and other implementation-specific
+perturbations. For a block-clique population graph
+
+\[
+W=
+\operatorname{blockdiag}
+\left(
+w_1(J_k-I_k),\ldots,w_m(J_k-I_k)
+\right),
+\]
+
+let \(w_{\min}=\min_f w_f\). Suppose every off-diagonal edge is
+estimated within \(\delta\) of its population value:
+
+\[
+\max_{j\neq \ell}|\widehat W_{j\ell}-W_{j\ell}|\leq \delta.
+\]
+
+For any node \(j \in B_f\), the estimated total connection to its true
+block is at least
+
+\[
+(k-1)(w_f-\delta),
+\]
+
+whereas its estimated total connection to any wrong block is at most
+
+\[
+k\delta.
+\]
+
+Thus each node has stronger total connection to its true block than to
+any wrong block whenever
+
+\[
+(k-1)(w_{\min}-\delta)>k\delta,
+\]
+
+or equivalently
+
+\[
+\delta
+<
+\frac{k-1}{2k-1}w_{\min}.
+\]
+
+This is the elementary perturbation statement. Recovery is favored when
+the estimation perturbation is small relative to the weakest
+within-block signal. Because the partial-correlation edge
+\(w^P(\theta)\) is smaller than the marginal shared-source edge
+\(w^M(\theta)\) for \(k>2\), the same perturbation has less margin under
+a partial-correlation representation.
+
+\subsection{A.5 Link to Oscillator
+Parameters}\label{a.5-link-to-oscillator-parameters}
+
+The signal-to-noise ratios above become LOMM-specific when
+\(Z_f(t)=a_f(t)X_f(t)\) is tied to the latent oscillator. In the stable
+continuous-time case with constant activity \(a_f\),
+
+\[
+\ddot X_f(t)=\eta_fX_f(t)+\zeta_f\dot X_f(t)+q_f(t),
+\qquad
+\eta_f<0,\ \zeta_f<0.
+\]
+
+Under the stationary linear approximation,
+
+\[
+\operatorname{Var}(X_f)
+=
+\frac{\sigma_{qf}^2}{2\eta_f\zeta_f},
+\]
+
+which is positive because both \(\eta_f\) and \(\zeta_f\) are negative.
+Therefore
+
+\[
+\operatorname{Var}(Z_f)
+=
+a_f^2\operatorname{Var}(X_f)
+=
+a_f^2\frac{\sigma_{qf}^2}{2\eta_f\zeta_f}.
+\]
+
+The contemporaneous block signal is controlled by
+
+\[
+\theta_f
+=
+\frac{\lambda^2a_f^2\sigma_{qf}^2}{2\eta_f\zeta_f\psi}.
+\]
+
+For the dynamic coordination graph,
+
+\[
+\operatorname{Var}(\Delta_hZ_f)
+=
+2a_f^2\operatorname{Var}(X_f)\{1-\rho_f(h)\},
+\]
+
+so
+
+\[
+\theta^\Delta_f(h)
+=
+\frac{\lambda^2a_f^2\operatorname{Var}(X_f)\{1-\rho_f(h)\}}{\psi}.
+\]
+
+In the underdamped case,
+
+\[
+\rho_f(h)
+=
+e^{\zeta_f h/2}
+\left[
+\cos(\omega_fh)
+-
+\frac{\zeta_f}{2\omega_f}\sin(\omega_fh)
+\right],
+\qquad
+\omega_f=\sqrt{-\eta_f-\frac{\zeta_f^2}{4}}.
+\]
+
+Thus the perturbation margin depends on the same quantities varied in
+the simulation design: loading strength \(\lambda\), measurement-error
+variance \(\psi=s_\varepsilon^2\), activity \(a_f\), shock variance
+\(\sigma_{qf}^2\), position feedback \(\eta_f\), velocity feedback
+\(\zeta_f\), lag \(h\), and number of indicators \(k\).
+
+\subsection{A.6 Interpretation}\label{a.6-interpretation}
+
+This derivation explains the target-alignment claim in the Discussion.
+In the simplified population LOMM, the true dimensions are disconnected
+weighted cliques or, equivalently, rank-one dynamic subspaces. Finite
+samples and estimator behavior perturb that graph. Recovery is favored
+when the within-block signal remains large relative to the perturbation.
+
+DynEGA is aligned with this target because it is used here to recover
+groups of variables whose changes are coordinated over time.
+GraphicalVAR remains a reasonable network comparator, but the
+contemporaneous partial-correlation representation conditions on other
+indicators in the same reflective block and therefore compresses the
+shared-source signal. GIMME is not part of this theorem because it
+addresses a broader idiographic time-series problem with group-level,
+subgroup-level, and individual-level paths; in this study it is best
+interpreted as a flexible but computationally bounded feasibility
+comparator.
 
 
 
