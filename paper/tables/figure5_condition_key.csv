@@ -1,0 +1,7 @@
+condition_code,description
+A,low-expression single-dominance
+B,high-expression single-dominance
+C,high-expression switching
+D,high-expression rapid switching
+E,ranked-persistence
+F,broad switching-geometry
