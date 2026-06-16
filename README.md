@@ -15,7 +15,7 @@ Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagn
 ## Clean Layout
 
 - `extract.r`: core LOMM simulation, empirical-target, and estimator helpers.
-- `run_external_structure_fit.R`: external-fit helper used by the retained simulation runner.
+- `scripts/run_external_structure_fit.R`: external-fit helper used by the retained simulation runner.
 - `scripts/simulations/`: final simulation runners, launchers, shared runner internals, and the final comparison builder.
 - `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
 - `paper/figures/` and `paper/tables/`: rendered manuscript-facing outputs.

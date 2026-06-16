@@ -5,7 +5,7 @@ options(run_extract_pipeline = FALSE)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 3L) {
   stop(
-    "Usage: Rscript run_external_structure_fit.R <method> <input.rds> <output.rds>",
+    "Usage: Rscript scripts/run_external_structure_fit.R <method> <input.rds> <output.rds>",
     call. = FALSE
   )
 }
@@ -23,9 +23,9 @@ script_candidate <- if (length(script_arg) > 0L) {
 script_path <- if (nzchar(script_candidate) && !identical(script_candidate, "-")) {
   normalizePath(script_candidate, mustWork = TRUE)
 } else {
-  normalizePath("run_external_structure_fit.R", mustWork = TRUE)
+  normalizePath(file.path("scripts", "run_external_structure_fit.R"), mustWork = TRUE)
 }
-repo_root <- dirname(script_path)
+repo_root <- dirname(dirname(script_path))
 
 old_flags <- Sys.getenv(c("RUN_METHOD_BENCHMARK", "RUN_METHOD_BENCHMARK_SMOKE"))
 on.exit({

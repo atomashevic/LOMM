@@ -129,7 +129,7 @@ run_external_structure_fit <- function(method, sim_data, cfg, scenario_label,
     limit_sec <- 0
   }
 
-  script_path <- file.path(repo_root, "run_external_structure_fit.R")
+  script_path <- file.path(repo_root, "scripts", "run_external_structure_fit.R")
   if (!file.exists(script_path)) {
     stop("External structure-fit helper is missing: ", script_path, call. = FALSE)
   }
