@@ -27,7 +27,19 @@ script_path <- if (nzchar(script_candidate) && !identical(script_candidate, "-")
 }
 repo_root <- dirname(script_path)
 
-source(file.path(repo_root, "run_method_benchmark.R"))
+old_flags <- Sys.getenv(c("RUN_METHOD_BENCHMARK", "RUN_METHOD_BENCHMARK_SMOKE"))
+on.exit({
+  for (flag_name in names(old_flags)) {
+    if (nzchar(old_flags[[flag_name]])) {
+      do.call(Sys.setenv, stats::setNames(as.list(old_flags[[flag_name]]), flag_name))
+    } else {
+      Sys.unsetenv(flag_name)
+    }
+  }
+}, add = TRUE)
+Sys.setenv(RUN_METHOD_BENCHMARK = "0", RUN_METHOD_BENCHMARK_SMOKE = "0")
+
+source(file.path(repo_root, "scripts", "simulations", "run_method_simulation.R"))
 
 payload <- readRDS(input_path)
 

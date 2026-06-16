@@ -11,6 +11,7 @@ library(dplyr)
 library(ggplot2)
 library(grid)
 library(igraph)
+library(jpeg)
 library(tidyr)
 
 read_char <- function(name, default) {
@@ -40,6 +41,14 @@ read_label_vec <- function(name, default) {
   trimws(strsplit(value, "|", fixed = TRUE)[[1]])
 }
 
+read_bool <- function(name, default) {
+  value <- tolower(trimws(Sys.getenv(name, unset = "")))
+  if (!nzchar(value)) {
+    return(default)
+  }
+  value %in% c("1", "true", "yes", "y")
+}
+
 clip_id <- read_char("OAI_CLIP_FIGURE_CLIP", "02875.mp4")
 model_name <- read_char("OAI_CLIP_FIGURE_MODEL", "oai-large")
 frame_scores_path <- read_char(
@@ -55,13 +64,18 @@ n_embed <- as.integer(read_num("OAI_CLIP_FIGURE_N_EMBED", 3))
 edge_threshold <- read_num("OAI_CLIP_FIGURE_EDGE_THRESHOLD", 0.08)
 smooth_window <- as.integer(read_num("OAI_CLIP_FIGURE_SMOOTH_WINDOW", 7))
 top_emotion_count <- as.integer(read_num("OAI_CLIP_FIGURE_TOP_N", 4))
+include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", TRUE)
 figure_width <- read_num("OAI_CLIP_FIGURE_WIDTH", 10.8)
-figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", 9.0)
+figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", if (include_frame_stills) 10.8 else 9.0)
 figure_dpi <- as.integer(read_num("OAI_CLIP_FIGURE_DPI", 300))
 selected_frame_indices <- read_int_vec("OAI_CLIP_FIGURE_FRAMES", c(7L, 16L, 19L, 23L))
 selected_frame_labels <- read_label_vec(
   "OAI_CLIP_FIGURE_FRAME_LABELS",
   c("Helplessness + fear", "Strong disgust", "Disgust + helplessness", "Pure helplessness")
+)
+frame_image_dir <- read_char(
+  "OAI_CLIP_FIGURE_FRAME_IMAGE_DIR",
+  "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/_tmp"
 )
 
 emotion_cols <- EMPIRICAL_EMOTION_COLUMNS
@@ -172,6 +186,21 @@ selected_frames$profile_label[is.na(selected_frames$profile_label)] <- ""
 bar_y_max <- max(0.65, max(as.matrix(selected_frames[, emotion_cols, drop = FALSE]), na.rm = TRUE) * 1.06)
 bar_y_breaks <- pretty(c(0, bar_y_max), n = 4)
 bar_y_breaks <- bar_y_breaks[bar_y_breaks >= 0 & bar_y_breaks <= bar_y_max]
+
+selected_frames$still_path <- file.path(
+  frame_image_dir,
+  sprintf("%s-frame-%d.jpg", clip_stem, selected_frames$frame_index)
+)
+if (include_frame_stills) {
+  missing_stills <- selected_frames$still_path[!file.exists(selected_frames$still_path)]
+  if (length(missing_stills) > 0L) {
+    stop(
+      "Missing selected frame stills: ",
+      paste(missing_stills, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
 
 dynega_panel <- clip_scores[, c("clip", "frame_index", "truth_label", "model", dynega_cols), drop = FALSE]
 dynega_fit <- fit_pooled_ord0_dynega(
@@ -446,18 +475,58 @@ make_section_header <- function(label, title) {
     )
 }
 
+make_frame_still_panel <- function(row) {
+  frame_image <- jpeg::readJPEG(row$still_path[[1]])
+  ggdraw() +
+    draw_grob(
+      rasterGrob(frame_image, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE),
+      x = 0, y = 0, width = 1, height = 1
+    ) +
+    draw_label(
+      sprintf("Frame %d", row$frame_index[[1]]),
+      x = 0.02, y = 0.95,
+      hjust = 0, vjust = 1,
+      size = 8.5,
+      fontface = "bold",
+      fontfamily = base_family,
+      color = "white"
+    )
+}
+
+if (include_frame_stills) {
+  still_panels <- lapply(seq_len(nrow(selected_frames)), function(idx) {
+    make_frame_still_panel(selected_frames[idx, , drop = FALSE])
+  })
+  still_row <- plot_grid(plotlist = still_panels, nrow = 1, align = "h", axis = "tb")
+}
+
 bar_row <- plot_grid(plotlist = bar_panels, nrow = 1, align = "h", axis = "tb")
 
-figure_body <- plot_grid(
-  make_section_header("A", "Selected-frame OpenAI CLIP emotion scores"),
-  bar_row,
-  make_section_header("B", "Smoothed frame-level emotion trajectories"),
-  time_panel,
-  make_section_header("C", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
-  network_panel,
-  ncol = 1,
-  rel_heights = c(0.12, 1.02, 0.10, 1.34, 0.10, 1.18)
-)
+if (include_frame_stills) {
+  figure_body <- plot_grid(
+    make_section_header("A", "Selected MAFW video frames"),
+    still_row,
+    make_section_header("B", "Selected-frame OpenAI CLIP emotion scores"),
+    bar_row,
+    make_section_header("C", "Smoothed frame-level emotion trajectories"),
+    time_panel,
+    make_section_header("D", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
+    network_panel,
+    ncol = 1,
+    rel_heights = c(0.11, 0.72, 0.10, 0.94, 0.10, 1.16, 0.10, 1.08)
+  )
+} else {
+  figure_body <- plot_grid(
+    make_section_header("A", "Selected-frame OpenAI CLIP emotion scores"),
+    bar_row,
+    make_section_header("B", "Smoothed frame-level emotion trajectories"),
+    time_panel,
+    make_section_header("C", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
+    network_panel,
+    ncol = 1,
+    rel_heights = c(0.12, 1.02, 0.10, 1.34, 0.10, 1.18)
+  )
+}
 figure <- ggdraw() +
   draw_plot(figure_body, x = 0.016, y = 0.014, width = 0.968, height = 0.972)
 

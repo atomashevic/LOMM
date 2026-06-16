@@ -18,9 +18,11 @@ if (!file.exists(file.path(repo_root, "paper", "Paper_emotion_dynamics_HGolino_R
 input_path <- file.path(
   repo_root,
   "simulation_outputs",
-  "empirical_realism",
-  "oai_validation_sensitivity_metrics_v2.csv"
+  "empirical_link_options",
+  "oai-large-100",
+  "metric_comparison_long.csv"
 )
+selected_candidate <- "link_softmax_temp_1.00_intercept_none"
 figure_dir <- file.path(repo_root, "paper", "figures")
 table_dir <- file.path(repo_root, "paper", "tables")
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
@@ -57,8 +59,9 @@ component_colors <- c(
 
 realism <- read_csv(input_path, show_col_types = FALSE) |>
   filter(
+    candidate_label == selected_candidate,
     metric %in% metric_levels,
-    family == "raw" | (family == "latent" & algorithm == "louvain")
+    family %in% c("raw", "latent")
   ) |>
   mutate(
     readout = recode(
@@ -114,9 +117,7 @@ status_panel <- realism |>
   labs(
     x = NULL,
     y = NULL,
-    fill = "Call",
-    title = "Realism calls by target",
-    subtitle = "Numbers are the larger of the scaled median and Wasserstein discrepancies"
+    fill = "Call"
   ) +
   theme_minimal(base_size = 9) +
   theme(
@@ -165,8 +166,7 @@ component_panel <- realism |>
     x = "Scaled discrepancy",
     y = NULL,
     color = NULL,
-    shape = NULL,
-    title = "Discrepancy components"
+    shape = NULL
   ) +
   theme_minimal(base_size = 9) +
   theme(

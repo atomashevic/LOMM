@@ -1,4 +1,10 @@
-Method,Scope,Structural cells,Method rows,Hit rate (%),Assignment (%),Score r,Score NRMSE,Median runtime (s)
-DynEGA,Matched bounded comparison,162,486,98.8,99.5,0.659,0.844,0.8
-GraphicalVAR,Matched bounded comparison,162,486,85.8,94.6,0.655,0.841,40
-GIMME,Matched bounded comparison,162,486,40.7,74.3,0.629,0.844,161
+Method,CD,Cells,Rows,ok,timeout,error,Hit (%),Assign. (%),Score r,Score NRMSE,Runtime (s)
+DynEGA,Louvain,216,21600,21600,0,0,95.5,96.0,0.725,0.649,2.79
+DynEGA,Leiden,216,21600,21600,0,0,95.6,96.0,0.725,0.649,3.14
+DynEGA,Walktrap,216,21600,21600,0,0,94.7,95.9,0.725,0.650,1.59
+GraphicalVAR,Louvain,216,21600,20872,728,0,80.3,90.4,0.717,0.659,86.1
+GraphicalVAR,Leiden,216,21600,20872,728,0,80.3,90.4,0.717,0.659,86.1
+GraphicalVAR,Walktrap,216,21600,20872,728,0,80.3,90.4,0.717,0.659,86.1
+GIMME,Louvain,216,21600,15294,4114,2192,25.9,67.2,0.604,0.842,280.5
+GIMME,Leiden,216,21600,15294,4114,2192,25.9,67.2,0.604,0.842,280.5
+GIMME,Walktrap,216,21600,15294,4114,2192,25.9,67.2,0.604,0.842,280.5

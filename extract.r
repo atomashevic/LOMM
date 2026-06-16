@@ -2003,11 +2003,39 @@ simulate_ar1 <- function(num_steps, phi = 0.6, sd = 1.0) {
 }
 
 apply_score_link <- function(z,
-                             link = c("softmax", "identity", "logistic"),
+                             link = c("softmax", "identity", "logistic", "logistic_renorm"),
                              temperature = 1.0,
+                             channel_intercepts = NULL,
                              eps = 1e-8) {
   link <- match.arg(link)
+  z <- as.matrix(z)
   temperature <- max(as.numeric(temperature), eps)
+
+  if (!is.null(channel_intercepts)) {
+    if (!is.null(names(channel_intercepts)) && !is.null(colnames(z))) {
+      missing_intercepts <- setdiff(colnames(z), names(channel_intercepts))
+      if (length(missing_intercepts) > 0L) {
+        stop(
+          "Missing channel intercepts for: ",
+          paste(missing_intercepts, collapse = ", "),
+          call. = FALSE
+        )
+      }
+      intercepts <- as.numeric(channel_intercepts[colnames(z)])
+    } else {
+      intercepts <- as.numeric(channel_intercepts)
+      if (length(intercepts) == 1L) {
+        intercepts <- rep(intercepts, ncol(z))
+      }
+      if (length(intercepts) != ncol(z)) {
+        stop(
+          "channel_intercepts must be length 1, length ncol(z), or named by score column.",
+          call. = FALSE
+        )
+      }
+    }
+    z <- sweep(z, 2, intercepts, "+")
+  }
 
   if (link == "identity") {
     return(z)
@@ -2017,9 +2045,14 @@ apply_score_link <- function(z,
     return(plogis(z / temperature))
   }
 
-  z <- z / temperature
-  z <- sweep(z, 1, apply(z, 1, max, na.rm = TRUE), "-")
-  ez <- exp(z)
+  if (link == "logistic_renorm") {
+    p <- plogis(z / temperature)
+    return(p / pmax(rowSums(p), eps))
+  }
+
+  z_scaled <- z / temperature
+  z_scaled <- sweep(z_scaled, 1, apply(z_scaled, 1, max, na.rm = TRUE), "-")
+  ez <- exp(z_scaled)
   ez / pmax(rowSums(ez), eps)
 }
 
@@ -2310,8 +2343,9 @@ simulate_named_observables <- function(latent,
                                        common_sd = 0,
                                        common_phi = 0.6,
                                        cross_loading_sd = 0,
-                                       link = c("softmax", "identity", "logistic"),
-                                       temperature = 1.0) {
+                                       link = c("softmax", "identity", "logistic", "logistic_renorm"),
+                                       temperature = 1.0,
+                                       channel_intercepts = NULL) {
   link <- match.arg(link)
   emotion_names <- names(community_map)
   n_steps <- nrow(latent)
@@ -2341,7 +2375,12 @@ simulate_named_observables <- function(latent,
   obs_star <- obs_scale * (latent %*% t(L) + outer(g, rep(1, n_emotions))) + e
   colnames(obs_star) <- emotion_names
 
-  obs <- apply_score_link(obs_star, link = link, temperature = temperature)
+  obs <- apply_score_link(
+    obs_star,
+    link = link,
+    temperature = temperature,
+    channel_intercepts = channel_intercepts
+  )
   obs <- as.data.frame(obs, stringsAsFactors = FALSE)
   names(obs) <- emotion_names
   obs
@@ -2368,6 +2407,7 @@ simulate_empirical_dlo_panel <- function(clip_lengths,
                                          cross_loading_sd = 0,
                                          link = "softmax",
                                          temperature = 1.0,
+                                         channel_intercepts = NULL,
                                          init_x_sd = NULL,
                                          init_dx_sd = NULL,
                                          burn_in = 0L) {
@@ -2410,7 +2450,8 @@ simulate_empirical_dlo_panel <- function(clip_lengths,
         common_phi = common_phi,
         cross_loading_sd = cross_loading_sd,
         link = link,
-        temperature = temperature
+        temperature = temperature,
+        channel_intercepts = channel_intercepts
       )
 
       observables$clip <- sprintf("rep%03d_%s", rep_idx, clip_names[[clip_idx]])
