@@ -33,13 +33,12 @@ if (!file.exists(rows_path) || !file.exists(structure_status_path) || !file.exis
 }
 
 method_levels <- c("DynEGA", "GraphicalVAR", "GIMME")
-cd_levels <- c("Louvain", "Leiden", "Walktrap")
 method_colors <- c(
   DynEGA = "#0072B2",
   GraphicalVAR = "#E69F00",
   GIMME = "#CC79A7"
 )
-cd_shapes <- c(Louvain = 16, Leiden = 17, Walktrap = 15)
+method_shapes <- c(DynEGA = 16, GraphicalVAR = 17, GIMME = 15)
 
 fmt_runtime <- function(x) {
   x <- as.numeric(x)
@@ -52,30 +51,24 @@ fmt_ratio <- function(x) {
 }
 
 rows <- readRDS(rows_path) %>%
-  mutate(
-    Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels)
-  )
+  mutate(Method = factor(as.character(Method), levels = method_levels))
 
 summary_df <- read_csv(summary_path, show_col_types = FALSE) %>%
-  mutate(
-    Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels)
-  )
+  mutate(Method = factor(as.character(Method), levels = method_levels))
 
 runtime_summary <- rows %>%
   filter(status == "ok") %>%
-  group_by(Method, CD) %>%
+  group_by(Method) %>%
   summarise(
     median_sec = median(runtime_sec, na.rm = TRUE),
     q25_sec = quantile(runtime_sec, 0.25, na.rm = TRUE),
     q75_sec = quantile(runtime_sec, 0.75, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  arrange(Method, CD)
+  arrange(Method)
 
 dynega_louvain_runtime <- runtime_summary %>%
-  filter(Method == "DynEGA", CD == "Louvain") %>%
+  filter(Method == "DynEGA") %>%
   pull(median_sec)
 if (length(dynega_louvain_runtime) != 1L || !is.finite(dynega_louvain_runtime)) {
   dynega_louvain_runtime <- NA_real_
@@ -83,15 +76,14 @@ if (length(dynega_louvain_runtime) != 1L || !is.finite(dynega_louvain_runtime)) 
 
 runtime_table <- runtime_summary %>%
   mutate(
-    `Runtime/DynEGA Louvain` = median_sec / dynega_louvain_runtime
+    `Runtime/DynEGA` = median_sec / dynega_louvain_runtime
   ) %>%
   transmute(
     Method = as.character(Method),
-    CD = as.character(CD),
     `Median runtime (s)` = fmt_runtime(median_sec),
     `IQR low (s)` = fmt_runtime(q25_sec),
     `IQR high (s)` = fmt_runtime(q75_sec),
-    `Runtime/DynEGA Louvain` = fmt_ratio(`Runtime/DynEGA Louvain`)
+    `Runtime/DynEGA` = fmt_ratio(`Runtime/DynEGA`)
   )
 write_csv(runtime_table, file.path(table_dir, "table3_runtime_feasibility.csv"))
 
@@ -100,9 +92,9 @@ status_table <- read_csv(structure_status_path, show_col_types = FALSE) %>%
     Method = as.character(Method),
     `Feasibility note` = case_when(
       Method == "DynEGA" & Scope == "Full DynEGA grid" ~ "Full expanded DynEGA Louvain/expand grid completed.",
-      Method == "DynEGA" ~ "Bounded comparator DynEGA CD readouts completed.",
-      Method == "GraphicalVAR" ~ "Bounded NVAR = 4 structure fits completed except OAI 3D timeouts; each fit has Louvain, Leiden, and Walktrap readouts.",
-      Method == "GIMME" ~ "Bounded NVAR = 4 structure fits include substantial timeouts and post-estimation errors; each completed fit has Louvain, Leiden, and Walktrap readouts.",
+      Method == "DynEGA" ~ "Bounded comparator completed across CD readouts.",
+      Method == "GraphicalVAR" ~ "Bounded NVAR = 4 structure fits completed except OAI 3D timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap.",
+      Method == "GIMME" ~ "Bounded NVAR = 4 structure fits include substantial timeouts and post-estimation errors; completed fits were partitioned with Louvain, Leiden, and Walktrap.",
       TRUE ~ ""
     )
   ) %>%
@@ -134,8 +126,8 @@ figure7 <- ggplot(
     x = Method,
     y = median_sec,
     color = Method,
-    shape = CD,
-    group = CD
+    shape = Method,
+    group = Method
   )
 ) +
   geom_errorbar(
@@ -147,7 +139,7 @@ figure7 <- ggplot(
   ) +
   geom_point(size = 2.55, stroke = 0.75, position = position_dodge(width = 0.55)) +
   scale_color_manual(values = method_colors, guide = "none") +
-  scale_shape_manual(values = cd_shapes, name = "Community detection") +
+  scale_shape_manual(values = method_shapes, guide = "none") +
   scale_y_log10(
     breaks = as.numeric(names(runtime_labels)),
     labels = unname(runtime_labels),

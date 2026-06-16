@@ -137,63 +137,69 @@ final_cd_by_measurement <- final_cd_rows %>%
   summarise_rows(c("Method", "CD", "Error", "Loadings")) %>%
   arrange(Method, CD, Loadings, Error)
 
-conditional_score_summary <- final_cd_rows %>%
-  mutate(correct = status == "ok" & n_dim_exact == 1) %>%
-  group_by(Method, CD, Error, Loadings) %>%
-  summarise(
-    stratum_total_rows = n(),
-    stratum_correct_rows = sum(correct, na.rm = TRUE),
-    mean_r = mean(score_cor_common[correct], na.rm = TRUE),
-    ci_width = {
-      vals <- score_cor_common[correct]
-      vals <- vals[is.finite(vals)]
-      if (length(vals) <= 3L) {
-        NA_real_
-      } else {
-        z <- atanh(pmin(pmax(vals, -0.999999), 0.999999))
-        2 * 1.96 / sqrt(length(vals) - 3)
-      }
-    },
-    .groups = "drop"
-  ) %>%
-  group_by(Method, CD) %>%
-  summarise(
-    correct_rows = sum(stratum_correct_rows, na.rm = TRUE),
-    total_rows = sum(stratum_total_rows, na.rm = TRUE),
-    hit_rate = correct_rows / total_rows,
-    mean_conditional_r = {
-      vals <- mean_r[is.finite(mean_r)]
-      weights <- stratum_correct_rows[is.finite(mean_r)]
-      if (length(vals) == 0L || sum(weights) == 0) {
-        NA_real_
-      } else {
-        tanh(weighted.mean(atanh(pmin(pmax(vals, -0.999999), 0.999999)), weights))
-      }
-    },
-    min_conditional_r = suppressWarnings(min(mean_r, na.rm = TRUE)),
-    max_conditional_r = suppressWarnings(max(mean_r, na.rm = TRUE)),
-    min_correct_rows_per_stratum = suppressWarnings(min(stratum_correct_rows[stratum_correct_rows > 0], na.rm = TRUE)),
-    max_correct_rows_per_stratum = suppressWarnings(max(stratum_correct_rows, na.rm = TRUE)),
-    widest_ci = suppressWarnings(max(ci_width, na.rm = TRUE)),
-    missing_strata = sum(!is.finite(mean_r)),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    min_conditional_r = if_else(is.infinite(min_conditional_r), NA_real_, min_conditional_r),
-    max_conditional_r = if_else(is.infinite(max_conditional_r), NA_real_, max_conditional_r),
-    min_correct_rows_per_stratum = if_else(
-      is.infinite(min_correct_rows_per_stratum),
-      NA_real_,
-      min_correct_rows_per_stratum
-    ),
-    max_correct_rows_per_stratum = if_else(
-      is.infinite(max_correct_rows_per_stratum),
-      NA_real_,
-      max_correct_rows_per_stratum
-    ),
-    widest_ci = if_else(is.infinite(widest_ci), NA_real_, widest_ci)
-  ) %>%
+summarise_conditional_scores <- function(data, grouping) {
+  data %>%
+    mutate(correct = status == "ok" & n_dim_exact == 1) %>%
+    group_by(across(all_of(c(grouping, "Error", "Loadings")))) %>%
+    summarise(
+      stratum_total_rows = n(),
+      stratum_correct_rows = sum(correct, na.rm = TRUE),
+      mean_r = mean(score_cor_common[correct], na.rm = TRUE),
+      ci_width = {
+        vals <- score_cor_common[correct]
+        vals <- vals[is.finite(vals)]
+        if (length(vals) <= 3L) {
+          NA_real_
+        } else {
+          2 * 1.96 / sqrt(length(vals) - 3)
+        }
+      },
+      .groups = "drop"
+    ) %>%
+    group_by(across(all_of(grouping))) %>%
+    summarise(
+      correct_rows = sum(stratum_correct_rows, na.rm = TRUE),
+      total_rows = sum(stratum_total_rows, na.rm = TRUE),
+      hit_rate = correct_rows / total_rows,
+      mean_conditional_r = {
+        vals <- mean_r[is.finite(mean_r)]
+        weights <- stratum_correct_rows[is.finite(mean_r)]
+        if (length(vals) == 0L || sum(weights) == 0) {
+          NA_real_
+        } else {
+          tanh(weighted.mean(atanh(pmin(pmax(vals, -0.999999), 0.999999)), weights))
+        }
+      },
+      min_conditional_r = suppressWarnings(min(mean_r, na.rm = TRUE)),
+      max_conditional_r = suppressWarnings(max(mean_r, na.rm = TRUE)),
+      min_correct_rows_per_stratum = suppressWarnings(min(stratum_correct_rows[stratum_correct_rows > 0], na.rm = TRUE)),
+      max_correct_rows_per_stratum = suppressWarnings(max(stratum_correct_rows, na.rm = TRUE)),
+      widest_ci = suppressWarnings(max(ci_width, na.rm = TRUE)),
+      missing_strata = sum(!is.finite(mean_r)),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      min_conditional_r = if_else(is.infinite(min_conditional_r), NA_real_, min_conditional_r),
+      max_conditional_r = if_else(is.infinite(max_conditional_r), NA_real_, max_conditional_r),
+      min_correct_rows_per_stratum = if_else(
+        is.infinite(min_correct_rows_per_stratum),
+        NA_real_,
+        min_correct_rows_per_stratum
+      ),
+      max_correct_rows_per_stratum = if_else(
+        is.infinite(max_correct_rows_per_stratum),
+        NA_real_,
+        max_correct_rows_per_stratum
+      ),
+      widest_ci = if_else(is.infinite(widest_ci), NA_real_, widest_ci)
+    )
+}
+
+conditional_score_summary <- summarise_conditional_scores(final_cd_rows, c("Method", "CD")) %>%
   arrange(Method, CD)
+
+conditional_method_summary <- summarise_conditional_scores(final_cd_rows, "Method") %>%
+  arrange(Method)
 
 structure_fit_status <- bind_rows(
   full_dynega_louvain %>%
@@ -229,10 +235,9 @@ fmt_runtime <- function(x) {
   ifelse(is.na(x), NA_character_, ifelse(x < 10, sprintf("%.2f", x), sprintf("%.1f", x)))
 }
 
-paper_table1 <- final_cd_summary %>%
+paper_table1 <- final_method_summary %>%
   transmute(
     Method = as.character(Method),
-    CD = as.character(CD),
     Cells = structural_cells,
     Rows = rows,
     ok,
@@ -245,10 +250,9 @@ paper_table1 <- final_cd_summary %>%
     `Runtime (s)` = fmt_runtime(runtime_ok_median_s)
   )
 
-paper_table2 <- conditional_score_summary %>%
+paper_table2 <- conditional_method_summary %>%
   transmute(
     Method = as.character(Method),
-    CD = as.character(CD),
     Correct = paste0(correct_rows, "/", total_rows),
     `Hit (%)` = scales::percent(hit_rate, accuracy = 0.1),
     `Mean r` = fmt_num(mean_conditional_r, 3),
@@ -272,6 +276,7 @@ write_csv(final_cd_summary, file.path(out_dir, "final_cd_summary.csv"))
 write_csv(final_cd_by_scenario, file.path(out_dir, "final_cd_by_scenario.csv"))
 write_csv(final_cd_by_measurement, file.path(out_dir, "final_cd_by_measurement.csv"))
 write_csv(conditional_score_summary, file.path(out_dir, "final_cd_conditional_score_summary.csv"))
+write_csv(conditional_method_summary, file.path(out_dir, "final_method_conditional_score_summary.csv"))
 write_csv(structure_fit_status, file.path(out_dir, "final_structure_fit_status_accounting.csv"))
 write_csv(paper_table1, file.path(repo_root, "paper", "tables", "table1_method_overall.csv"))
 write_csv(paper_table2, file.path(repo_root, "paper", "tables", "table2_conditional_score_correlations.csv"))

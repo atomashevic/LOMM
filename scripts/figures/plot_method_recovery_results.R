@@ -19,7 +19,7 @@ comparison_dir <- file.path(
   "simulation_outputs/final_simulation_results/comparison_to_current_manuscript"
 )
 rows_path <- file.path(comparison_dir, "final_cd_rows.rds")
-summary_path <- file.path(comparison_dir, "final_cd_summary.csv")
+summary_path <- file.path(comparison_dir, "final_method_summary.csv")
 figure_dir <- file.path(repo_root, "paper", "figures")
 table_dir <- file.path(repo_root, "paper", "tables")
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
@@ -34,13 +34,12 @@ if (!file.exists(rows_path) || !file.exists(summary_path)) {
 }
 
 method_levels <- c("DynEGA", "GraphicalVAR", "GIMME")
-cd_levels <- c("Louvain", "Leiden", "Walktrap")
 method_colors <- c(
   DynEGA = "#0072B2",
   GraphicalVAR = "#E69F00",
   GIMME = "#CC79A7"
 )
-cd_shapes <- c(Louvain = 16, Leiden = 17, Walktrap = 15)
+method_shapes <- c(DynEGA = 16, GraphicalVAR = 17, GIMME = 15)
 
 wilson_ci <- function(successes, trials, z = 1.96) {
   if (!is.finite(successes) || !is.finite(trials) || trials <= 0) {
@@ -82,7 +81,6 @@ fmt_runtime <- function(x) {
 rows <- readRDS(rows_path) %>%
   mutate(
     Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels),
     scenario_label = recode(
       scenario_family,
       oai_broad_geometry = "OAI broad",
@@ -103,15 +101,11 @@ rows <- readRDS(rows_path) %>%
   )
 
 summary_df <- read_csv(summary_path, show_col_types = FALSE) %>%
-  mutate(
-    Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels)
-  )
+  mutate(Method = factor(as.character(Method), levels = method_levels))
 
 table1 <- summary_df %>%
   transmute(
     Method = as.character(Method),
-    CD = as.character(CD),
     Cells = structural_cells,
     Rows = rows,
     ok,
@@ -125,20 +119,19 @@ table1 <- summary_df %>%
   )
 write_csv(table1, file.path(table_dir, "table1_method_overall.csv"))
 
-overall <- summarise_hit(rows, c("Method", "CD"))
-scenario <- summarise_hit(rows, c("Method", "CD", "scenario_label", "dim_label"))
+overall <- summarise_hit(rows, "Method")
+scenario <- summarise_hit(rows, c("Method", "scenario_label", "dim_label"))
 
 panel_a <- overall %>%
-  ggplot(aes(x = Method, y = hit_rate, color = Method, shape = CD, group = CD)) +
+  ggplot(aes(x = Method, y = hit_rate, color = Method, shape = Method, group = Method)) +
   geom_errorbar(
     aes(ymin = ci_low, ymax = ci_high),
     width = 0.10,
-    linewidth = 0.45,
-    position = position_dodge(width = 0.55)
+    linewidth = 0.45
   ) +
-  geom_point(size = 2.55, stroke = 0.75, position = position_dodge(width = 0.55)) +
+  geom_point(size = 2.55, stroke = 0.75) +
   scale_color_manual(values = method_colors, guide = "none") +
-  scale_shape_manual(values = cd_shapes, name = "Community detection") +
+  scale_shape_manual(values = method_shapes, guide = "none") +
   scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1), breaks = seq(0, 1, .25)) +
   labs(x = NULL, y = "Dimensional hit rate", title = "Overall") +
   theme_minimal(base_size = 9) +
@@ -158,9 +151,9 @@ panel_b <- scenario %>%
     position = position_dodge(width = 0.55)
   ) +
   geom_point(size = 1.65, stroke = 0.65, position = position_dodge(width = 0.55)) +
-  facet_grid(dim_label ~ CD) +
+  facet_grid(dim_label ~ .) +
   scale_color_manual(values = method_colors, name = "Method") +
-  scale_shape_manual(values = c(DynEGA = 16, GraphicalVAR = 17, GIMME = 15), name = "Method") +
+  scale_shape_manual(values = method_shapes, name = "Method") +
   scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1), breaks = seq(0, 1, .25)) +
   labs(x = NULL, y = "Dimensional hit rate", title = "By scenario family") +
   theme_minimal(base_size = 8.5) +
@@ -174,7 +167,7 @@ panel_b <- scenario %>%
   )
 
 figure5 <- panel_a / panel_b +
-  plot_layout(heights = c(0.75, 1.45), guides = "collect") +
+  plot_layout(heights = c(0.75, 1.35), guides = "collect") +
   plot_annotation(tag_levels = "A") &
   theme(
     legend.position = "bottom",

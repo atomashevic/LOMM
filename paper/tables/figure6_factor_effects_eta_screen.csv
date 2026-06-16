@@ -1,13 +1,37 @@
 response,term,df,ss,partial_eta2
-n_dim_exact,Method,2,9828.11665636724,0.404
-n_dim_exact,CD,2,0.3592886242194797,0
-n_dim_exact,scenario_family,5,4612.700794553696,0.241
-n_dim_exact,scenario_nfac,1,219.44387721868264,0.015
-n_dim_exact,Error,2,2487.5566951309647,0.146
-n_dim_exact,Loadings,2,536.0327149054286,0.036
-score_cor_common,Method,2,465.1540941915147,0.31
-score_cor_common,CD,2,2.9221654705155996e-4,0
-score_cor_common,scenario_family,5,7083.916172897108,0.873
-score_cor_common,scenario_nfac,1,99.98134810341995,0.088
-score_cor_common,Error,2,1950.1028821503255,0.653
-score_cor_common,Loadings,2,470.1069103119607,0.312
+Dimensional hit,Method,2,9828.11665636724,0.404
+Dimensional hit,CD,2,0.3592886242194797,0
+Dimensional hit,scenario_family,5,4612.700794553696,0.241
+Dimensional hit,scenario_nfac,1,219.44387721868264,0.015
+Dimensional hit,Error,2,2487.5566951309647,0.146
+Dimensional hit,Loadings,2,536.0327149054286,0.036
+Estimator completion,Method,2,3306.00481481329,0.221
+Estimator completion,CD,2,2.5065127970278747e-25,0
+Estimator completion,scenario_family,5,3057.5948148147745,0.207
+Estimator completion,scenario_nfac,1,422.8001851851781,0.035
+Estimator completion,Error,2,207.8495370370237,0.017
+Estimator completion,Loadings,2,137.45814814816055,0.012
+Block assignment,Method,2,2390.3547666642735,0.346
+Block assignment,CD,2,0.006007174058542686,0
+Block assignment,scenario_family,5,2756.5276414022464,0.379
+Block assignment,scenario_nfac,1,59.354329210783085,0.013
+Block assignment,Error,2,1199.6586266306206,0.21
+Block assignment,Loadings,2,288.0909425730164,0.06
+Score correlation,Method,2,465.1540941915147,0.31
+Score correlation,CD,2,2.9221654705155996e-4,0
+Score correlation,scenario_family,5,7083.916172897108,0.873
+Score correlation,scenario_nfac,1,99.98134810341995,0.088
+Score correlation,Error,2,1950.1028821503255,0.653
+Score correlation,Loadings,2,470.1069103119607,0.312
+Score NRMSE,Method,2,1198.719119360565,0.49
+Score NRMSE,CD,2,0.003959295942268702,0
+Score NRMSE,scenario_family,5,27488.79755589504,0.957
+Score NRMSE,scenario_nfac,1,159.0699457805665,0.113
+Score NRMSE,Error,2,2611.471495711783,0.677
+Score NRMSE,Loadings,2,633.5673131622309,0.337
+Runtime,Method,2,141674.42236649053,0.944
+Runtime,CD,2,439.1750963201801,0.049
+Runtime,scenario_family,5,3536.2313675355904,0.294
+Runtime,scenario_nfac,1,2352.7829940443894,0.217
+Runtime,Error,2,358.9305834929488,0.041
+Runtime,Loadings,2,147.1383247457529,0.017

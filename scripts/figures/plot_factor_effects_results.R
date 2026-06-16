@@ -17,7 +17,7 @@ comparison_dir <- file.path(
   "simulation_outputs/final_simulation_results/comparison_to_current_manuscript"
 )
 rows_path <- file.path(comparison_dir, "final_cd_rows.rds")
-conditional_path <- file.path(comparison_dir, "final_cd_conditional_score_summary.csv")
+conditional_path <- file.path(comparison_dir, "final_method_conditional_score_summary.csv")
 figure_dir <- file.path(repo_root, "paper", "figures")
 table_dir <- file.path(repo_root, "paper", "tables")
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
@@ -32,7 +32,6 @@ if (!file.exists(rows_path) || !file.exists(conditional_path)) {
 }
 
 method_levels <- c("DynEGA", "GraphicalVAR", "GIMME")
-cd_levels <- c("Louvain", "Leiden", "Walktrap")
 method_colors <- c(
   DynEGA = "#0072B2",
   GraphicalVAR = "#E69F00",
@@ -58,7 +57,6 @@ fmt_num <- function(x, digits = 3) {
 rows <- readRDS(rows_path) %>%
   mutate(
     Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels),
     Error = as.numeric(Error),
     Loadings = as.numeric(Loadings),
     loading_label = factor(
@@ -68,7 +66,7 @@ rows <- readRDS(rows_path) %>%
   )
 
 summary_df <- rows %>%
-  group_by(Method, CD, Error, Loadings, loading_label) %>%
+  group_by(Method, Error, Loadings, loading_label) %>%
   summarise(
     rows = n(),
     successes = sum(n_dim_exact == 1, na.rm = TRUE),
@@ -91,7 +89,7 @@ partial_eta2_table <- function(data, response, terms) {
     mutate(
       response_value = .data[[response]],
       Method = factor(Method, levels = method_levels),
-      CD = factor(CD, levels = cd_levels),
+      CD = factor(CD),
       scenario_family = factor(scenario_family),
       scenario_nfac = factor(scenario_nfac),
       Error = factor(Error),
@@ -123,22 +121,49 @@ effects <- bind_rows(
     c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
   ),
   partial_eta2_table(
+    rows %>% mutate(status_ok = as.numeric(status == "ok")),
+    "status_ok",
+    c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
+  ),
+  partial_eta2_table(
+    rows,
+    "assignment_accuracy",
+    c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
+  ),
+  partial_eta2_table(
     rows %>% filter(status == "ok"),
     "score_cor_common",
     c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
+  ),
+  partial_eta2_table(
+    rows %>% filter(status == "ok"),
+    "score_nrmse_common",
+    c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
+  ),
+  partial_eta2_table(
+    rows %>% filter(status == "ok") %>% mutate(log_runtime_sec = log10(runtime_sec)),
+    "log_runtime_sec",
+    c("Method", "CD", "scenario_family", "scenario_nfac", "Error", "Loadings")
   )
 ) %>%
-  mutate(partial_eta2 = round(partial_eta2, 3))
+  mutate(
+    response = recode(
+      response,
+      n_dim_exact = "Dimensional hit",
+      status_ok = "Estimator completion",
+      assignment_accuracy = "Block assignment",
+      score_cor_common = "Score correlation",
+      score_nrmse_common = "Score NRMSE",
+      log_runtime_sec = "Runtime"
+    ),
+    partial_eta2 = round(partial_eta2, 3)
+  )
 write_csv(effects, file.path(table_dir, "figure6_factor_effects_eta_screen.csv"))
 
 conditional <- read_csv(conditional_path, show_col_types = FALSE) %>%
-  mutate(
-    Method = factor(as.character(Method), levels = method_levels),
-    CD = factor(as.character(CD), levels = cd_levels)
-  ) %>%
+  mutate(Method = factor(as.character(Method), levels = method_levels)) %>%
   transmute(
     Method = as.character(Method),
-    CD = as.character(CD),
     Correct = paste0(correct_rows, "/", total_rows),
     `Hit (%)` = percent(hit_rate, accuracy = 0.1),
     `Mean r` = fmt_num(mean_conditional_r, 3),
@@ -176,7 +201,7 @@ figure6 <- ggplot(
     na.rm = TRUE
   ) +
   geom_point(size = 1.85, stroke = 0.65, na.rm = TRUE) +
-  facet_grid(CD ~ loading_label) +
+  facet_grid(. ~ loading_label) +
   scale_color_manual(values = method_colors, name = "Method") +
   scale_shape_manual(values = method_shapes, name = "Method") +
   scale_x_continuous(

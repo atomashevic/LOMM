@@ -1,10 +1,4 @@
-Method,CD,Median runtime (s),IQR low (s),IQR high (s),Runtime/DynEGA Louvain
-DynEGA,Louvain,2.79,2.50,3.09,1.0x
-DynEGA,Leiden,3.14,2.56,3.89,1.1x
-DynEGA,Walktrap,1.59,1.11,2.21,0.6x
-GraphicalVAR,Louvain,86.1,55.5,176.2,30.9x
-GraphicalVAR,Leiden,86.1,55.5,176.2,30.9x
-GraphicalVAR,Walktrap,86.1,55.5,176.2,30.9x
-GIMME,Louvain,280.5,185.8,469.1,100.7x
-GIMME,Leiden,280.5,185.8,469.1,100.7x
-GIMME,Walktrap,280.5,185.8,469.1,100.7x
+Method,Median runtime (s),IQR low (s),IQR high (s),Runtime/DynEGA
+DynEGA,2.61,2.01,3.13,1.0x
+GraphicalVAR,86.1,55.5,176.2,33.0x
+GIMME,280.5,185.8,469.1,107.7x
