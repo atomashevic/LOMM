@@ -61,9 +61,9 @@ bootstrap_hit_ci <- function(data, n_boot = 1000L, seed = 20260616L) {
     return(tibble(ci_low = NA_real_, ci_high = NA_real_))
   }
   clusters <- data %>%
-    mutate(success = as.numeric(n_dim_exact == 1)) %>%
+    mutate(success = if_else(!is.na(n_dim_exact) & n_dim_exact == 1, 1, 0)) %>%
     group_by(cluster_id) %>%
-    summarise(cluster_hit = mean(success, na.rm = TRUE), .groups = "drop")
+    summarise(cluster_hit = mean(success), .groups = "drop")
   if (nrow(clusters) < 2L) {
     return(tibble(ci_low = NA_real_, ci_high = NA_real_))
   }
@@ -124,7 +124,7 @@ scenario <- rows %>%
     tibble(
       rows = nrow(.x),
       clusters = n_distinct(.x$cluster_id),
-      successes = sum(.x$n_dim_exact == 1, na.rm = TRUE),
+      successes = sum(!is.na(.x$n_dim_exact) & .x$n_dim_exact == 1),
       hit_rate = successes / rows,
       ci_low = ci$ci_low,
       ci_high = ci$ci_high
