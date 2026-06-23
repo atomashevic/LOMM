@@ -510,6 +510,9 @@ def check_untracked_generated_outputs(root: Path, config: dict[str, Any]) -> lis
         paths.get("research", ""),
         "research.yaml",
         "tools/research_ops.py",
+        "README.md",
+        "scripts/README.md",
+        "REPRODUCIBILITY.md",
     ]
     untracked = untracked_paths(root, [str(path) for path in package_paths])
     return [f"untracked package artifact: {path}" for path in untracked]

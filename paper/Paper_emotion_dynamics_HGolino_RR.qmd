@@ -466,11 +466,11 @@ Not applicable.
 
 ## Availability of data and materials
 
-The manuscript analyses use simulation outputs and derived FER-like score summaries generated for this study. The version-controlled manuscript, analysis code, figure-generation scripts, simulation scripts, and reproducibility materials are available at \url{https://github.com/atomashevic/dlo-rr}. Raw MAFW video materials are third-party dataset materials; access to the original videos is governed by the MAFW dataset providers. A permanent OSF archival record will be added before final journal upload.
+The manuscript analyses use simulation outputs and derived FER-like score summaries generated for this study. The OSF archive will include the version-controlled manuscript repository, final simulation runners, figure-generation scripts, manuscript-facing derived outputs, provenance manifests, and from-scratch rerun instructions for the final simulation grids. Raw MAFW video materials are third-party dataset materials; access to the original videos is governed by the MAFW dataset providers. Derived empirical score summaries needed for the realism check will be included in the archive.
 
 ## Code availability
 
-All code needed to reproduce the manuscript figures, tables, and simulation summaries is available in the project repository at \url{https://github.com/atomashevic/dlo-rr}. The repository includes the R scripts used for simulation, empirical realism summaries, method-comparison summaries, and manuscript rendering.
+All code needed to rerun the final LOMM simulations, rebuild the method-comparison summaries, regenerate the manuscript figures and tables, and render the manuscript will be available in the archived project repository. The repository includes the R simulation runners, empirical realism and method-comparison scripts, manuscript rendering source, claim ledger, and run manifests.
 
 ## Authors' contributions
 
@@ -478,7 +478,7 @@ Aleksandar Tomasevic contributed conceptualization, formal analysis, methodology
 
 # Open Practices Statement
 
-The study was not preregistered. Analysis code, simulation code, manuscript source files, generated figure and table inputs, and derived reproducibility materials are available at \url{https://github.com/atomashevic/dlo-rr}. Raw MAFW video data are third-party materials governed by the dataset providers. A permanent OSF archive will be linked before final journal upload.
+The study was not preregistered. The OSF archive will include analysis code, simulation code, manuscript source files, generated figure and table inputs, derived empirical score summaries needed for the realism check, and provenance materials for rerunning the final simulations from scratch. Raw MAFW video data are third-party materials governed by the dataset providers.
 
 # References
 

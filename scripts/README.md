@@ -11,24 +11,22 @@ Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
 ## Manuscript Figures And Tables
 
 The checked-in manuscript renders from the generated files already present
-under `paper/figures/` and `paper/tables/`. To regenerate those files from raw
-results on this machine, restore
-`archive/2026-06-16-coauthor-tidy/results/simulation_outputs/` to
-`simulation_outputs/` first.
+under `paper/figures/` and `paper/tables/`. To regenerate those files from a
+full rerun, run the final simulation commands below first. The empirical realism
+plot also requires the packaged derived input
+`simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv`.
 
 ```bash
-Rscript scripts/figures/plot_empirical_realism_results.R
 Rscript scripts/simulations/compare_final_results_to_manuscript.R
+Rscript scripts/figures/plot_empirical_realism_results.R
 Rscript scripts/figures/plot_method_recovery_results.R
 Rscript scripts/figures/plot_factor_effects_results.R
 Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
 These scripts write to `paper/figures/` and `paper/tables/`. The final
-simulation comparison uses the archived raw result trees under
-`simulation_outputs/final_simulation_results/` after restoration. The empirical
-realism figure uses the archived link-option output under
-`simulation_outputs/empirical_link_options/`.
+simulation comparison reads `simulation_outputs/final_simulation_results/`,
+which is produced by the final runners below.
 
 ## Final Simulation Evidence
 
@@ -46,6 +44,9 @@ The final runners share scenario and estimator internals from
 code. Defaults write local outputs under the ignored `simulation_outputs/`
 directory.
 
+For the full manuscript package and dry-run grid checks, see
+`REPRODUCIBILITY.md`.
+
 ## Manuscript Build
 
 ```bash
@@ -57,4 +58,4 @@ pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/r
 
 Older exploratory scripts, diagnostics, reports, and raw result trees were moved
 to ignored dated archive folders. They are local provenance artifacts and are
-not part of the co-author-facing manuscript tree.
+not part of the submission reproducibility package.

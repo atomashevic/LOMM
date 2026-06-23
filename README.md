@@ -1,6 +1,6 @@
 # LOMM Manuscript Simulation Workspace
 
-This repository is the cleaned RR manuscript workspace for the Latent Oscillator Measurement Model (LOMM) paper. The visible tree is organized around the current manuscript, the rendered manuscript artifacts, and the scripts needed to audit or regenerate manuscript-facing figures and tables.
+This repository is the cleaned RR manuscript workspace for the Latent Oscillator Measurement Model (LOMM) paper. The visible tree is organized around the current manuscript, the rendered manuscript artifacts, and the scripts needed to rerun the final simulations and regenerate manuscript-facing figures and tables.
 
 ## Active Manuscript
 
@@ -19,7 +19,8 @@ Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagn
 - `scripts/simulations/`: final simulation runners, launchers, shared runner internals, and the final comparison builder.
 - `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
 - `paper/figures/` and `paper/tables/`: rendered manuscript-facing outputs.
-- `archive/`: ignored local archive for raw result trees, old scripts, and superseded notes.
+- `research/`: claim ledger, run manifests, and project-local provenance checks.
+- `REPRODUCIBILITY.md`: from-scratch rerun instructions for the final simulation package.
 
 ## Main Commands
 
@@ -32,18 +33,17 @@ Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
 Regenerate manuscript-facing figures and tables:
 
 ```bash
-Rscript scripts/figures/plot_empirical_realism_results.R
 Rscript scripts/simulations/compare_final_results_to_manuscript.R
+Rscript scripts/figures/plot_empirical_realism_results.R
 Rscript scripts/figures/plot_method_recovery_results.R
 Rscript scripts/figures/plot_factor_effects_results.R
 Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
 The manuscript itself renders from the checked-in `paper/figures/` and
-`paper/tables/` files. The raw result trees needed to rerun the figure/table
-pipeline are local archived artifacts under
-`archive/2026-06-16-coauthor-tidy/results/simulation_outputs/`; restore that
-directory to `simulation_outputs/` before rerunning the upstream scripts.
+`paper/tables/` files. A full rerun writes final result trees under
+`simulation_outputs/final_simulation_results/`; see `REPRODUCIBILITY.md` for
+the exact long-run commands and required derived empirical inputs.
 
 Rebuild the manuscript and response letter:
 
