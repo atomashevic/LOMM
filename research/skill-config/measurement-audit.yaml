@@ -1,0 +1,14 @@
+scores:
+  path: null
+  variables: []
+  group_col: null
+  text_col: null
+measurement:
+  construct_names: []
+  threshold_cols: []
+  model_version_cols: []
+  prompt_version_cols: []
+  allowed_score_min: null
+  allowed_score_max: null
+report:
+  output: research/reports/measurement-audit-{date}.md

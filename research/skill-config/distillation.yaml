@@ -1,0 +1,13 @@
+workflow_name: null
+reusable_outcome: null
+variable_inputs: []
+invariant_steps: []
+project_specific_assumptions: []
+guardrails_from_failed_attempts: []
+human_checkpoints: []
+redactions_required: []
+proposed_skill_change: null
+tests: []
+file_count_impact:
+  added: 0
+  modified: 0

@@ -250,26 +250,6 @@ paper_table1 <- final_method_summary %>%
     `Runtime (s)` = fmt_runtime(runtime_ok_median_s)
   )
 
-paper_table2 <- conditional_method_summary %>%
-  transmute(
-    Method = as.character(Method),
-    Correct = paste0(correct_rows, "/", total_rows),
-    `Hit (%)` = scales::percent(hit_rate, accuracy = 0.1),
-    `Mean r` = fmt_num(mean_conditional_r, 3),
-    `r range` = ifelse(
-      is.na(min_conditional_r) | is.na(max_conditional_r),
-      NA_character_,
-      sprintf("%.3f-%.3f", min_conditional_r, max_conditional_r)
-    ),
-    `Stratum n` = ifelse(
-      is.na(min_correct_rows_per_stratum) | is.na(max_correct_rows_per_stratum),
-      NA_character_,
-      paste0(min_correct_rows_per_stratum, "-", max_correct_rows_per_stratum)
-    ),
-    `Max CI` = fmt_num(widest_ci, 3),
-    Missing = missing_strata
-  )
-
 write_csv(final_full_dynega_summary, file.path(out_dir, "final_full_dynega_summary.csv"))
 write_csv(final_method_summary, file.path(out_dir, "final_method_summary.csv"))
 write_csv(final_cd_summary, file.path(out_dir, "final_cd_summary.csv"))
@@ -279,7 +259,6 @@ write_csv(conditional_score_summary, file.path(out_dir, "final_cd_conditional_sc
 write_csv(conditional_method_summary, file.path(out_dir, "final_method_conditional_score_summary.csv"))
 write_csv(structure_fit_status, file.path(out_dir, "final_structure_fit_status_accounting.csv"))
 write_csv(paper_table1, file.path(repo_root, "paper", "tables", "table1_method_overall.csv"))
-write_csv(paper_table2, file.path(repo_root, "paper", "tables", "table2_conditional_score_correlations.csv"))
 saveRDS(final_cd_rows, file.path(out_dir, "final_cd_rows.rds"))
 
 report_path <- file.path(out_dir, "final_vs_current_manuscript_report.md")

@@ -1,0 +1,31 @@
+project: dlo
+paths:
+  manuscript: paper
+  figures: paper/figures
+  tables: paper/tables
+  research: research
+  runs: research/runs
+  reports: research/reports
+  log: research/log.jsonl
+  evidence: research/evidence.jsonl
+  claims: research/claim-ledger.yaml
+  references: paper/references.bib
+execution:
+  python: python3
+  r: Rscript
+  require_clean_git_for_final: false
+paper:
+  engine: quarto
+  main: paper/Paper_emotion_dynamics_HGolino_RR.qmd
+checks:
+  require_run_manifest_for_result_claims: true
+  require_evidence_for_literature_claims: true
+  fail_on_stale_figures: true
+  fail_on_untracked_generated_outputs: true
+human_checkpoints:
+  - change_hypothesis
+  - change_construct
+  - change_outcome
+  - change_exclusion_rule
+  - add_causal_language
+  - infer_sensitive_identity

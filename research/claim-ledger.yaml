@@ -1,0 +1,86 @@
+- id: claim-empirical-realism-001
+  location: "Results: Empirical Realism Results"
+  statement: "The calibrated LOMM generator reproduces selected local temporal and dimensional signatures of the empirical MAFW-derived FER-like panels, with a remaining amplitude-dispersion mismatch."
+  claim_type: empirical
+  status: supported
+  run_ids:
+    - manuscript-figures-tables-20260623
+  evidence_ids: []
+  artifact_selectors:
+    - path: paper/figures/figure4_empirical_realism.pdf
+    - path: paper/tables/empirical_realism_table.csv
+  citations: []
+  scope: "Simulation-construction realism check against selected summary metrics; not validation of emotion labels or the scoring model."
+  caveats:
+    - "Channel IQR fails at observed-channel and community-score readouts."
+
+- id: claim-expanded-dynega-001
+  location: "Methods and Results: Dimensional-Recovery Simulation Study"
+  statement: "The expanded DynEGA Louvain/expand grid contains 1,296 structural cells and 518,400 method rows, all completed without errors or timeouts."
+  claim_type: empirical
+  status: supported
+  run_ids:
+    - final-manuscript-comparison-20260623
+  evidence_ids: []
+  artifact_selectors:
+    - path: simulation_outputs/final_simulation_results/comparison_to_current_manuscript/final_full_dynega_summary.csv
+  citations: []
+  scope: "Expanded DynEGA grid only."
+  caveats:
+    - "This claim does not describe GraphicalVAR or GIMME scalability."
+
+- id: claim-bounded-method-comparison-001
+  location: "Results: Simulation Results"
+  statement: "In the bounded NVAR = 4 all-method comparator, DynEGA has the strongest status-inclusive dimensional recovery, followed by GraphicalVAR and then GIMME."
+  claim_type: empirical
+  status: supported
+  run_ids:
+    - final-manuscript-comparison-20260623
+    - manuscript-figures-tables-20260623
+  evidence_ids: []
+  artifact_selectors:
+    - path: simulation_outputs/final_simulation_results/comparison_to_current_manuscript/final_method_summary.csv
+    - path: paper/tables/table1_method_overall.csv
+    - path: paper/figures/figure5_dimension_recovery.pdf
+  citations: []
+  scope: "Bounded NVAR = 4 comparator aggregated across Louvain, Leiden, and Walktrap readouts."
+  caveats:
+    - "Hit rates retain timeouts and failed fits in the denominator."
+
+- id: claim-score-quality-001
+  location: "Results: Simulation Results"
+  statement: "Matched-score diagnostics show that score recovery varies mainly with scenario family and measurement quality after a usable structure has been estimated."
+  claim_type: empirical
+  status: supported
+  run_ids:
+    - final-manuscript-comparison-20260623
+    - manuscript-figures-tables-20260623
+  evidence_ids: []
+  artifact_selectors:
+    - path: simulation_outputs/final_simulation_results/comparison_to_current_manuscript/final_method_conditional_score_summary.csv
+    - path: paper/tables/table2_score_quality_marginal_means.csv
+    - path: paper/figures/figure6_factor_effects.pdf
+    - path: paper/tables/figure6_factor_effects_eta_screen.csv
+  citations: []
+  scope: "Successful method-readout rows with recovered score summaries."
+  caveats:
+    - "Score r and Score NRMSE are secondary diagnostics, not the primary dimensional-recovery endpoint."
+
+- id: claim-feasibility-001
+  location: "Results: Computational Feasibility"
+  statement: "DynEGA is substantially faster than GraphicalVAR and GIMME in the bounded comparator, and GraphicalVAR and GIMME have method-specific timeout or extraction-error limits."
+  claim_type: empirical
+  status: supported
+  run_ids:
+    - final-manuscript-comparison-20260623
+    - manuscript-figures-tables-20260623
+  evidence_ids: []
+  artifact_selectors:
+    - path: simulation_outputs/final_simulation_results/comparison_to_current_manuscript/final_structure_fit_status_accounting.csv
+    - path: paper/tables/table3_runtime_feasibility.csv
+    - path: paper/tables/table3_runtime_feasibility_accounting.csv
+    - path: paper/figures/figure7_runtime_feasibility.pdf
+  citations: []
+  scope: "Bounded NVAR = 4 comparator plus expanded DynEGA completion statement."
+  caveats:
+    - "Runtime summaries describe successful-fit rows; status accounting describes unique structure fits for GraphicalVAR and GIMME."

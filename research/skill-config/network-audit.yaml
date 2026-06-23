@@ -1,0 +1,19 @@
+edges:
+  path: null
+  source_col: source
+  target_col: target
+  time_col: null
+  weight_col: null
+  directed: true
+nodes:
+  path: null
+  id_col: id
+  actor_type_col: null
+analysis:
+  expected_window_start: null
+  expected_window_end: null
+  allowed_actor_types: []
+  known_bad_dates: []
+  duplicate_policy: document
+report:
+  output: research/reports/network-audit-{date}.md

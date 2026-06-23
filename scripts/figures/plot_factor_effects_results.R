@@ -17,13 +17,12 @@ comparison_dir <- file.path(
   "simulation_outputs/final_simulation_results/comparison_to_current_manuscript"
 )
 rows_path <- file.path(comparison_dir, "final_cd_rows.rds")
-conditional_path <- file.path(comparison_dir, "final_method_conditional_score_summary.csv")
 figure_dir <- file.path(repo_root, "paper", "figures")
 table_dir <- file.path(repo_root, "paper", "tables")
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(table_dir, recursive = TRUE, showWarnings = FALSE)
 
-if (!file.exists(rows_path) || !file.exists(conditional_path)) {
+if (!file.exists(rows_path)) {
   stop(
     "Missing final CD comparison outputs. Run ",
     "`Rscript scripts/simulations/compare_final_results_to_manuscript.R` first.",
@@ -48,10 +47,6 @@ wilson_ci <- function(successes, trials, z = 1.96) {
   center <- (p + z^2 / (2 * trials)) / denom
   half_width <- z * sqrt((p * (1 - p) / trials) + (z^2 / (4 * trials^2))) / denom
   c(low = max(0, center - half_width), high = min(1, center + half_width))
-}
-
-fmt_num <- function(x, digits = 3) {
-  ifelse(is.na(x), NA_character_, sprintf(paste0("%.", digits, "f"), as.numeric(x)))
 }
 
 rows <- readRDS(rows_path) %>%
@@ -157,30 +152,64 @@ effects <- bind_rows(
       log_runtime_sec = "Runtime"
     ),
     partial_eta2 = round(partial_eta2, 3)
-  )
+)
 write_csv(effects, file.path(table_dir, "figure6_factor_effects_eta_screen.csv"))
 
-conditional <- read_csv(conditional_path, show_col_types = FALSE) %>%
-  mutate(Method = factor(as.character(Method), levels = method_levels)) %>%
-  transmute(
-    Method = as.character(Method),
-    Correct = paste0(correct_rows, "/", total_rows),
-    `Hit (%)` = percent(hit_rate, accuracy = 0.1),
-    `Mean r` = fmt_num(mean_conditional_r, 3),
-    `r range` = ifelse(
-      is.na(min_conditional_r) | is.na(max_conditional_r),
-      NA_character_,
-      sprintf("%.3f-%.3f", min_conditional_r, max_conditional_r)
-    ),
-    `Stratum n` = ifelse(
-      is.na(min_correct_rows_per_stratum) | is.na(max_correct_rows_per_stratum),
-      NA_character_,
-      paste0(min_correct_rows_per_stratum, "-", max_correct_rows_per_stratum)
-    ),
-    `Max CI` = fmt_num(widest_ci, 3),
-    Missing = missing_strata
+scenario_labels <- c(
+  old_low_single_stable = "A: low-expression single-dominance",
+  old_high_single_stable = "B: high-expression single-dominance",
+  old_high_switch_stable = "C: high-expression switching",
+  old_high_switch_volatile = "D: high-expression rapid switching",
+  oai_ranked_persistence = "E: ranked-persistence",
+  oai_broad_geometry = "F: broad switching-geometry"
+)
+
+score_quality_summary <- function(data, factor_col, factor_label, level_order) {
+  data %>%
+    mutate(Level = as.character(.data[[factor_col]])) %>%
+    group_by(Level) %>%
+    summarise(
+      Rows = n(),
+      `Mean Score r` = mean(score_cor_common, na.rm = TRUE),
+      `Mean Score NRMSE` = mean(score_nrmse_common, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      Factor = factor_label,
+      Level = recode(Level, !!!scenario_labels),
+      Level = factor(Level, levels = level_order)
+    ) %>%
+    arrange(Level) %>%
+    mutate(
+      `Mean Score r` = round(`Mean Score r`, 3),
+      `Mean Score NRMSE` = round(`Mean Score NRMSE`, 3)
+    ) %>%
+    select(Factor, Level, Rows, `Mean Score r`, `Mean Score NRMSE`)
+}
+
+score_quality_rows <- rows %>% filter(status == "ok")
+score_quality_means <- bind_rows(
+  score_quality_summary(score_quality_rows, "Method", "Method", method_levels),
+  score_quality_summary(
+    score_quality_rows,
+    "scenario_family",
+    "Scenario family",
+    unname(scenario_labels)
+  ),
+  score_quality_summary(
+    score_quality_rows,
+    "Error",
+    "Measurement-error SD",
+    c("0.125", "0.25", "0.5")
+  ),
+  score_quality_summary(
+    score_quality_rows,
+    "Loadings",
+    "Loading strength",
+    c("0.4", "0.6", "0.8")
   )
-write_csv(conditional, file.path(table_dir, "table2_conditional_score_correlations.csv"))
+)
+write_csv(score_quality_means, file.path(table_dir, "table2_score_quality_marginal_means.csv"))
 
 figure6 <- ggplot(
   summary_df,
@@ -241,4 +270,4 @@ message("Wrote ", pdf_path)
 message("Wrote ", png_path)
 message("Wrote ", file.path(table_dir, "figure6_factor_effects_table.csv"))
 message("Wrote ", file.path(table_dir, "figure6_factor_effects_eta_screen.csv"))
-message("Wrote ", file.path(table_dir, "table2_conditional_score_correlations.csv"))
+message("Wrote ", file.path(table_dir, "table2_score_quality_marginal_means.csv"))
