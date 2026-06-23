@@ -2,4 +2,4 @@ Method,Scope,Structure fits,ok,timeout,error,Feasibility note
 DynEGA,Bounded NVAR=4 comparator,21600,21600,0,0,Bounded comparator completed across CD readouts.
 DynEGA,Full DynEGA grid,518400,518400,0,0,Full expanded DynEGA Louvain/expand grid completed.
 GIMME,Bounded NVAR=4 comparator,21600,15294,4114,2192,"Bounded NVAR = 4 structure fits include substantial timeouts and post-estimation errors; completed fits were partitioned with Louvain, Leiden, and Walktrap."
-GraphicalVAR,Bounded NVAR=4 comparator,21600,20872,728,0,"Bounded NVAR = 4 structure fits completed except OAI 3D timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap."
+GraphicalVAR,Bounded NVAR=4 comparator,21600,20872,728,0,"Bounded NVAR = 4 structure fits completed except three-dimensional ranked-persistence and broad switching-geometry timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap."

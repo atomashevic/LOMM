@@ -93,7 +93,7 @@ status_table <- read_csv(structure_status_path, show_col_types = FALSE) %>%
     `Feasibility note` = case_when(
       Method == "DynEGA" & Scope == "Full DynEGA grid" ~ "Full expanded DynEGA Louvain/expand grid completed.",
       Method == "DynEGA" ~ "Bounded comparator completed across CD readouts.",
-      Method == "GraphicalVAR" ~ "Bounded NVAR = 4 structure fits completed except OAI 3D timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap.",
+      Method == "GraphicalVAR" ~ "Bounded NVAR = 4 structure fits completed except three-dimensional ranked-persistence and broad switching-geometry timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap.",
       Method == "GIMME" ~ "Bounded NVAR = 4 structure fits include substantial timeouts and post-estimation errors; completed fits were partitioned with Louvain, Leiden, and Walktrap.",
       TRUE ~ ""
     )

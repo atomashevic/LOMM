@@ -11,8 +11,8 @@
     "python": "3.13.1"
   },
   "experiment_id": "final_manuscript_assets",
-  "finished_at": "2026-06-23T10:34:17Z",
-  "git_commit": "a0b22d1a769652cedae26186e1fcec9e77b8d783",
+  "finished_at": "2026-06-23T10:57:42Z",
+  "git_commit": "674dd3c2b4dff2202c36bf7eed53892077f808dd",
   "git_dirty": true,
   "input_artifacts": [
     {
@@ -38,7 +38,7 @@
     },
     {
       "generating_command": null,
-      "hash": "09684f1ea0497960c50e76e849c34739aad333d48ac19e4e409d144441c750da",
+      "hash": "d947439e924b06c8771a8c7f17186011f73aa2d32d59e7b2f75a358ffb79da57",
       "path": "scripts/figures/plot_runtime_feasibility_results.R",
       "role": "input",
       "type": "R"
@@ -124,7 +124,7 @@
     },
     {
       "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "7c07146908bb152e23ab5337f4743a20b11a673714410a17152568ada9bd7c94",
+      "hash": "1801e053e6c9ac9b741be201e4cf8dbdb61790940d335d71cf4ba8a7e7e58ae6",
       "path": "paper/figures/figure7_runtime_feasibility.pdf",
       "role": "output",
       "type": "pdf"
@@ -187,7 +187,7 @@
     },
     {
       "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "2e74a2b41dfc37a875f2b9f6be30b05defd453d5fc8ce0c0a5032b641e7d9e85",
+      "hash": "ab5b9c243059fc314c98801f2e9836b0046b33326564c92cd6dc7436612c7a45",
       "path": "paper/tables/table3_runtime_feasibility_accounting.csv",
       "role": "output",
       "type": "csv"
@@ -197,6 +197,6 @@
   "run_id": "manuscript-figures-tables-20260623",
   "seeds": [],
   "software_versions": {},
-  "started_at": "2026-06-23T10:34:17Z",
+  "started_at": "2026-06-23T10:57:42Z",
   "status": "success"
 }

@@ -10,3 +10,4 @@
 - Revised the Scenario Selection paragraph to describe the six scenario families without stale primary-design, sensitivity, or three-replication wording. The exact final grid sizes and replication counts now remain in the dimensional-recovery simulation paragraph.
 - Revised the empirical-realism Discussion boundary to state the directional calibration problem directly: the current observation layer leaves marginal score dispersion too high relative to the empirical panels.
 - Clarified the Table 1 caption so readers can distinguish status-inclusive hit-rate denominators from score diagnostics computed only on successful rows with recovered score summaries.
+- Replaced the Table 3 feasibility-accounting note that used internal OAI shorthand with reader-facing scenario language for three-dimensional ranked-persistence and broad switching-geometry timeouts.
