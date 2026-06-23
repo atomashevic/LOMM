@@ -953,8 +953,8 @@ bounded NVAR = 4 comparator, aggregated across Louvain, Leiden, and
 Walktrap readouts. Hit rate is recovery of the known number of latent
 dimensions using all method-readout rows as the denominator; Assign. is
 optimal block-assignment accuracy. Score r and Score NRMSE are secondary
-matched-score diagnostics comparing recovered score summaries with the
-known latent trajectories.}
+matched-score diagnostics computed only for successful rows with
+recovered score summaries.}
 
 \tabularnewline
 
@@ -1258,8 +1258,8 @@ community-score readouts, showing that the current calibration still
 produces larger marginal amplitude dispersion than the empirical panels.
 This mismatch identifies the main calibration boundary: the current LOMM
 specification reproduces selected dynamic and dimensional signatures,
-while the bounded probability-like observation layer still has a
-narrower score-range and occupancy limitation.
+and its bounded probability-like observation layer leaves marginal score
+dispersion too high relative to the empirical panels.
 
 Several limitations follow directly from this design. FER-like scores
 remain model-derived observations of visible expression, so the realism
