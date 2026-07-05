@@ -49,8 +49,29 @@ read_bool <- function(name, default) {
   value %in% c("1", "true", "yes", "y")
 }
 
+sha256_file <- function(path) {
+  hash_line <- tryCatch(
+    system2("sha256sum", path, stdout = TRUE, stderr = FALSE),
+    error = function(...) character()
+  )
+  if (length(hash_line) == 0L || !nzchar(hash_line[[1]])) {
+    return(NA_character_)
+  }
+  strsplit(hash_line[[1]], "[[:space:]]+")[[1]][[1]]
+}
+
 clip_id <- read_char("OAI_CLIP_FIGURE_CLIP", "02875.mp4")
 model_name <- read_char("OAI_CLIP_FIGURE_MODEL", "oai-large")
+model_id <- if (identical(model_name, "oai-large")) {
+  "openai/clip-vit-large-patch14"
+} else {
+  model_name
+}
+model_description <- if (identical(model_name, "oai-large")) {
+  "OpenAI CLIP ViT-Large/14"
+} else {
+  model_name
+}
 frame_scores_path <- read_char(
   "OAI_CLIP_FIGURE_FRAME_SCORES",
   "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/frame_scores.csv"
@@ -64,14 +85,14 @@ n_embed <- as.integer(read_num("OAI_CLIP_FIGURE_N_EMBED", 3))
 edge_threshold <- read_num("OAI_CLIP_FIGURE_EDGE_THRESHOLD", 0.08)
 smooth_window <- as.integer(read_num("OAI_CLIP_FIGURE_SMOOTH_WINDOW", 7))
 top_emotion_count <- as.integer(read_num("OAI_CLIP_FIGURE_TOP_N", 4))
-include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", TRUE)
+include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", FALSE)
 figure_width <- read_num("OAI_CLIP_FIGURE_WIDTH", 10.8)
 figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", if (include_frame_stills) 10.8 else 9.0)
 figure_dpi <- as.integer(read_num("OAI_CLIP_FIGURE_DPI", 300))
 selected_frame_indices <- read_int_vec("OAI_CLIP_FIGURE_FRAMES", c(7L, 16L, 19L, 23L))
 selected_frame_labels <- read_label_vec(
   "OAI_CLIP_FIGURE_FRAME_LABELS",
-  c("Helplessness + fear", "Strong disgust", "Disgust + helplessness", "Pure helplessness")
+  c("Score profile 1", "Score profile 2", "Score profile 3", "Score profile 4")
 )
 frame_image_dir <- read_char(
   "OAI_CLIP_FIGURE_FRAME_IMAGE_DIR",
@@ -134,6 +155,12 @@ if (!file.exists(frame_scores_path)) {
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 raw_scores <- utils::read.csv(frame_scores_path, stringsAsFactors = FALSE)
+processing_summary_path <- file.path(dirname(frame_scores_path), "processing_summary.csv")
+processing_summary <- if (file.exists(processing_summary_path)) {
+  utils::read.csv(processing_summary_path, stringsAsFactors = FALSE)
+} else {
+  NULL
+}
 required_cols <- c("clip", "frame_index", "truth_label", "model", emotion_cols)
 missing_cols <- setdiff(required_cols, names(raw_scores))
 if (length(missing_cols) > 0L) {
@@ -151,6 +178,20 @@ if (nrow(clip_scores) == 0L) {
 clip_scores <- clip_scores[complete.cases(clip_scores[, emotion_cols, drop = FALSE]), , drop = FALSE]
 if (nrow(clip_scores) < 15L) {
   stop("Selected clip has too few complete frames after filtering: ", nrow(clip_scores), call. = FALSE)
+}
+clip_summary <- if (!is.null(processing_summary)) {
+  processing_summary[
+    processing_summary$clip == clip_id & processing_summary$model == model_name,
+    ,
+    drop = FALSE
+  ]
+} else {
+  data.frame()
+}
+clip_n_frames <- if (nrow(clip_summary) > 0L && "n_frames" %in% names(clip_summary)) {
+  clip_summary$n_frames[[1]]
+} else {
+  nrow(clip_scores)
 }
 
 clip_scores[, emotion_cols] <- renormalize_probability_rows(clip_scores, emotion_cols)[, emotion_cols]
@@ -252,6 +293,37 @@ utils::write.csv(
   file.path(output_dir, paste0(clip_stem, "_dynega_membership.csv")),
   row.names = FALSE
 )
+transforemotion_version <- tryCatch(
+  as.character(utils::packageVersion("transforEmotion")),
+  error = function(...) NA_character_
+)
+utils::write.csv(
+  data.frame(
+    artifact = "figure3_scoring_provenance",
+    clip = clip_id,
+    scoring_package = "transforEmotion",
+    scoring_package_version = transforemotion_version,
+    model_key = model_name,
+    model_id = model_id,
+    model_description = model_description,
+    prompt_channels = paste(emotion_cols, collapse = ";"),
+    frame_extraction_settings = paste(
+      paste0("MAFW calibration frame-score CSV with ", clip_n_frames, " retained frames for selected clip"),
+      "complete-score rows retained",
+      "score vectors renormalized after clipping",
+      sep = "; "
+    ),
+    frame_scores_path = frame_scores_path,
+    frame_scores_sha256 = sha256_file(frame_scores_path),
+    processing_summary_path = if (file.exists(processing_summary_path)) processing_summary_path else NA_character_,
+    processing_summary_sha256 = if (file.exists(processing_summary_path)) sha256_file(processing_summary_path) else NA_character_,
+    selected_frame_indices = paste(selected_frames$frame_index, collapse = ";"),
+    include_frame_stills = include_frame_stills,
+    stringsAsFactors = FALSE
+  ),
+  file.path(output_dir, paste0(clip_stem, "_figure3_scoring_provenance.csv")),
+  row.names = FALSE
+)
 
 make_bar_panel <- function(row, show_y_axis = FALSE) {
   scores <- data.frame(
@@ -274,7 +346,7 @@ make_bar_panel <- function(row, show_y_axis = FALSE) {
     ) +
     labs(
       x = NULL,
-      y = "Frame score",
+      y = "Classifier-output score",
       title = sprintf("Frame %d", row$frame_index[[1]]),
       subtitle = row$profile_label[[1]]
     ) +
@@ -346,7 +418,7 @@ time_panel <- ggplot() +
   ) +
   scale_x_continuous(breaks = seq(0, 50, by = 10), expand = expansion(mult = c(0.01, 0.01))) +
   scale_y_continuous(limits = c(0, max(0.50, max(time_series$smoothed_score) * 1.05)), expand = expansion(mult = c(0, 0.02))) +
-  labs(x = "Frame", y = sprintf("OpenAI CLIP score (%d-frame smooth)", smooth_window)) +
+  labs(x = "Frame", y = sprintf("Classifier-output score (%d-frame smooth)", smooth_window)) +
   guides(color = guide_legend(nrow = 1, byrow = TRUE, override.aes = list(linewidth = 1.2, alpha = 1))) +
   theme_classic(base_size = 8.5, base_family = base_family) +
   theme(
@@ -506,9 +578,9 @@ if (include_frame_stills) {
   figure_body <- plot_grid(
     make_section_header("A", "Selected MAFW video frames"),
     still_row,
-    make_section_header("B", "Selected-frame OpenAI CLIP emotion scores"),
+    make_section_header("B", "Selected-frame classifier-output score profiles"),
     bar_row,
-    make_section_header("C", "Smoothed frame-level emotion trajectories"),
+    make_section_header("C", "Smoothed classifier-output trajectories"),
     time_panel,
     make_section_header("D", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
     network_panel,
@@ -517,9 +589,9 @@ if (include_frame_stills) {
   )
 } else {
   figure_body <- plot_grid(
-    make_section_header("A", "Selected-frame OpenAI CLIP emotion scores"),
+    make_section_header("A", "Selected-frame classifier-output score profiles"),
     bar_row,
-    make_section_header("B", "Smoothed frame-level emotion trajectories"),
+    make_section_header("B", "Smoothed classifier-output trajectories"),
     time_panel,
     make_section_header("C", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
     network_panel,

@@ -169,7 +169,7 @@ score_quality_summary <- function(data, factor_col, factor_label, level_order) {
     mutate(Level = as.character(.data[[factor_col]])) %>%
     group_by(Level) %>%
     summarise(
-      Rows = n(),
+      `Usable score-summary rows` = n(),
       `Mean Score r` = mean(score_cor_common, na.rm = TRUE),
       `Mean Score NRMSE` = mean(score_nrmse_common, na.rm = TRUE),
       .groups = "drop"
@@ -184,7 +184,7 @@ score_quality_summary <- function(data, factor_col, factor_label, level_order) {
       `Mean Score r` = round(`Mean Score r`, 3),
       `Mean Score NRMSE` = round(`Mean Score NRMSE`, 3)
     ) %>%
-    select(Factor, Level, Rows, `Mean Score r`, `Mean Score NRMSE`)
+    select(Factor, Level, `Usable score-summary rows`, `Mean Score r`, `Mean Score NRMSE`)
 }
 
 score_quality_rows <- rows %>% filter(status == "ok")

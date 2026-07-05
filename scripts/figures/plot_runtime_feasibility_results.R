@@ -39,6 +39,8 @@ method_colors <- c(
   GIMME = "#CC79A7"
 )
 method_shapes <- c(DynEGA = 16, GraphicalVAR = 17, GIMME = 15)
+legacy_matched_scope <- paste("Bounded", paste0("NVAR", "=4"), "comparator")
+legacy_broad_scope <- "Full DynEGA grid"
 
 fmt_runtime <- function(x) {
   x <- as.numeric(x)
@@ -90,11 +92,21 @@ write_csv(runtime_table, file.path(table_dir, "table3_runtime_feasibility.csv"))
 status_table <- read_csv(structure_status_path, show_col_types = FALSE) %>%
   mutate(
     Method = as.character(Method),
+    Scope = recode(
+      Scope,
+      !!legacy_matched_scope := "Matched four-indicator grid",
+      !!legacy_broad_scope := "Broad DynEGA grid"
+    ),
+    readout_multiplier = if_else(Scope == "Broad DynEGA grid", 1L, 3L),
+    readout_rows = structure_fits * readout_multiplier,
+    valid_readout_rows = ok * readout_multiplier,
+    timeout_readout_rows = timeout * readout_multiplier,
+    error_readout_rows = error * readout_multiplier,
     `Feasibility note` = case_when(
-      Method == "DynEGA" & Scope == "Full DynEGA grid" ~ "Full expanded DynEGA Louvain/expand grid completed.",
-      Method == "DynEGA" ~ "Bounded comparator completed across CD readouts.",
-      Method == "GraphicalVAR" ~ "Bounded NVAR = 4 structure fits completed except three-dimensional ranked-persistence and broad switching-geometry timeouts; each fit was partitioned with Louvain, Leiden, and Walktrap.",
-      Method == "GIMME" ~ "Bounded NVAR = 4 structure fits include substantial timeouts and post-estimation errors; completed fits were partitioned with Louvain, Leiden, and Walktrap.",
+      Method == "DynEGA" & Scope == "Broad DynEGA grid" ~ "Broad DynEGA Louvain/expand grid completed.",
+      Method == "DynEGA" ~ "Matched grid completed across community-detection readouts.",
+      Method == "GraphicalVAR" ~ "Matched-grid structure fits completed except timeout cases; each fit was partitioned with Louvain, Leiden, and Walktrap.",
+      Method == "GIMME" ~ "Matched-grid structure fits include substantial timeouts and post-estimation errors; completed fits were partitioned with Louvain, Leiden, and Walktrap.",
       TRUE ~ ""
     )
   ) %>%
@@ -102,9 +114,13 @@ status_table <- read_csv(structure_status_path, show_col_types = FALSE) %>%
     Method,
     Scope,
     `Structure fits` = structure_fits,
-    ok,
-    timeout,
-    error,
+    `Readout rows` = readout_rows,
+    `Valid fits` = ok,
+    `Timeout fits` = timeout,
+    `Error fits` = error,
+    `Valid rows` = valid_readout_rows,
+    `Timeout rows` = timeout_readout_rows,
+    `Error rows` = error_readout_rows,
     `Feasibility note`
   )
 write_csv(status_table, file.path(table_dir, "table3_runtime_feasibility_accounting.csv"))

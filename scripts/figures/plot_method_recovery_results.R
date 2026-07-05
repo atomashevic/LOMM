@@ -39,6 +39,7 @@ method_colors <- c(
   GIMME = "#CC79A7"
 )
 method_shapes <- c(DynEGA = 16, GraphicalVAR = 17, GIMME = 15)
+method_offsets <- c(DynEGA = -0.12, GraphicalVAR = 0, GIMME = 0.12)
 condition_levels <- c(
   old_low_single_stable = "A",
   old_high_single_stable = "B",
@@ -91,6 +92,8 @@ rows <- readRDS(rows_path) %>%
     condition_code = recode(scenario_family, !!!condition_levels),
     condition_code = factor(condition_code, levels = unname(condition_levels)),
     condition_index = as.integer(condition_code),
+    method_offset = unname(method_offsets[as.character(Method)]),
+    condition_x = condition_index + method_offset,
     dim_label = factor(paste0(scenario_nfac, "D source"), levels = c("2D source", "3D source")),
     cluster_id = paste(
       scenario, N, TimeP, NVAR, Error, Loadings, Q, base_err, rep,
@@ -139,17 +142,24 @@ condition_lookup <- tibble(
 write_csv(condition_lookup, file.path(table_dir, "figure5_condition_key.csv"))
 
 figure5 <- scenario %>%
-  ggplot(aes(x = condition_index, y = hit_rate, color = Method, fill = Method, group = Method)) +
-  geom_ribbon(
-    aes(ymin = ci_low, ymax = ci_high),
-    alpha = 0.15,
-    color = NA
-  ) +
+  left_join(
+    rows %>%
+      distinct(Method, method_offset),
+    by = "Method"
+  ) %>%
+  mutate(condition_x = condition_index + method_offset) %>%
+  ggplot(aes(x = condition_x, y = hit_rate, color = Method, group = Method)) +
   geom_line(linewidth = 0.62, alpha = 0.95) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    width = 0.08,
+    linewidth = 0.55,
+    alpha = 0.95,
+    na.rm = TRUE
+  ) +
   geom_point(aes(shape = Method), size = 1.95, stroke = 0.65) +
   facet_grid(dim_label ~ .) +
   scale_color_manual(values = method_colors, name = "Method") +
-  scale_fill_manual(values = method_colors, guide = "none") +
   scale_shape_manual(values = method_shapes, name = "Method") +
   scale_x_continuous(
     breaks = seq_along(condition_levels),
@@ -158,10 +168,10 @@ figure5 <- scenario %>%
   ) +
   scale_y_continuous(
     labels = percent_format(accuracy = 1),
-    limits = c(0, 1),
     breaks = seq(0, 1, .25),
     expand = expansion(mult = c(0.01, 0.025))
   ) +
+  coord_cartesian(ylim = c(0, 1), clip = "off") +
   labs(
     x = "Condition",
     y = "Dimensional hit rate"

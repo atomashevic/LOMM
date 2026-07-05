@@ -17,28 +17,28 @@
   "input_artifacts": [
     {
       "generating_command": null,
-      "hash": "116ac67fbce4e15ebc9adfbb5518f002753b0b6e70915b2c8f754c3ce5d384de",
+      "hash": "55a68dc1449cf2768f5e483116cb0ea711e5eaa95f4d9fd513fe127ca5de5209",
       "path": "scripts/figures/plot_empirical_realism_results.R",
       "role": "input",
       "type": "R"
     },
     {
       "generating_command": null,
-      "hash": "1536e0073c12ce5806c9f62fd5d83f518542b01c3cb1fbe2df25cdba226301eb",
+      "hash": "01a4656423957f3b12f057ee238ab87e4634c1a5b3c8764e0857653f0377d181",
       "path": "scripts/figures/plot_method_recovery_results.R",
       "role": "input",
       "type": "R"
     },
     {
       "generating_command": null,
-      "hash": "f13339d010d602cc10d7cfb25d2691652c6f3442325a4c6e4af8fa5691b9d3cc",
+      "hash": "6586d5e3658b30e2c1d47b0e05dcac3a4a58bd00ff20e5ae1e2fa2b5f5b8ef0b",
       "path": "scripts/figures/plot_factor_effects_results.R",
       "role": "input",
       "type": "R"
     },
     {
       "generating_command": null,
-      "hash": "d947439e924b06c8771a8c7f17186011f73aa2d32d59e7b2f75a358ffb79da57",
+      "hash": "14547da17986ef090f92e9de7429d23da3d601243665ae6dd5f71670ef2fd314",
       "path": "scripts/figures/plot_runtime_feasibility_results.R",
       "role": "input",
       "type": "R"
@@ -81,42 +81,42 @@
   ],
   "output_artifacts": [
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "9fab12cae5cb038e1fe18cd8d179e7867c70c1b42cfd03593b86481e54bbc24c",
+      "generating_command": "Rscript scripts/figures/plot_empirical_realism_results.R",
+      "hash": "df4f6b82421dddd34572bca6ca1fdf19b2e192d5edee9766583eb54f326eda74",
       "path": "paper/figures/figure4_empirical_realism.pdf",
       "role": "output",
       "type": "pdf"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "fb101f4e05c539b07ef942b41753e66af59ea311a28059b713ba15898bb234a6",
+      "generating_command": "Rscript scripts/figures/plot_empirical_realism_results.R",
+      "hash": "4230f6662cc8081124075e336cbc009590ffcdf8690d6e0fe25cab0b5b40b23a",
       "path": "paper/figures/figure4_empirical_realism.png",
       "role": "output",
       "type": "png"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "e0cfce316fdf366f407f4a51f81afdad108a1edae433c7cbfa1b335f954618ae",
+      "generating_command": "Rscript scripts/figures/plot_method_recovery_results.R",
+      "hash": "4d7576b715612bae061e07f59954211aeb56331063fc755af504ca5d0013f86c",
       "path": "paper/figures/figure5_dimension_recovery.pdf",
       "role": "output",
       "type": "pdf"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "f2097a1735ee63172e982b4ce3c7ce1f9c05b531cca31466e56fc2275a67f314",
+      "generating_command": "Rscript scripts/figures/plot_method_recovery_results.R",
+      "hash": "7881dca7af572755494c5ae11e7d343c612a88dc686c1ab671294f31f89def8c",
       "path": "paper/figures/figure5_dimension_recovery.png",
       "role": "output",
       "type": "png"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "ff84ea2f66e503f175b33aff12de796b017febad64d71054dae9f43f2fc9b181",
+      "generating_command": "Rscript scripts/figures/plot_factor_effects_results.R",
+      "hash": "96d83e61ea0e3590d783b8cec437399be7f3c909d6c0ddd644c15036e7fdb389",
       "path": "paper/figures/figure6_factor_effects.pdf",
       "role": "output",
       "type": "pdf"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
+      "generating_command": "Rscript scripts/figures/plot_factor_effects_results.R",
       "hash": "c07ca01ed4f4e2234dc1eb7002a467682bca0ae5200398be2ea2cba6f2a98d25",
       "path": "paper/figures/figure6_factor_effects.png",
       "role": "output",
@@ -124,7 +124,7 @@
     },
     {
       "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "1801e053e6c9ac9b741be201e4cf8dbdb61790940d335d71cf4ba8a7e7e58ae6",
+      "hash": "a980fb5cd2a3e086c6d4cb123a924706f2e93eae5e96f36fdd70649d445df8f9",
       "path": "paper/figures/figure7_runtime_feasibility.pdf",
       "role": "output",
       "type": "pdf"
@@ -137,43 +137,43 @@
       "type": "png"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "4f8c3086cc9f3747dbf2e4bf0a1a9ebfd87a76055b2cd42222bdafe14abcdfd0",
+      "generating_command": "Rscript scripts/figures/plot_empirical_realism_results.R",
+      "hash": "903cad9be843f030e628d43c8ed9b25fb778cd4bbfe7f130c24d0cc46904eef2",
       "path": "paper/tables/empirical_realism_table.csv",
       "role": "output",
       "type": "csv"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
+      "generating_command": "Rscript scripts/figures/plot_method_recovery_results.R",
       "hash": "8b96e1a343ced0f8591302342d4cb76b65e97f06f6f5a21ca9ef481dde0ccc98",
       "path": "paper/tables/figure5_condition_key.csv",
       "role": "output",
       "type": "csv"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
+      "generating_command": "Rscript scripts/figures/plot_factor_effects_results.R",
       "hash": "5db29383010a512f0e816aa7799aa4604e43d313f49ea1d595e452bf1513474d",
       "path": "paper/tables/figure6_factor_effects_eta_screen.csv",
       "role": "output",
       "type": "csv"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
+      "generating_command": "Rscript scripts/figures/plot_factor_effects_results.R",
       "hash": "4643653e9b95470cee465332de451a8acc6ee75fc88877f163333fa771d894c6",
       "path": "paper/tables/figure6_factor_effects_table.csv",
       "role": "output",
       "type": "csv"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
+      "generating_command": "Rscript scripts/figures/plot_method_recovery_results.R",
       "hash": "6af20af8e0df5bda83e6cb1cbf8053ec006e691ac5f23cee2451c4684e0c902f",
       "path": "paper/tables/table1_method_overall.csv",
       "role": "output",
       "type": "csv"
     },
     {
-      "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "3d7d4296847ec0812121143a99c95fee09d0f08dcbafeeec264a3971e84ef895",
+      "generating_command": "Rscript scripts/figures/plot_factor_effects_results.R",
+      "hash": "31cefe95f9925ac70b95b94e11c8560ffccee4ae20dfcae5da413ef5ed14de28",
       "path": "paper/tables/table2_score_quality_marginal_means.csv",
       "role": "output",
       "type": "csv"
@@ -187,7 +187,7 @@
     },
     {
       "generating_command": "Rscript scripts/figures/plot_runtime_feasibility_results.R",
-      "hash": "ab5b9c243059fc314c98801f2e9836b0046b33326564c92cd6dc7436612c7a45",
+      "hash": "fe32dfce512c89eb75f58619cbb9a75b557e7de100c7c287ed016d458b7078a8",
       "path": "paper/tables/table3_runtime_feasibility_accounting.csv",
       "role": "output",
       "type": "csv"

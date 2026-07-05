@@ -67,7 +67,7 @@ realism <- read_csv(input_path, show_col_types = FALSE) |>
     readout = recode(
       family,
       raw = "Observed score channels",
-      latent = "Community scores"
+      latent = "Recovered community-score summaries"
     ),
     metric = factor(metric, levels = metric_levels),
     metric_label = factor(metric_labels[as.character(metric)],
@@ -83,7 +83,7 @@ realism <- read_csv(input_path, show_col_types = FALSE) |>
       TRUE ~ "Fail"
     ),
     status = factor(status, levels = status_levels),
-    readout = factor(readout, levels = c("Observed score channels", "Community scores"))
+    readout = factor(readout, levels = c("Observed score channels", "Recovered community-score summaries"))
   ) |>
   arrange(readout, metric)
 
@@ -91,13 +91,14 @@ realism_table <- realism |>
   transmute(
     Readout = recode(as.character(readout),
                      "Observed score channels" = "Channels",
-                     "Community scores" = "Community scores"),
+                     "Recovered community-score summaries" = "Recovered community-score summaries"),
     Metric = as.character(metric_label),
     `Empirical median` = sprintf("%.3f", empirical_median),
     `LOMM median` = sprintf("%.3f", synthetic_median),
-    `Scaled median diff.` = sprintf("%.2f", abs(median_diff_scaled)),
-    `Scaled Wasserstein` = sprintf("%.2f", wasserstein_scaled),
-    `Max discrepancy` = sprintf("%.2f", max_discrepancy),
+    `Empirical IQR` = sprintf("%.3f", empirical_iqr),
+    `Scaled median diff.` = sprintf("%.3f", abs(median_diff_scaled)),
+    `Scaled Wasserstein` = sprintf("%.3f", wasserstein_scaled),
+    `Max discrepancy` = sprintf("%.3f", max_discrepancy),
     Status = as.character(status)
   )
 
@@ -110,10 +111,10 @@ status_panel <- realism |>
   )) |>
   ggplot(aes(x = metric_label_wrapped, y = readout, fill = status)) +
   geom_tile(color = "white", linewidth = 0.7, width = 0.96, height = 0.82) +
-  geom_text(aes(label = sprintf("%.2f", max_discrepancy)),
+  geom_text(aes(label = sprintf("%.3f", max_discrepancy)),
             size = 3.0, color = "black") +
   scale_fill_manual(values = status_colors, drop = FALSE) +
-  scale_y_discrete(limits = c("Community scores", "Observed score channels")) +
+  scale_y_discrete(limits = c("Recovered community-score summaries", "Observed score channels")) +
   labs(
     x = NULL,
     y = NULL,
@@ -174,6 +175,7 @@ component_panel <- realism |>
     strip.text = element_text(face = "bold", hjust = 0),
     plot.title = element_text(face = "bold", size = 10),
     legend.position = "bottom",
+    legend.text = element_text(size = 7.5),
     axis.text.y = element_text(size = 8)
   )
 
@@ -188,8 +190,8 @@ figure <- status_panel / component_panel +
 pdf_path <- file.path(figure_dir, "figure4_empirical_realism.pdf")
 png_path <- file.path(figure_dir, "figure4_empirical_realism.png")
 
-ggsave(pdf_path, figure, width = 7.2, height = 6.0, device = cairo_pdf)
-ggsave(png_path, figure, width = 7.2, height = 6.0, dpi = 450, bg = "white")
+ggsave(pdf_path, figure, width = 8.2, height = 6.0, device = cairo_pdf)
+ggsave(png_path, figure, width = 8.2, height = 6.0, dpi = 450, bg = "white")
 
 message("Wrote ", pdf_path)
 message("Wrote ", png_path)

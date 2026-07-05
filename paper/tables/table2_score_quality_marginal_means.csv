@@ -1,4 +1,4 @@
-Factor,Level,Rows,Mean Score r,Mean Score NRMSE
+Factor,Level,Usable score-summary rows,Mean Score r,Mean Score NRMSE
 Method,DynEGA,64800,0.725,0.649
 Method,GraphicalVAR,62616,0.717,0.659
 Method,GIMME,45882,0.604,0.842
