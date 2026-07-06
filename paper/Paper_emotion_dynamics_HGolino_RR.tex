@@ -226,14 +226,15 @@ local temporal and dimensional features, while retaining an
 amplitude-dispersion mismatch. We then evaluated dimensional recovery in
 two designs: a broad DynEGA grid and a matched comparison of DynEGA,
 GraphicalVAR, and GIMME using common community-detection readouts.
-DynEGA showed the most consistent dimensional and block recovery and
-completed the broad grid. GraphicalVAR often recovered the generating
-dimensionality but was slower and more sensitive to weak measurement
-conditions. GIMME served as a flexible idiographic comparator with
-substantial runtime and completion limits in this design. LOMM provides
-a reusable framework for testing whether dynamic methods recover latent
-organization, tolerate measurement error, and scale to video-derived
-behavioral time series before substantive interpretation.
+DynEGA showed the most consistent dimensional and block recovery in
+these LOMM simulation designs and completed the broad grid. GraphicalVAR
+often recovered the generating dimensionality but was slower and more
+sensitive to weak measurement conditions. GIMME served as an indirect
+feasibility-stress comparator with substantial runtime and completion
+limits in this design. LOMM provides a reusable framework for testing
+whether dynamic methods recover latent organization, tolerate
+measurement error, and scale to video-derived behavioral time series
+before substantive interpretation.
 \end{abstract}
 
 
@@ -407,46 +408,58 @@ measurement layer adapted from direct autoregressive factor-score
 modeling (\citeproc{ref-golino2020modeling}{H. Golino et al., 2022};
 \citeproc{ref-nesselroade2013dynamic}{Nesselroade et al., 2013}).
 
-The latent layer treats each expressive dimension as a continuous-time
-second-order state process advanced in discrete simulation steps. The
-implemented process is
+The latent layer treats each expressive dimension as a second-order
+state process advanced in discrete simulation steps. For state
+\(\mathbf{s}_{if,t}=[x_{if,t},v_{if,t}]^\top\), the implemented exact
+linear step is
 
 \begin{equation}
-\frac{\mathrm{d}}{\mathrm{d} t}
-\begin{bmatrix}
-x_{if}(t) \\
-v_{if}(t)
-\end{bmatrix}
+\mathbf{s}_{if,t+dt}
 =
-\begin{bmatrix}
-0 & 1 \\
-\eta_f & \zeta_f
-\end{bmatrix}
-\begin{bmatrix}
-x_{if}(t) \\
-v_{if}(t)
-\end{bmatrix}
+\boldsymbol{\Phi}_f(dt)\mathbf{s}_{if,t}
 +
-\begin{bmatrix}
-0 \\
-q_{if,t}
-\end{bmatrix},
+\boldsymbol{\Gamma}_f(dt)q_{if,t},
 \qquad
 q_{if,t}\sim\mathcal{N}(0,\sigma_{qf}^{2}),
 \label{eq:lomm-latent}
 \end{equation}
 
+where
+
+\[
+\boldsymbol{\Phi}_f(dt)=\exp(\mathbf{A}_f dt),
+\qquad
+\mathbf{A}_f=
+\begin{bmatrix}
+0 & 1 \\
+\eta_f & \zeta_f
+\end{bmatrix}
+\qquad
+\text{and}
+\qquad
+\boldsymbol{\Gamma}_f(dt)=\int_0^{dt}\exp(\mathbf{A}_f u)\mathbf{b}\,du,
+\quad
+\mathbf{b}=
+\begin{bmatrix}
+0 \\
+1
+\end{bmatrix}.
+\]
+
 In Equation \ref{eq:lomm-latent}, \(i\) indexes videos, \(f\) indexes
-latent expressive dimensions, \(t\) indexes continuous time, and the
-simulation advances the process with step size \(dt\). The state
-variable \(x_{if}(t)\) is the latent level of dimension \(f\) for video
-\(i\), and \(v_{if}(t)=\dot{x}_{if}(t)\) is its instantaneous rate of
-change. The parameter \(\eta_f\) is position feedback, \(\zeta_f\) is
-velocity feedback, \(q_{if,t}\) is the stepwise Gaussian acceleration
-input used at each integration step, and \(\sigma_{qf}\) is the standard
-deviation of that input. Equivalently, within a simulation step, the
-acceleration has the form
-\(\ddot{x}_{if}(t)=\eta_f x_{if}(t)+\zeta_f \dot{x}_{if}(t)+q_{if,t}\).
+latent expressive dimensions, and \(t\) indexes discrete simulation time
+points spaced \(dt\) apart. The state variable \(x_{if,t}\) is the
+latent level of dimension \(f\) for video \(i\), and \(v_{if,t}\) is its
+rate of change. The parameter \(\eta_f\) is position feedback,
+\(\zeta_f\) is velocity feedback, \(q_{if,t}\) is the stepwise Gaussian
+acceleration input used at each transition, and \(\sigma_{qf}\) is the
+standard deviation of that input. Within a step, the recursion is the
+exact transition of the linear second-order oscillator
+\(\ddot{x}_{if}=\eta_f x_{if}+\zeta_f \dot{x}_{if}+q_{if,t}\) with the
+shock held constant, so \(\boldsymbol{\Phi}_f(dt)\) propagates the
+deterministic state and \(\boldsymbol{\Gamma}_f(dt)\) is the
+zero-order-hold loading through which \(q_{if,t}\) enters as a per-step
+acceleration input.
 
 The dynamic parameters set the latent regime. Negative \(\eta_f\) pulls
 a displaced latent trajectory back toward its equilibrium level, with
@@ -456,13 +469,12 @@ removes velocity feedback, and positive \(\zeta_f\) can sustain or
 amplify ongoing change over the finite interval being simulated. The
 reported simulations use an uncoupled multivariate system: \(\eta_f\),
 \(\zeta_f\), and \(\sigma_{qf}\) may vary by factor, and off-diagonal
-dynamic effects are omitted. The continuous-time linear system is
-advanced with the exact linear transition matrix and initialized with
-\(x_{if}(1)=0.25\) and \(v_{if}(1)=2\).
+dynamic effects are omitted. The state is initialized with
+\(x_{if,1}=0.25\) and \(v_{if,1}=2\).
 
 The activity layer turns raw oscillator states into scenario-specific
 expression episodes. The trajectory passed to the measurement model is
-\(\tilde{x}_{if}(t)=a_{if}(t)x_{if}(t)\), where \(a_{if}(t)\geq 0\) is a
+\(\tilde{x}_{if,t}=a_{if,t}x_{if,t}\), where \(a_{if,t}\geq 0\) is a
 scenario-defined activity envelope generated from active gains,
 background gains, and dwell schedules. In single-regime scenarios, one
 dimension has higher activity across the full sequence; in switching
@@ -858,15 +870,17 @@ grouping variable. The embedding dimension is selected by minimizing the
 Total Entropy Fit Index (TEFI) over candidate values
 (\citeproc{ref-golino2019entropy}{H. Golino et al., 2021}), using
 \(n_\mathrm{embed}\in\{5,10,15,\lfloor T/4\rfloor,\lfloor T/2\rfloor\}\)
-where admissible. The estimated pooled simulated-panel network is then
-partitioned into communities, which are interpreted as recovered groups
-of score channels. The broad DynEGA grid uses Louvain community
-detection (\citeproc{ref-blondel2008fast}{Blondel et al., 2008}) with
-the expand rule for unidimensional solutions. In the matched
-three-method grid, community detection is analyzed as a factor with
-Louvain, Leiden (\citeproc{ref-traag2019leiden}{Traag et al., 2019}),
-and Walktrap (\citeproc{ref-pons2006walktrap}{Pons \& Latapy, 2005}),
-holding the unidimensional rule at expand.
+where admissible. DynEGA then estimates a regularized
+partial-correlation network (EBICglasso, the EGAnet default) from the
+pooled derivative panel, and that network is partitioned into
+communities, which are interpreted as recovered groups of score
+channels. The broad DynEGA grid uses Louvain community detection
+(\citeproc{ref-blondel2008fast}{Blondel et al., 2008}) with the expand
+rule for unidimensional solutions. In the matched three-method grid,
+community detection is analyzed as a factor with Louvain, Leiden
+(\citeproc{ref-traag2019leiden}{Traag et al., 2019}), and Walktrap
+(\citeproc{ref-pons2006walktrap}{Pons \& Latapy, 2005}), holding the
+unidimensional rule at expand.
 
 GraphicalVAR estimates a graphical vector autoregressive model for
 intensive longitudinal data (\citeproc{ref-epskampggm}{Epskamp et al.,
@@ -913,6 +927,10 @@ three-method grid because complete factorial estimation is
 computationally unstable in this setting. Community-detection algorithm
 is included as a diagnostic factor in the matched three-method grid;
 method and simulation design remain the primary organizing variables.
+Appendix A derives the population structural signal that each pipeline
+supplies to community detection under the linear block-measurement
+target and collects the pipeline differences in a single perturbation
+margin.
 
 Performance is summarized using dimensional hit rate, assignment
 accuracy for observed score channels, matched trajectory-recovery
@@ -952,7 +970,11 @@ strengths, three measurement-error standard deviations, and all six
 scenario families. The reported final runs fix the innovation quality
 scale at \(Q=0.75\), so the scenario base \(\sigma_q\) vectors listed in
 the supplementary scenario-parameter tables are the final-run innovation
-vectors. This matched grid contains 216 structural cells with 100
+vectors. The latent systems were advanced with the exact linear
+transition of Equation \ref{eq:lomm-latent} using step size \(dt=0.4\)
+for 100-point series and \(dt=0.25\) for 300-point series, so
+\(\sigma_{qf}\) is the per-step shock standard deviation at that
+resolution. This matched grid contains 216 structural cells with 100
 replications. Louvain, Leiden, and Walktrap are included as
 community-detection levels, yielding 64,800 method-readout rows per
 method in the matched three-method grid. Timeouts, failed fits, and
@@ -1048,6 +1070,10 @@ dispersion as the main calibration boundary. Taken together, the
 selected realism checks support scenario construction for method
 testing; they do not establish empirical validity for the linear
 recovery panels.
+
+The next analyses therefore evaluate known-truth recovery in the linear
+LOMM panels, not empirical emotion recognition or bounded-probability
+realism.
 
 \subsection{Simulation Results}\label{simulation-results}
 
@@ -1190,7 +1216,9 @@ hit rate was weakest when loadings were low and measurement error was
 high, and improved when observed channels carried a stronger signal from
 their generating dimensions. GIMME remained lower on status-inclusive
 hit rate across most strata because errors and timeouts occurred before
-dimensional recovery could be evaluated.
+dimensional recovery could be evaluated. This loading-by-error gradient
+tracks the population signal-to-noise ratio \(\lambda^2 V/\psi\) that
+drives both graph readouts in Appendix A.
 
 Conditional on obtaining a usable structural readout,
 trajectory-recovery diagnostics followed the same measurement pattern.
@@ -1240,10 +1268,10 @@ and returned post-estimation errors for 2,192 fits. Because GraphicalVAR
 and GIMME apply three community-detection algorithms to each fitted
 structure, these feasibility counts refer to unique structure fits
 before repeated CD readouts; Appendix D reports the fit-level and
-readout-row accounting side by side. The method-comparison result in
-this design is clear: DynEGA combined the strongest structural recovery
-with broad-grid scalability, GraphicalVAR was informative but slower and
-more condition-sensitive, and GIMME was feasibility-limited.
+readout-row accounting side by side. In these LOMM simulation designs,
+DynEGA combined the strongest structural recovery with broad-grid
+scalability, GraphicalVAR was informative but slower and more
+condition-sensitive, and GIMME was feasibility-limited.
 
 \section{Discussion}\label{discussion}
 
@@ -1255,37 +1283,40 @@ checks reproduced local movement and directional-change texture,
 partially matched persistence, spectral complexity, and effective
 multivariate dimensionality, and retained a clear amplitude-dispersion
 mismatch. DynEGA recovered the generating dimensionality and indicator
-blocks most consistently across the broad focal-method grid and the
-matched three-method comparison. Recovery weakened when simulated
-measurement signal was lower, while GraphicalVAR was informative but
-condition-sensitive and GIMME was feasibility-limited in the matched
-design. The trajectory-recovery diagnostics add a conditional result
-among successful structural readouts rather than a status-inclusive
-method ranking.
+blocks most consistently in these LOMM simulation designs, across the
+broad focal-method grid and the matched three-method comparison.
+Recovery weakened when simulated measurement signal was lower, while
+GraphicalVAR was informative but condition-sensitive and GIMME was
+feasibility-limited in the matched design. The trajectory-recovery
+diagnostics add a conditional result among method-readout rows with
+recovered score summaries rather than a status-inclusive method ranking.
 
 Appendix A frames recovery in the linear panels as a method-specific
 graph perturbation problem. Under the linear LOMM measurement model,
 indicators assigned to the same latent oscillator share a common change
 signal, whereas indicators assigned to different oscillators are
 independent. The measurement signal within each dimension is rank-one,
-and the corresponding population dynamic-coordination graph is a
-disconnected weighted clique. DynEGA receives a direct
-dynamic-coordination signal, GraphicalVAR receives a partial-correlation
-signal with reduced within-block margin, and GIMME adds an indirect
-graph-conversion and completion layer. Recovery becomes more difficult
+and per-channel filtered population readouts form disconnected weighted
+cliques under the symmetric block target. DynEGA reads this structure
+through smoothed derivative estimates, whereas GraphicalVAR reaches the
+same block algebra through a multivariate VAR innovation projection
+under the simplified population target. GIMME adds an indirect
+graph-conversion and completion layer rather than a closed-form
+population block edge. The population edge sets how much common block
+signal reaches community detection, and recovery becomes more difficult
 when the method-specific perturbation approaches the weakest
-within-block signal.
+within-block edge.
 
-This population structure is closely aligned with DynEGA's target.
-DynEGA groups variables whose estimated changes are coordinated over
-time, so the common derivative signal within each LOMM block provides
-direct evidence for community recovery. Its high dimensional hit rate,
-high block-assignment accuracy, and complete broad-grid coverage
-indicate that this signal usually remained identifiable across the
-simulated score-panel regimes. The reductions under weak loadings, high
-measurement error, and low-expression generated regimes identify
-conditions in which the observed channels no longer carry enough common
-dynamic variation for reliable partitioning.
+This population structure is closely aligned with DynEGA's target in
+these LOMM simulation designs. DynEGA groups variables whose estimated
+changes are coordinated over time, so the common derivative signal
+within each LOMM block provides direct evidence for community recovery.
+Its high dimensional hit rate, high block-assignment accuracy, and
+complete broad-grid coverage indicate that this signal usually remained
+identifiable across the simulated score-panel regimes. The reductions
+under weak loadings, high measurement error, and low-expression
+generated regimes identify conditions in which the observed channels no
+longer carry enough common dynamic variation for reliable partitioning.
 
 Beyond the method comparison, LOMM provides a reusable way to generate
 multivariate behavioral time series in which latent dynamics, activity
@@ -1302,11 +1333,13 @@ GraphicalVAR provides a less direct representation of the generating
 measurement blocks. In this comparison, community detection is applied
 to the contemporaneous partial-correlation matrix, which conditions each
 pairwise association on the remaining channels. Appendix A shows that,
-in the symmetric block model, partial correlations preserve block
-support while reducing the within-block signal margin. The observed
-sensitivity of GraphicalVAR is consistent with this mechanism,
+in the symmetric block model, the population VAR innovation readout
+preserves block support while compressing the within-block edge toward a
+ceiling set by block size, and that the VAR projection removes the
+predictable part of the common block signal before that readout. The
+observed sensitivity of GraphicalVAR is consistent with this mechanism,
 especially when loadings are weak or measurement error is high, but the
-simulation does not isolate partial-correlation attenuation from lag
+simulation does not isolate this population attenuation from lag
 estimation, regularization, finite-sample variation, or timeout
 behavior. In the matched grid, GraphicalVAR completed most structure
 fits and had 728 unique structure-fit timeouts, so its main limitation
@@ -1399,22 +1432,24 @@ materials}\label{availability-of-data-and-materials}
 
 The manuscript analyses use simulation outputs and derived
 classifier-output score summaries generated for this study. The OSF
-archive will include the version-controlled manuscript repository, final
-simulation runners, figure-generation scripts, manuscript-facing derived
-outputs, provenance manifests, and from-scratch rerun instructions for
-the final simulation grids. Raw MAFW video materials are third-party
-dataset materials; access to the original videos is governed by the MAFW
-dataset providers. Derived empirical score summaries needed for the
-realism check will be included in the archive.
+archive ({[}anonymized OSF link provided for masked review{]}) contains
+the version-controlled manuscript repository, final simulation runners,
+figure-generation scripts, manuscript-facing derived outputs, provenance
+manifests, and from-scratch rerun instructions for the final simulation
+grids. Raw MAFW video materials are third-party dataset materials;
+access to the original videos is governed by the MAFW dataset providers.
+Derived empirical score summaries needed for the realism check are
+included in the archive.
 
 \subsection{Code availability}\label{code-availability}
 
 All code needed to rerun the final LOMM simulations, rebuild the
 method-comparison summaries, regenerate the manuscript figures and
-tables, and render the manuscript will be available in the archived
-project repository. The repository includes the R simulation runners,
-empirical realism and method-comparison scripts, manuscript rendering
-source, claim ledger, and run manifests.
+tables, and render the manuscript is available in the archived project
+repository ({[}anonymized OSF link provided for masked review{]}). The
+repository includes the R simulation runners, empirical realism and
+method-comparison scripts, manuscript rendering source, claim ledger,
+and run manifests.
 
 \subsection{Authors' contributions}\label{authors-contributions}
 
@@ -1429,12 +1464,12 @@ editing the manuscript.
 
 \section{Open Practices Statement}\label{open-practices-statement}
 
-The study was not preregistered. The OSF archive will include analysis
-code, simulation code, manuscript source files, generated figure and
-table inputs, derived empirical score summaries needed for the realism
-check, and provenance materials for rerunning the final simulations from
-scratch. Raw MAFW video data are third-party materials governed by the
-dataset providers.
+The study was not preregistered. The OSF archive ({[}anonymized OSF link
+provided for masked review{]}) contains analysis code, simulation code,
+manuscript source files, generated figure and table inputs, derived
+empirical score summaries needed for the realism check, and provenance
+materials for rerunning the final simulations from scratch. Raw MAFW
+video data are third-party materials governed by the dataset providers.
 
 \section{References}\label{references}
 
@@ -1722,6 +1757,11 @@ Paradigm} for {Facial Expression Recognition}} (arXiv:2209.15402).
 
 \newpage
 
+\setcounter{table}{0}
+\renewcommand{\thetable}{A\arabic{table}}
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+
 \section{Appendix A: Perturbation Targets for LOMM
 Recovery}\label{appendix-a-perturbation-targets-for-lomm-recovery}
 
@@ -1731,6 +1771,20 @@ Each pipeline produces a population structural signal for the same
 block-measured linear score panel, and the fitted readout adds
 perturbations from finite samples, estimation choices, convergence
 behavior, extraction, and community detection.
+
+The argument reaches three conclusions. For the idealized DynEGA and
+GraphicalVAR population readouts, the generating block support is
+preserved exactly under the symmetric linear block target. Their
+within-block partial-correlation edges share one ceiling and differ
+through the signal-to-noise ratio delivered by the derivative or VAR
+innovation readout. GIMME has a different mathematical status and is
+treated separately as an indirect graph-conversion pipeline whose
+recovery also depends on path search, convergence, extraction,
+averaging, and completion. Section A.1 defines the symmetric block
+target, A.2 derives the two graph readouts available for per-channel
+filtered panels, A.3 maps DynEGA and GraphicalVAR to their population
+readouts, A.4 gives the shared perturbation margin, A.5 treats GIMME's
+indirect readout and completion, and A.6 summarizes the comparison.
 
 \subsection{A.1 Linear Block Target}\label{a.1-linear-block-target}
 
@@ -1750,11 +1804,14 @@ where \(Z_f(t)\) is the activity-scaled latent oscillator for dimension
 variance \(\psi=s_\varepsilon^2\). Measurement errors are independent
 across indicators and time in this target, so
 \(\operatorname{Cov}(\varepsilon_j(t),\varepsilon_\ell(s))=0\) whenever
-\(j\neq \ell\) or \(t\neq s\). The centered latent processes \(Z_f\) are
-mutually independent in this simplified population object. Loading
-jitter, item-level variance jitter, switching schedules, finite-sample
-activity imbalance, and estimator behavior are treated as perturbations
-around this symmetric target.
+\(j\neq \ell\) or \(t\neq s\). The latent processes \(Z_f\) are
+zero-mean and mutually independent in this simplified population object.
+Activity gating makes \(Z_f\) nonstationary by design, so the variances
+used in this appendix are time-averaged second moments over the analyzed
+window. Loading jitter, item-level variance jitter, switching schedules,
+initialization transients, finite-sample activity imbalance, and
+estimator behavior are treated as perturbations around this symmetric
+target.
 
 For a method readout \(r\), write the fitted graph as
 
@@ -1772,136 +1829,106 @@ effects. This notation keeps the comparison focused on two quantities:
 the population signal available to the method and the perturbation added
 by the implemented pipeline.
 
-\subsection{A.2 DynEGA Dynamic-Coordination
-Target}\label{a.2-dynega-dynamic-coordination-target}
+\subsection{A.2 Filtered Panels and Two Graph
+Readouts}\label{a.2-filtered-panels-and-two-graph-readouts}
 
-DynEGA is aligned with the LOMM recovery target because it groups
-variables whose changes are coordinated over time. A stylized population
-target is the lag-\(h\) change graph
+Two useful population graph readouts can be derived for any per-channel
+filtered block panel. DynEGA estimates local derivatives of every
+channel, and a lag difference is a simple analytic example of the same
+channelwise operation. GraphicalVAR is handled separately in A.3 because
+its contemporaneous innovations come from a multivariate VAR projection
+rather than from an identical filter applied to each channel.
+
+Let \(L\) denote a linear filter applied to each channel separately.
+Applying \(L\) to the measurement model for \(j \in B_f\) gives
 
 \[
-W^\Delta_{j\ell}
+(LY_j)(t)=\lambda\,(LZ_f)(t)+(L\varepsilon_j)(t),
+\]
+
+so the filtered panel keeps the one-factor block structure. Write
+\(V_{L,f}=\operatorname{Var}(LZ_f)\) for the filtered common-signal
+variance and \(\psi_L=\operatorname{Var}(L\varepsilon_j)\) for the
+filtered noise variance. Because \(L\) acts on each channel separately,
+filtered errors stay independent across channels, and the within-block
+covariance matrix of the filtered channels is
+
+\[
+\boldsymbol{\Sigma}_{L,f}
 =
-\left|\operatorname{Cor}(\Delta_hY_j,\Delta_hY_\ell)\right|,
+\lambda^{2}V_{L,f}\,\mathbf{1}_k\mathbf{1}_k^\top+\psi_L I_k,
 \qquad
-\Delta_hY_j(t)=Y_j(t+h)-Y_j(t).
+\theta_{L,f}=\frac{\lambda^{2}V_{L,f}}{\psi_L},
 \]
 
-For two distinct indicators \(j,\ell \in B_f\),
+with zero cross-block covariance. The filtered signal-to-noise ratio
+\(\theta_{L,f}\) is the only quantity through which the filter enters
+the population graph. Filtered errors can be serially correlated; the
+population readouts below use only the contemporaneous covariance across
+channels, and serial dependence is absorbed into the estimation
+perturbation in A.4.
+
+The filtered panel admits two graph readouts. The marginal readout uses
+correlations directly. For two distinct indicators \(j,\ell \in B_f\),
 
 \[
-\Delta_hY_j(t)=\lambda \Delta_hZ_f(t)+\Delta_h\varepsilon_j(t),
+w^{M}_f(L)
+=
+\left|\operatorname{Cor}(LY_j,LY_\ell)\right|
+=
+\frac{\theta_{L,f}}{1+\theta_{L,f}}.
 \]
 
-so
-
-\[
-\operatorname{Cov}(\Delta_hY_j,\Delta_hY_\ell)
-=
-\lambda^2\operatorname{Var}(\Delta_hZ_f)
-\]
-
-and
-
-\[
-\operatorname{Var}(\Delta_hY_j)
-=
-\lambda^2\operatorname{Var}(\Delta_hZ_f)+2\psi.
-\]
-
-The within-block dynamic edge is therefore
-
-\[
-w^\Delta_f
-=
-\frac{\theta^\Delta_f}{1+\theta^\Delta_f},
-\qquad
-\theta^\Delta_f
-=
-\frac{\lambda^2\operatorname{Var}(\Delta_hZ_f)}{2\psi}.
-\]
-
-For \(j \in B_f\) and \(\ell \in B_g\) with \(f \neq g\), independence
-of the latent processes and measurement errors gives zero cross-block
-covariance. Thus the population dynamic-coordination graph has
-block-clique form,
-
-\[
-\mathbf{W}^\Delta_*
-=
-\operatorname{blockdiag}
-\left(
-w^\Delta_1(J_k-I_k),\ldots,w^\Delta_m(J_k-I_k)
-\right).
-\]
-
-In this population readout, the LOMM target is a disconnected block
-graph: indicators in the same latent block share a common change signal,
-and indicators in different latent blocks have zero population
-dynamic-coordination edges.
-
-\subsection{A.3 GraphicalVAR Partial-Correlation
-Compression}\label{a.3-graphicalvar-partial-correlation-compression}
-
-GraphicalVAR is converted into dimensional partitions by applying
-community detection to the contemporaneous partial-correlation matrix.
-Within block \(B_f\), let
-
-\[
-S_f=\operatorname{Var}(Z_f),
-\qquad
-\theta_f=\frac{\lambda^2S_f}{\psi}.
-\]
-
-The covariance matrix is
-
-\[
-\boldsymbol{\Sigma}_f
-=
-\lambda^2S_f\mathbf{1}_k\mathbf{1}_k^\top+\psi I_k
-=
-\psi(I_k+\theta_f\mathbf{1}_k\mathbf{1}_k^\top).
-\]
-
+The partial readout conditions each pair on the remaining channels.
 Using the Sherman-Morrison identity,
 
 \[
-\boldsymbol{\Sigma}_f^{-1}
+\boldsymbol{\Sigma}_{L,f}^{-1}
 =
-\psi^{-1}
+\psi_L^{-1}
 \left[
 I_k-
-\frac{\theta_f}{1+k\theta_f}
+\frac{\theta_{L,f}}{1+k\theta_{L,f}}
 \mathbf{1}_k\mathbf{1}_k^\top
-\right].
+\right],
 \]
 
-The absolute partial correlation between two indicators in the same
+and the absolute partial correlation between two indicators in the same
 block is
 
 \[
-w^P_f
+w^{P}_f(L)
 =
-\frac{\theta_f}{1+(k-1)\theta_f}.
+\frac{\theta_{L,f}}{1+(k-1)\theta_{L,f}}.
 \]
 
-The corresponding marginal common-source edge is
+Because the filtered precision matrix is block-diagonal, cross-block
+partial correlations are exactly zero. These marginal and partial
+readouts therefore preserve the generating block support without error
+for the per-channel filtered population object, and the population graph
+has block-clique form for any per-channel filter,
 
 \[
-w^M_f
+\mathbf{W}_*
 =
-\frac{\theta_f}{1+\theta_f}.
+\operatorname{blockdiag}
+\left(
+w_1(J_k-I_k),\ldots,w_m(J_k-I_k)
+\right),
+\qquad
+w_f\in\{w^{M}_f(L),\,w^{P}_f(L)\}.
 \]
 
-For the same signal-to-noise ratio \(\theta\),
+The two readouts differ in how much within-block signal they keep. For
+the same signal-to-noise ratio \(\theta\),
 
 \[
 \frac{w^P(\theta)}{w^M(\theta)}
 =
-\frac{1+\theta}{1+(k-1)\theta}.
+\frac{1+\theta}{1+(k-1)\theta},
 \]
 
-When \(k>2\) and \(\theta>0\), \(w^P(\theta)<w^M(\theta)\). As
+so \(w^P(\theta)<w^M(\theta)\) whenever \(k>2\) and \(\theta>0\). As
 \(\theta \to \infty\),
 
 \[
@@ -1910,19 +1937,98 @@ w^P(\theta)\to \frac{1}{k-1},
 w^M(\theta)\to 1.
 \]
 
-This is the main population difference between a marginal common-source
-readout of the block signal and GraphicalVAR's partial-correlation
-readout under the reflective block target. DynEGA's dynamic-coordination
-target is a marginal common-source readout on changes. The matched grid
-uses four indicators per latent dimension, so GraphicalVAR's
-within-block partial-correlation signal approaches a ceiling of \(1/3\)
-even as the common-source signal becomes arbitrarily strong. A
-dynamic-coordination edge can approach 1 in the same signal-dominant
-limit. GraphicalVAR can preserve the ideal block support, while the
-partial-correlation representation compresses the common-source signal
-that defines a reflective measurement block. This gives GraphicalVAR
-less separation margin before finite-sample, regularization, and
-model-estimation perturbations are added.
+The partial readout compresses an arbitrarily strong common-source
+signal toward a ceiling set by block size alone: with four indicators
+per dimension, no within-block partial-correlation edge can exceed
+\(1/3\). Both readout maps are increasing in \(\theta\), so filter and
+readout separate cleanly. The filter sets \(\theta_{L,f}\), and the
+readout maps \(\theta_{L,f}\) to the edge weight supplied to community
+detection.
+
+Figure~\ref{fig-readout-curves} shows both readout maps for the matched
+grid's four indicators per dimension. Neither implemented pipeline uses
+the marginal readout; it is the pre-conditioning benchmark that shows
+how much common-source signal exists before conditioning, and the
+vertical gap between the curves is the compression that the partial
+readout applies to that signal. The shaded band marks the
+\(\lambda^2/s_\varepsilon^2\) span of the matched measurement grid, so
+the simulated loading and error conditions place \(\theta_{L,f}\) inside
+the band up to the filtered common-signal variance \(V_{L,f}\). Across
+that span, the marginal curve rises from mid-range values toward 1,
+whereas the partial curve is already near its \(1/3\) ceiling: strong
+measurement conditions widen the margin for the common-source signal but
+cannot widen the partial-correlation edge beyond the ceiling.
+
+\begin{figure}[H]
+
+\centering{
+
+\includegraphics[width=0.9\linewidth,height=\textheight,keepaspectratio]{figures/perturbation_readout_curves.pdf}
+
+}
+
+\caption{\label{fig-readout-curves}Population within-block edge weight
+as a function of the filtered signal-to-noise ratio for the marginal and
+partial readouts with four indicators per dimension. The dotted line
+marks the partial-readout ceiling \(1/(k-1)=1/3\). The shaded band spans
+the loading-to-error-variance ratios of the matched simulation grid; the
+filtered common-signal variance multiplies the signal-to-noise ratio
+within this band. Higher edge weight means more within-block signal
+margin before estimation perturbations.}
+
+\end{figure}%
+
+\subsection{A.3 Method-Specific Filters and Signal-to-Noise
+Ratios}\label{a.3-method-specific-filters-and-signal-to-noise-ratios}
+
+The implemented pipelines are specific readout combinations. DynEGA
+estimates generalized local linear approximation (GLLA) derivatives of
+each score channel over a time-delay embedding window and then estimates
+a regularized partial-correlation network (EBICglasso) on the derivative
+panel. Its population object is therefore the partial readout of a
+per-channel derivative filter, \(w^{P}_f(L_{\mathrm{GLLA}})\). A
+lag-\(h\) difference, \(\Delta_hY_j(t)=Y_j(t+h)-Y_j(t)\), gives a
+transparent analytic stand-in for that filter, with
+
+\[
+\theta^{\Delta}_f
+=
+\frac{\lambda^2\operatorname{Var}(\Delta_hZ_f)}{2\psi},
+\]
+
+because independent measurement errors contribute \(2\psi\) to the
+variance of every differenced channel. Both the lag difference and GLLA
+derivative estimation operate channel by channel. For the smooth
+oscillator trajectories generated here, the GLLA filter improves on this
+stand-in: it averages frame-level measurement noise over the embedding
+window while tracking the common latent change signal, which supports a
+high filtered signal-to-noise ratio.
+
+GraphicalVAR reads partial correlations from the contemporaneous
+innovations of a lag-1 vector autoregression, so its population object
+is the partial readout of a multivariate VAR innovation projection,
+\(w^{P}_f(L_{\mathrm{VAR}})\). For the population lag-1 fit of the
+symmetric block model, the implied coefficient matrix is proportional to
+\(\mathbf{1}_k\mathbf{1}_k^\top\) within each block, and the innovation
+covariance retains the one-factor-plus-diagonal form. The compression
+map of A.2 therefore applies at the innovation scale under this
+symmetric target. The VAR projection also removes the predictable part
+of the common signal by construction: the simulated oscillator
+trajectories are strongly autocorrelated, so the lagged panel explains
+much of the common variance, while the serially independent measurement
+error passes into the innovations. The innovation readout therefore
+tends to enter the shared compression map with a smaller signal-to-noise
+ratio than a derivative filter applied to the same panel.
+
+The population comparison between DynEGA and GraphicalVAR then has a
+precise form. Both population readouts supply partial-correlation edges
+to community detection, so both within-block edges are capped at
+\(1/(k-1)\) and the generating block support is preserved in both
+population objects under the symmetric target. The population difference
+is where the derivative and innovation signal-to-noise ratios
+\(\theta_{\mathrm{GLLA}}\) and \(\theta_{\mathrm{VAR}}\) place each edge
+below that shared ceiling. The remaining differences are pipeline
+perturbations, which A.4 collects in a single margin.
 
 \subsection{A.4 Shared Perturbation
 Margin}\label{a.4-shared-perturbation-margin}
@@ -1939,7 +2045,9 @@ w_1^{(r)}(J_k-I_k),\ldots,w_m^{(r)}(J_k-I_k)
 \]
 
 where edge weights are on the nonnegative scale supplied to community
-detection. Suppose every off-diagonal edge is estimated within
+detection and all \(m\) blocks share the same size \(k\). For DynEGA and
+GraphicalVAR, \(w_f^{(r)}=w^{P}_f(L_r)\) with the method-specific filter
+from A.3. Suppose every off-diagonal edge is estimated within
 \(\delta_r\) of its readout-specific population value:
 
 \[
@@ -1979,33 +2087,65 @@ or equivalently
 \]
 
 For the matched grid with \(k=4\), the sufficient node-level
-block-preference condition is
+block-preference and threshold-separation condition is
 
 \[
 \delta_r < \frac{3}{7}w_{\min}^{(r)}.
 \]
 
-This margin is a block-separation statement, and exact recovery by
-Louvain, Leiden, Walktrap, DynEGA, GraphicalVAR, or GIMME depends on the
-implemented estimator and community-detection algorithm. The margin
-still clarifies the method comparison. For DynEGA,
-\(w_{\min}^{(r)}=w_{\min}^{\Delta}\), which can be large when the shared
-latent change signal is strong relative to measurement error. For
-GraphicalVAR, \(w_{\min}^{(r)}=w_{\min}^{P}\). With \(k=4\), the
-high-signal partial-correlation limit is \(w^P\to 1/3\), so the
-corresponding sufficient perturbation margin approaches at most
+This margin is not a guarantee that Louvain, Leiden, or Walktrap recover
+the blocks, because exact recovery depends on the implemented
+community-detection algorithm. The bound has a narrower consequence.
+Because \(\tfrac{k-1}{2k-1}<\tfrac{1}{2}\), the condition forces every
+estimated cross-block edge below every estimated within-block edge, so
+any threshold \(\tau\in(\delta_r,\,w_{\min}^{(r)}-\delta_r)\) deletes
+all cross-block edges, keeps each block a connected clique, and
+reproduces the generating blocks exactly as the connected components of
+the thresholded graph.
+
+The margin treats perturbation as symmetric noise on every edge, which
+makes \(\delta_r\) a worst-case envelope. Regularized estimation acts
+asymmetrically: glasso shrinkage lowers within-block edges, which
+reduces \(w_{\min}^{(r)}\), and sets weak cross-block edges to zero,
+which supports block separation.
+
+The two population partial-readout pipelines share the same ceiling.
+DynEGA and GraphicalVAR supply partial-correlation edges to community
+detection, so \(w_{\min}^{(r)}\leq 1/(k-1)\) for both pipelines, and
+with \(k=4\) the sufficient perturbation margin approaches at most
 
 \[
-\delta_{\mathrm{GVAR}}
+\delta_r
 <
 \frac{3}{7}\cdot\frac{1}{3}
 =
-\frac{1}{7}.
+\frac{1}{7}
 \]
 
-This explains why GraphicalVAR can be more fragile than DynEGA under the
-LOMM block-measurement target even when both readouts preserve the same
-ideal block support.
+in the high-signal limit. The population comparison therefore reduces to
+the two quantities identified in A.3: how close each filtered
+signal-to-noise ratio keeps \(w_{\min}^{(r)}\) to the shared ceiling,
+and how large each pipeline's realized perturbation \(\delta_r\) is. The
+observed recovery ordering is consistent with the derivative filter
+preserving more within-block signal than the innovation filter, while
+the full graphical vector-autoregression fit adds larger estimation and
+timeout perturbations.
+
+The margin also identifies which blocks are fragile in each scenario
+family. Activity gating enters the filtered signal directly: \(V_{L,f}\)
+is the time-averaged variance of the filtered activity-scaled process,
+so a dimension held at background gain contributes a small
+\(\theta_{L,f}\) and a weak within-block edge. In the single-dominance
+families, background dimensions run at gains of 0.05--0.08 against
+active gains of 0.35--1.25 (Appendix E), so \(w_{\min}^{(r)}\) is set by
+the background blocks, and in the low-expression family every dimension
+sits near background activity. The margin therefore predicts the
+scenario-family ordering observed in Figure~\ref{fig-dimension-recovery}
+for DynEGA and GraphicalVAR: recovery is hardest where the activity
+schedule holds the weakest block's signal lowest. For GIMME, the same
+activity envelope is an expected stressor, but its effect is mediated by
+path search, convergence, extraction, averaging, graph conversion, and
+completion.
 
 \subsection{A.5 GIMME as an Indirect Graph-Conversion
 Readout}\label{a.5-gimme-as-an-indirect-graph-conversion-readout}
@@ -2040,12 +2180,18 @@ Status-inclusive recovery also includes completion. For any pipeline,
 \Pr(\mathrm{hit}\mid \mathrm{usable\ graph}).
 \]
 
-DynEGA returned usable graphs for the full broad grid and matched grid
-in this design. GraphicalVAR had some unique structure-fit timeouts.
-GIMME had many timeouts and post-estimation extraction errors. This
-decomposition explains why GIMME's status-inclusive hit rate reflects
-both partition quality after a usable graph is returned and the
-probability that the pipeline returns a usable graph.
+The reported feasibility tables make this decomposition concrete. DynEGA
+returned usable graphs for every broad-grid and matched-grid row, so its
+status-inclusive and conditional hit rates coincide at 95.3\%.
+GraphicalVAR completed 20,872 of 21,600 matched-grid structure fits
+(62,616 of 64,800 readout rows), so its 80.3\% status-inclusive hit rate
+corresponds to a conditional hit rate of about 83\% among usable
+readouts. GIMME completed 15,294 of 21,600 structure fits (45,882 of
+64,800 readout rows), so its 25.9\% status-inclusive hit rate
+corresponds to a conditional hit rate of about 37\%. The decomposition
+separates GIMME's two losses: many fits return no usable graph, and
+partition quality after a usable graph remains well below the other
+pipelines.
 
 \subsection{A.6 Method-Comparison
 Summary}\label{a.6-method-comparison-summary}
@@ -2064,8 +2210,8 @@ simplified LOMM block target.}
 \toprule
 Pipeline & Population signal & Main perturbation & Expected implication\\
 \midrule
-DynEGA & $w^\Delta=\theta^\Delta/(1+\theta^\Delta)$ & Derivative estimation, embedding, finite $N,T$, community detection & Directly aligned with LOMM change blocks\\
-GraphicalVAR & $w^P=\theta/[1+(k-1)\theta]$ & VAR estimation, regularization, partial-correlation compression, timeouts & Preserves block support with reduced signal margin\\
+DynEGA & $w^P(\theta_{\mathrm{GLLA}})$: partial readout of GLLA derivatives & Derivative estimation, embedding selection, glasso regularization, finite $N,T$, community detection & Derivative filter keeps the filtered signal near the shared ceiling\\
+GraphicalVAR & $w^P(\theta_{\mathrm{VAR}})$: partial readout of VAR innovations & VAR estimation, regularization, innovation-projection attenuation, timeouts & Population VAR innovation readout preserves block support under the symmetric block target\\
 GIMME & No closed-form block signal for the implemented readout & Path search, clip-level fitting, extraction, averaging, timeouts & Indirect feasibility-stress comparator\\
 \bottomrule
 
@@ -2242,7 +2388,10 @@ Values}\label{appendix-e-supplementary-scenario-parameter-values}
 The final scenario families use the numeric settings below. The reported
 final runs fix the quality scale at \(Q=0.75\), so the base \(\sigma_q\)
 vectors in the numeric dynamic-vector table are the final-run innovation
-vectors. The simulation code also supports configurable reruns with
+vectors, applied as per-step shock standard deviations at the step size
+used for each series length (\(dt=0.4\) for 100-point series and
+\(dt=0.25\) for 300-point series). The simulation code also supports
+configurable reruns with
 \(\sigma_q=\text{scenario base }\sigma_q\times(Q/0.75)\).
 
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}

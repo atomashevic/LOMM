@@ -22,8 +22,7 @@ ORCID: 0000-0002-9798-7037
 
 Aleksandar Tomašević  
 Institute of Physics Belgrade, University of Belgrade, Pregrevica 118, 11080 Belgrade, Serbia  
-Email: atomasevic@ipb.ac.rs  
-Telephone: to be supplied before final journal upload
+Email: atomasevic@ipb.ac.rs
 
 ## Submission Notes
 
@@ -36,4 +35,3 @@ The review manuscript may be submitted separately from this title page if anonym
 Version-controlled project repository: <https://github.com/atomashevic/dlo-rr>
 
 Permanent OSF archive: to be added before final journal upload
-

@@ -1597,6 +1597,7 @@ run_dynega_method <- function(sim_data, cfg, method_spec = NULL, scen_row = NULL
           tau = 1,
           delta = 1,
           id = length(sim_data$item_names) + 1L,
+          model = "glasso",
           algorithm = algorithm,
           uni.method = uni_method,
           use.derivatives = 1,
