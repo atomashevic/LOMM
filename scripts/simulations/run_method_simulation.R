@@ -16,7 +16,7 @@ do.call(
 
 repo_root <- normalizePath(".", mustWork = TRUE)
 
-source(file.path(repo_root, "extract.r"))
+source(file.path(repo_root, "scripts", "extract.r"))
 
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x

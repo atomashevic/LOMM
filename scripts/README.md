@@ -5,7 +5,7 @@ Run these commands from the repository root.
 ## Core Check
 
 ```bash
-Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
+Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
 ## Manuscript Figures And Tables

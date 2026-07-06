@@ -4,7 +4,7 @@ options(run_extract_pipeline = FALSE)
 
 repo_root <- normalizePath(".", mustWork = TRUE)
 
-source(file.path(repo_root, "extract.r"))
+source(file.path(repo_root, "scripts", "extract.r"))
 
 library(cowplot)
 library(dplyr)
@@ -85,7 +85,7 @@ n_embed <- as.integer(read_num("OAI_CLIP_FIGURE_N_EMBED", 3))
 edge_threshold <- read_num("OAI_CLIP_FIGURE_EDGE_THRESHOLD", 0.08)
 smooth_window <- as.integer(read_num("OAI_CLIP_FIGURE_SMOOTH_WINDOW", 7))
 top_emotion_count <- as.integer(read_num("OAI_CLIP_FIGURE_TOP_N", 4))
-include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", FALSE)
+include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", TRUE)
 figure_width <- read_num("OAI_CLIP_FIGURE_WIDTH", 10.8)
 figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", if (include_frame_stills) 10.8 else 9.0)
 figure_dpi <- as.integer(read_num("OAI_CLIP_FIGURE_DPI", 300))

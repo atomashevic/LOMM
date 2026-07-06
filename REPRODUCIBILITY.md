@@ -42,13 +42,7 @@ export NUMEXPR_NUM_THREADS=1
 Load the core implementation without running the expensive extraction pipeline:
 
 ```bash
-Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
-```
-
-Run the project provenance check:
-
-```bash
-python3 tools/research_ops.py check-paper
+Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
 ## Dry-Run Grid Checks
@@ -131,7 +125,7 @@ simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.c
 ```
 
 Researchers with access to the underlying MAFW-derived frame-score CSV can
-rerun the empirical realism calibration by sourcing `extract.r` with
+rerun the empirical realism calibration by sourcing `scripts/extract.r` with
 `options(run_extract_pipeline=FALSE)` and calling
 `run_empirical_dlo_realism_pipeline(frame_scores_path=..., model_name=..., output_dir=...)`.
 The manuscript figure script reads the selected final comparison table above.
@@ -145,20 +139,4 @@ by `scripts/figures/plot_oai_clip_video_dynega_figure.R`.
 ```bash
 quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
-```
-
-## Provenance Manifests
-
-The current package records manuscript-facing claims in
-`research/claim-ledger.yaml` and run/artifact hashes in:
-
-- `research/runs/final-manuscript-comparison-20260623/run-manifest.json`
-- `research/runs/manuscript-figures-tables-20260623/run-manifest.json`
-
-Validate them with:
-
-```bash
-python3 tools/research_ops.py validate-run research/runs/final-manuscript-comparison-20260623/run-manifest.json
-python3 tools/research_ops.py validate-run research/runs/manuscript-figures-tables-20260623/run-manifest.json
-python3 tools/research_ops.py check-paper
 ```
