@@ -60,16 +60,31 @@ quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
 ```
 
-## Data Boundary
+## Using MAFW
 
-The repository contains the manuscript source, code, and paper-facing generated
-assets. Rerunning the empirical realism figure also requires the derived
-MAFW-based metric file described in `REPRODUCIBILITY.md`. Raw MAFW videos remain
-third-party dataset materials governed by the dataset provider.
+MAFW is used only for the empirical score-series illustration and realism
+calibration. The raw videos are not stored in this repository. To rebuild the
+MAFW-derived parts of the workflow:
 
-## Terminology
+1. Request access from the MAFW site:
+   <https://mafw-database.github.io/MAFW/>. Complete the EULA, obtain the
+   required signature, and use the approved download links from the dataset
+   maintainers.
+2. Store the downloaded MAFW clips and labels outside the Git repository. If the
+   approved Google Drive package does not include frame data, extract frames
+   from the clips; the MAFW FAQ recommends aligned 224 x 224 face frames for
+   benchmark-style processing.
+3. Score the selected MAFW frames with `transforEmotion` or an equivalent FER
+   scoring pipeline. The CSV consumed here needs one row per frame with
+   `clip`, `frame_index`, `truth_label`, and these score columns: `anger`,
+   `disgust`, `fear`, `happiness`, `neutral`, `sadness`, `surprise`,
+   `contempt`, `anxiety`, `helplessness`, and `disappointment`.
+4. Put the derived manuscript realism file at
+   `simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv`
+   before running `scripts/figures/plot_empirical_realism_results.R`.
+5. To regenerate Figure 3 with still frames, also provide the frame-score CSV
+   and selected frame images to `scripts/figures/plot_oai_clip_video_dynega_figure.R`
+   through `OAI_CLIP_FIGURE_FRAME_SCORES` and
+   `OAI_CLIP_FIGURE_FRAME_IMAGE_DIR`.
 
-Public documentation uses `LOMM`, `simulation`, `classifier-output score
-channels`, and `paper-facing assets` for the active workflow. Some internal
-environment variables still use `BENCHMARK` or `benchmark` for compatibility
-with existing R runner logic.
+See `REPRODUCIBILITY.md` for the exact environment variables and commands.

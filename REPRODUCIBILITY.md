@@ -21,19 +21,94 @@ The checked-in manuscript can be rendered from the current files under
 `paper/figures/` and `paper/tables/`. A full rerun writes intermediate and final
 outputs under the ignored `simulation_outputs/` directory.
 
-## External Data Boundary
+## MAFW-Derived Inputs
 
 The final method-comparison simulations can be rerun from the code in this
-repository. The empirical realism figure also requires this derived metric file:
+repository. The empirical realism figure and Figure 3 use derived files from
+MAFW, a third-party dataset. The raw videos are not included here.
+
+### 1. Request MAFW access
+
+Use the official MAFW access page: <https://mafw-database.github.io/MAFW/>.
+Download the EULA, review the terms, complete the required information, obtain
+the required signature, and email the signed form to the contact listed by the
+MAFW maintainers. After approval, use the provided Baidu Netdisk or Google Drive
+links to download the dataset. The MAFW site states that the dataset is for
+non-commercial research use and restricts copying, distribution, and commercial
+use of the dataset materials. Check the EULA before sharing derived files.
+
+### 2. Prepare local MAFW files
+
+Store the approved MAFW files outside the Git repository, for example:
+
+```text
+/path/to/mafw/clips/
+/path/to/mafw/labels/
+/path/to/mafw/frames/
+```
+
+The MAFW FAQ states that the Google Drive option includes video clips and label
+files but not frame data. If you use that download, extract frames from the
+clips and run face detection/alignment locally. The FAQ recommends aligned
+224 x 224 face frames for consistency with the dataset benchmark format.
+
+### 3. Create the frame-score CSV
+
+Score the selected MAFW frames with `transforEmotion` or another FER scoring
+pipeline. The empirical helper in `scripts/extract.r` expects one row per frame
+with these columns:
+
+```text
+clip,frame_index,truth_label,anger,disgust,fear,happiness,neutral,sadness,
+surprise,contempt,anxiety,helplessness,disappointment
+```
+
+For Figure 3, `scripts/figures/plot_oai_clip_video_dynega_figure.R` also uses a
+`model` column and defaults to `model == "oai-large"`. The manuscript version
+used `oai-large`, which maps in the manuscript text to OpenAI CLIP
+ViT-Large/14.
+
+### 4. Supply the manuscript realism file
+
+The manuscript figure script reads this derived metric file:
 
 ```text
 simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv
 ```
 
-That file is derived from MAFW frame-level FER-like score panels. Raw MAFW
-videos remain third-party materials governed by the dataset provider. Figure 3
-also uses selected video frames and derived score traces referenced by
-`scripts/figures/plot_oai_clip_video_dynega_figure.R`.
+The Git repository ignores `simulation_outputs/`, so this file must be placed
+locally before the figure script is run. If you rebuild the MAFW scoring and
+calibration upstream, place the rebuilt file at the same path before running:
+
+```bash
+Rscript scripts/figures/plot_empirical_realism_results.R
+```
+
+The expected `metric_comparison_long.csv` columns are:
+
+```text
+family,metric,empirical_median,synthetic_median,empirical_iqr,
+median_diff_scaled,wasserstein_scaled,metric_loss,weight,max_discrepancy,
+paper_call,candidate_id,stage,candidate_label,link,temperature,intercept_mode,
+candidate_rank,paper_promising
+```
+
+### 5. Regenerate the Figure 3 empirical example
+
+Set the frame-score CSV and image directory before running the Figure 3 script:
+
+```bash
+export OAI_CLIP_FIGURE_FRAME_SCORES=/path/to/mafw-derived/frame_scores.csv
+export OAI_CLIP_FIGURE_FRAME_IMAGE_DIR=/path/to/mafw-derived/selected_frames
+export OAI_CLIP_FIGURE_CLIP=02875.mp4
+export OAI_CLIP_FIGURE_MODEL=oai-large
+
+Rscript scripts/figures/plot_oai_clip_video_dynega_figure.R
+```
+
+The script writes intermediate outputs under
+`simulation_outputs/video_dynega_example/` and refreshes
+`paper/figures/mafw_video_dynega_example.pdf`.
 
 ## Software
 
@@ -145,18 +220,28 @@ Rscript scripts/figures/plot_factor_effects_results.R
 Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
-`plot_empirical_realism_results.R` requires the packaged derived empirical
-input:
+`plot_empirical_realism_results.R` requires the derived empirical input:
 
 ```text
 simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv
 ```
 
-Researchers with access to the underlying MAFW-derived frame-score CSV can
-rerun the empirical realism calibration by sourcing `scripts/extract.r` with
-`options(run_extract_pipeline=FALSE)` and calling the retained helper
-`run_empirical_dlo_realism_pipeline(frame_scores_path=..., model_name=..., output_dir=...)`.
-The manuscript figure script reads the selected final comparison table.
+Researchers with approved MAFW access can rebuild upstream frame scores and
+calibration outputs as described in `MAFW-Derived Inputs` above. The retained
+empirical helper in `scripts/extract.r` can be called from R as:
+
+```r
+options(run_extract_pipeline = FALSE)
+source("scripts/extract.r")
+run_empirical_dlo_realism_pipeline(
+  frame_scores_path = "/path/to/mafw-derived/frame_scores.csv",
+  model_name = "oai-large",
+  output_dir = "simulation_outputs/empirical_link_options/oai-large-100"
+)
+```
+
+That helper writes `final_metric_comparison.csv`; the manuscript figure script
+uses the paper-facing `metric_comparison_long.csv` file described above.
 
 Figure 3 is checked in as `paper/figures/mafw_video_dynega_example.pdf`. To
 regenerate it, supply the derived frame-score CSV and selected video frames used
