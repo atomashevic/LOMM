@@ -324,7 +324,7 @@ write_old_vs_new_grid_comparison <- function(out_dir, reps) {
       "Not a three-algorithm method-comparison factor",
       "Neutrality used as baseline/scaling, not an observed block",
       "500 generated matrices per condition in prose",
-      "Four DLO emotion scenarios"
+      "Four LOMM latent-expression scenarios"
     ),
     new_dynega_phase = c(
       "N = 50, 100",

@@ -1,6 +1,6 @@
 ## ============================================================
-## DLO–DynEGA Pipeline: Simulation → Calibration → Production
-## Golino / dynEGA DLO prototype (shareable version)
+## LOMM-DynEGA Pipeline: Simulation → Calibration → Production
+## Golino / dynEGA latent oscillator measurement prototype (shareable version)
 ## ============================================================
 
 ## -----------------------------
@@ -14,7 +14,7 @@ library(MASS)
 library(ggplot2)
 
 ## ============================================================
-## 1. LATENT DLO SIMULATION + MEASUREMENT MODEL
+## 1. LATENT OSCILLATOR SIMULATION + MEASUREMENT MODEL
 ## ============================================================
 
 # Map Q2 "energy" to number of latent factors
@@ -77,7 +77,7 @@ normalize_factor_parameter <- function(x, NFAC, name) {
   x
 }
 
-# Latent noise innovations q_t for NFAC DLO factors
+# Latent noise innovations q_t for NFAC oscillator factors
 generate_q_multi <- function(num_steps, NFAC, sigma_q, rho_q = 0, q_cov = NULL) {
   if (!is.null(q_cov)) {
     q_cov <- as.matrix(q_cov)
@@ -186,7 +186,7 @@ integrate_step <- function(method, x_old, dx_old, noise, dt, eta, zeta, exact_ca
   list(x = x_new, dx = dx_new)
 }
 
-# Simulate latent DLO trajectories (second-order) for NFAC factors
+# Simulate latent oscillator trajectories (second-order) for NFAC factors
 # Equation: x'' = eta * x + zeta * x' + q
 simulate_latent_multi <- function(dt, num_steps, NFAC, sigma_q, eta, zeta,
                                   integrator = "euler_explicit",
@@ -293,7 +293,7 @@ generate_observables_multi <- function(latent, NFAC, NVAR,
   obs
 }
 
-# One "video": latent NFAC DLO → NFAC * NVAR items (smoothed)
+# One simulated panel: latent NFAC oscillator trajectories -> NFAC * NVAR items (smoothed)
 simulate_video_multi <- function(dt, num_steps,
                                  NFAC, NVAR,
                                  eta, zeta,
@@ -402,6 +402,7 @@ run_dynEGA_network_fixed_params <- function(
     tau             = 1,
     delta           = 1,        # MUST be >= 1 (EGAnet constraint)
     id              = id_col_index,
+    model           = "glasso",
     algorithm       = cd.algorithm,
     uni.method      = uni.method,
     use.derivatives = 1,
@@ -425,7 +426,7 @@ run_dynEGA_network_fixed_params <- function(
 }
 
 ## ============================================================
-## 3. DLO PARAMETER ESTIMATION FROM TIME SERIES
+## 3. LATENT OSCILLATOR PARAMETER ESTIMATION FROM TIME SERIES
 ## ============================================================
 ## NOTE: This version uses a simple finite-difference scheme on the
 ## observed data (x, x', x'') to estimate a *global* (eta, zeta)
@@ -488,14 +489,14 @@ estimate_dlo_from_dynEGA <- function(dynEGA_obj,
   }
   
   if (length(all_rows) == 0L) {
-    stop("No valid time series segments with enough points to estimate DLO.")
+    stop("No valid time series segments with enough points to estimate latent oscillator parameters.")
   }
   
   big_df <- do.call(rbind, all_rows)
   n_obs  <- nrow(big_df)
   
   if (verbose) {
-    message("Total derivative rows used for DLO regression: ", n_obs)
+    message("Total derivative rows used for latent oscillator regression: ", n_obs)
   }
   
   # Global regression: x'' = eta * x + zeta * x' + noise
@@ -574,7 +575,7 @@ calibrate_dlo_scaling <- function(
         seed      = seed_start + row_id
       )
       
-      # DLO estimation in "production" style
+      # Latent oscillator estimation in "production" style
       est <- estimate_dlo_from_dynEGA(
         dynEGA_obj = sim$dynEGA_obj,
         data       = sim$data,
@@ -670,7 +671,7 @@ estimate_dlo_parameters_production <- function(dynEGA_obj, data,
                                                calib_prod,
                                                confidence_intervals = TRUE) {
   
-  cat("=== DLO PARAMETER ESTIMATION FROM DYNEGA (Production, calibrated) ===\n\n")
+  cat("=== LATENT OSCILLATOR PARAMETER ESTIMATION FROM DYNEGA (Production, calibrated) ===\n\n")
   
   dt_ref <- calib_prod$dt_ref
   
@@ -705,16 +706,13 @@ estimate_dlo_parameters_production <- function(dynEGA_obj, data,
     zeta_ci_lower <- zeta_ci_upper <- NA_real_
   }
   
-  # Step 4: Physical validity checks
+  # Step 4: Dynamic-regime checks
   warnings <- character()
   if (eta_corrected > 0) {
-    warnings <- c(warnings, "Eta > 0: System may be unstable")
+    warnings <- c(warnings, "Eta > 0: restoring force is absent; trajectory may grow")
   }
-  if (zeta_corrected < 0) {
-    warnings <- c(warnings, "Zeta < 0: Unphysical damping")
-  }
-  if (zeta_corrected > 0.5) {
-    warnings <- c(warnings, "Zeta > 0.5: Overdamped system")
+  if (zeta_corrected > 0) {
+    warnings <- c(warnings, "Zeta > 0: positive velocity feedback can sustain or amplify change")
   }
   
   # Step 5: Compile results
@@ -726,7 +724,15 @@ estimate_dlo_parameters_production <- function(dynEGA_obj, data,
       ci_lower  = c(eta_ci_lower, zeta_ci_lower),
       ci_upper  = c(eta_ci_upper, zeta_ci_upper)
     ),
-    dynamics_type = if (eta_corrected < 0 && zeta_corrected < 0.5) "Oscillatory" else "Overdamped",
+    dynamics_type = if (eta_corrected < 0 && zeta_corrected < 0) {
+      "Restoring with damped velocity feedback"
+    } else if (eta_corrected < 0 && zeta_corrected == 0) {
+      "Restoring without velocity feedback"
+    } else if (eta_corrected < 0 && zeta_corrected > 0) {
+      "Restoring with positive velocity feedback"
+    } else {
+      "Potentially unstable"
+    },
     quality_metrics = list(
       eta_confidence  = "Heuristic (±15%)",
       zeta_confidence = "Heuristic (±50%)",
@@ -923,7 +929,7 @@ plot_benchmark_integrators <- function(
 }
 
 ## ============================================================
-## 8. DYNEGA SCORE-BASED DLO ESTIMATION (PROTOTYPE)
+## 8. DYNEGA SCORE-BASED LATENT OSCILLATOR ESTIMATION (PROTOTYPE)
 ## ============================================================
 
 find_first_named <- function(obj, target) {
@@ -1015,7 +1021,7 @@ estimate_dlo_from_net_scores <- function(dynEGA_obj,
   }
   
   if (length(all_rows) == 0L) {
-    stop("No valid score series to estimate DLO.")
+    stop("No valid score series to estimate latent oscillator parameters.")
   }
   
   big_df <- do.call(rbind, all_rows)
@@ -1835,6 +1841,7 @@ fit_pooled_ord0_dynega <- function(panel,
     level = "population",
     n.embed = n_embed,
     tau = tau,
+    model = "glasso",
     use.derivatives = 0,
     algorithm = algorithm
   )

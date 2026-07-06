@@ -302,7 +302,7 @@ report <- c(
   "2. Describe community detection as an analyzed factor, not as a sensitivity-only readout.",
   "3. Keep the full DynEGA grid as separate scalability evidence because it is Louvain/expand only.",
   "4. Report GraphicalVAR and GIMME feasibility using unique structure-fit counts as well as CD readout rows.",
-  "5. Keep score recovery conditional on correct dimensional recovery and show denominators for each method x CD cell."
+  "5. Keep trajectory diagnostics tied to method-readout rows with recovered score summaries and show denominators for each method x CD cell."
 )
 writeLines(report, report_path)
 
