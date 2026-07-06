@@ -1,20 +1,46 @@
-# Manuscript Production Scripts
+# Scripts
 
-Run these commands from the repository root.
+Run commands from the repository root.
 
-## Core Check
+## Core Implementation
+
+`scripts/extract.r` contains the main LOMM functions, empirical-target helpers,
+and estimator wrappers. Load it without running the expensive extraction
+pipeline with:
 
 ```bash
 Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
-## Manuscript Figures And Tables
+## Final Simulation Runners
 
-The checked-in manuscript renders from the generated files already present
-under `paper/figures/` and `paper/tables/`. To regenerate those files from a
-full rerun, run the final simulation commands below first. The empirical realism
-plot also requires the packaged derived input
-`simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv`.
+The final method-comparison runners are:
+
+```bash
+Rscript scripts/simulations/run_final_dynega_full.R
+Rscript scripts/simulations/run_final_dynega_bounded_cd.R
+Rscript scripts/simulations/run_final_graphicalvar_bounded.R
+Rscript scripts/simulations/run_final_gimme_bounded.R
+```
+
+For full reruns, prefer the matching tmux launchers in
+`scripts/simulations/`. They set conservative thread limits and use the default
+output directories under `simulation_outputs/final_simulation_results/`.
+
+Shared scenario and estimator internals live in:
+
+- `scripts/simulations/run_emotion_dynega_simulation.R`
+- `scripts/simulations/run_method_simulation.R`
+- `scripts/run_external_structure_fit.R`
+
+Some runner internals still use `BENCHMARK_*` environment variables. Those
+names remain in place so existing long-run scripts and checkpoints keep working.
+
+## Paper Figures And Tables
+
+The checked-in manuscript renders from files already present under
+`paper/figures/` and `paper/tables/`. To rebuild those files after a full rerun,
+use:
 
 ```bash
 Rscript scripts/simulations/compare_final_results_to_manuscript.R
@@ -24,28 +50,15 @@ Rscript scripts/figures/plot_factor_effects_results.R
 Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
-These scripts write to `paper/figures/` and `paper/tables/`. The final
-simulation comparison reads `simulation_outputs/final_simulation_results/`,
-which is produced by the final runners below.
+`plot_empirical_realism_results.R` requires:
 
-## Final Simulation Evidence
-
-```bash
-Rscript scripts/simulations/run_final_dynega_full.R
-Rscript scripts/simulations/run_final_dynega_bounded_cd.R
-Rscript scripts/simulations/run_final_graphicalvar_bounded.R
-Rscript scripts/simulations/run_final_gimme_bounded.R
+```text
+simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.csv
 ```
 
-The final runners share scenario and estimator internals from
-`scripts/simulations/run_emotion_dynega_simulation.R` and
-`scripts/simulations/run_method_simulation.R`. The R runner internals still use
-`BENCHMARK_*` environment variables where renaming would risk breaking existing
-code. Defaults write local outputs under the ignored `simulation_outputs/`
-directory.
-
-For the full manuscript package and dry-run grid checks, see
-`REPRODUCIBILITY.md`.
+Figure 3 is produced by
+`scripts/figures/plot_oai_clip_video_dynega_figure.R` when the derived
+frame-score CSV and selected video frames are available.
 
 ## Manuscript Build
 
@@ -54,8 +67,5 @@ quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
 ```
 
-## Archived Material
-
-Older exploratory scripts, diagnostics, reports, and raw result trees were moved
-to ignored dated archive folders. They are local provenance artifacts and are
-not part of the submission reproducibility package.
+For complete rerun instructions and dry-run grid checks, see
+`REPRODUCIBILITY.md`.
