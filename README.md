@@ -14,7 +14,7 @@ Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagn
 
 ## Clean Layout
 
-- `extract.r`: core LOMM simulation, empirical-target, and estimator helpers.
+- `scripts/extract.r`: core LOMM simulation, empirical-target, and estimator helpers.
 - `scripts/run_external_structure_fit.R`: external-fit helper used by the retained simulation runner.
 - `scripts/simulations/`: final simulation runners, launchers, shared runner internals, and the final comparison builder.
 - `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
@@ -27,7 +27,7 @@ Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagn
 Load the core implementation without running the expensive extract pipeline:
 
 ```bash
-Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
+Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
 Regenerate manuscript-facing figures and tables:

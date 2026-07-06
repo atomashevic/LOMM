@@ -4,7 +4,7 @@ options(run_extract_pipeline = FALSE)
 
 repo_root <- normalizePath(".", mustWork = TRUE)
 
-source(file.path(repo_root, "extract.r"))
+source(file.path(repo_root, "scripts", "extract.r"))
 
 library(cowplot)
 library(dplyr)

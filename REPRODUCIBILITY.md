@@ -42,7 +42,7 @@ export NUMEXPR_NUM_THREADS=1
 Load the core implementation without running the expensive extraction pipeline:
 
 ```bash
-Rscript -e "options(run_extract_pipeline=FALSE); source('extract.r')"
+Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
 Run the project provenance check:
@@ -131,7 +131,7 @@ simulation_outputs/empirical_link_options/oai-large-100/metric_comparison_long.c
 ```
 
 Researchers with access to the underlying MAFW-derived frame-score CSV can
-rerun the empirical realism calibration by sourcing `extract.r` with
+rerun the empirical realism calibration by sourcing `scripts/extract.r` with
 `options(run_extract_pipeline=FALSE)` and calling
 `run_empirical_dlo_realism_pipeline(frame_scores_path=..., model_name=..., output_dir=...)`.
 The manuscript figure script reads the selected final comparison table above.
