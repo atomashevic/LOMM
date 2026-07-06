@@ -18,3 +18,22 @@ Rplots.pdf
 benchmark_outputs*/
 empirical_outputs*/
 simulation_outputs/
+
+# Local AI-agent / assistant workspace.
+AGENTS.md
+.codex/
+.claude/
+.aider*
+.cursor/
+.roo/
+.windsurf/
+.aislop/
+*.prompt.md
+*.agent.md
+
+# Local agent/provenance state.
+research-log.md
+research/log.jsonl
+research/evidence.jsonl
+research/reports/
+research/skill-config/
