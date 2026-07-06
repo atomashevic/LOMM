@@ -45,12 +45,6 @@ Load the core implementation without running the expensive extraction pipeline:
 Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
-Run the project provenance check:
-
-```bash
-python3 tools/research_ops.py check-paper
-```
-
 ## Dry-Run Grid Checks
 
 These commands validate the final grids and write only small grid/manifest
@@ -145,20 +139,4 @@ by `scripts/figures/plot_oai_clip_video_dynega_figure.R`.
 ```bash
 quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
-```
-
-## Provenance Manifests
-
-The current package records manuscript-facing claims in
-`research/claim-ledger.yaml` and run/artifact hashes in:
-
-- `research/runs/final-manuscript-comparison-20260623/run-manifest.json`
-- `research/runs/manuscript-figures-tables-20260623/run-manifest.json`
-
-Validate them with:
-
-```bash
-python3 tools/research_ops.py validate-run research/runs/final-manuscript-comparison-20260623/run-manifest.json
-python3 tools/research_ops.py validate-run research/runs/manuscript-figures-tables-20260623/run-manifest.json
-python3 tools/research_ops.py check-paper
 ```

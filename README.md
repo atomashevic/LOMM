@@ -19,7 +19,6 @@ Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagn
 - `scripts/simulations/`: final simulation runners, launchers, shared runner internals, and the final comparison builder.
 - `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
 - `paper/figures/` and `paper/tables/`: rendered manuscript-facing outputs.
-- `research/`: claim ledger, run manifests, and project-local provenance checks.
 - `REPRODUCIBILITY.md`: from-scratch rerun instructions for the final simulation package.
 
 ## Main Commands
