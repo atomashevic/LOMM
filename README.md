@@ -1,35 +1,49 @@
-# LOMM Manuscript Simulation Workspace
+# LOMM
 
-This repository is the cleaned RR manuscript workspace for the Latent Oscillator Measurement Model (LOMM) paper. The visible tree is organized around the current manuscript, the rendered manuscript artifacts, and the scripts needed to rerun the final simulations and regenerate manuscript-facing figures and tables.
+Reproducibility materials for the paper *A Latent Oscillator Measurement Model
+for Simulating Emotional-Expression Score Dynamics in Video*.
 
-## Active Manuscript
+Use this repository to inspect the current manuscript package, rerun the LOMM
+simulations, and rebuild the paper-facing figures and tables. The checked-in
+PDFs, figures, and tables are the current shared materials for collaborators.
+Long reruns write to ignored local directories, so collaborators can reproduce
+the results without changing the repository.
 
-- `paper/Paper_emotion_dynamics_HGolino_RR.qmd`: current RR manuscript source.
+## Where To Start
+
+- `paper/Paper_emotion_dynamics_HGolino_RR.qmd`: manuscript source.
 - `paper/Paper_emotion_dynamics_HGolino_RR.pdf`: rendered manuscript PDF.
-- `paper/response_letter.tex` and `paper/response_letter.pdf`: current response letter.
-- `paper/references.bib` and `paper/apa.csl`: manuscript bibliography and citation style.
-- `paper/figures/` and `paper/tables/`: manuscript-facing generated assets.
+- `paper/response_letter.tex` and `paper/response_letter.pdf`: response letter.
+- `paper/references.bib` and `paper/apa.csl`: bibliography and citation style.
+- `paper/figures/` and `paper/tables/`: figures and tables used by the paper.
+- `REPRODUCIBILITY.md`: full rerun instructions for the final simulation
+  package.
 
-Legacy drafts, old readouts, older reports, obsolete bibliography backups, diagnostic scripts, and raw result trees were moved to ignored dated folders under `archive/`.
+## Code Map
 
-## Clean Layout
+- `scripts/extract.r`: core LOMM implementation, empirical-target helpers, and
+  estimator wrappers.
+- `scripts/simulations/`: final simulation runners, tmux launchers, shared
+  runner internals, and the manuscript-comparison builder.
+- `scripts/figures/`: scripts that regenerate paper-facing figures and tables.
+- `scripts/run_external_structure_fit.R`: external helper used by the retained
+  simulation runners.
+- `scripts/README.md`: compact production map for the script directory.
 
-- `scripts/extract.r`: core LOMM simulation, empirical-target, and estimator helpers.
-- `scripts/run_external_structure_fit.R`: external-fit helper used by the retained simulation runner.
-- `scripts/simulations/`: final simulation runners, launchers, shared runner internals, and the final comparison builder.
-- `scripts/figures/`: scripts that regenerate manuscript-facing figures and tables.
-- `paper/figures/` and `paper/tables/`: rendered manuscript-facing outputs.
-- `REPRODUCIBILITY.md`: from-scratch rerun instructions for the final simulation package.
+The default rerun output location is `simulation_outputs/`, which is ignored by
+Git. Historical local material belongs under ignored `archive/` folders and is
+not part of the public reproducibility surface.
 
-## Main Commands
+## Quick Checks
 
-Load the core implementation without running the expensive extract pipeline:
+Load the core implementation without running the expensive extraction pipeline:
 
 ```bash
 Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 ```
 
-Regenerate manuscript-facing figures and tables:
+Regenerate paper-facing figures and tables after the final simulation result
+directories exist:
 
 ```bash
 Rscript scripts/simulations/compare_final_results_to_manuscript.R
@@ -39,11 +53,6 @@ Rscript scripts/figures/plot_factor_effects_results.R
 Rscript scripts/figures/plot_runtime_feasibility_results.R
 ```
 
-The manuscript itself renders from the checked-in `paper/figures/` and
-`paper/tables/` files. A full rerun writes final result trees under
-`simulation_outputs/final_simulation_results/`; see `REPRODUCIBILITY.md` for
-the exact long-run commands and required derived empirical inputs.
-
 Rebuild the manuscript and response letter:
 
 ```bash
@@ -51,8 +60,16 @@ quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
 ```
 
-See `scripts/README.md` for the current production map.
+## Data Boundary
+
+The repository contains the manuscript source, code, and paper-facing generated
+assets. Rerunning the empirical realism figure also requires the derived
+MAFW-based metric file described in `REPRODUCIBILITY.md`. Raw MAFW videos remain
+third-party dataset materials governed by the dataset provider.
 
 ## Terminology
 
-Visible project documentation now uses "simulation" for the active manuscript workflow. Some internal environment variables and archived historical files still use `BENCHMARK` or `benchmark` for provenance and backward compatibility with existing R runner logic.
+Public documentation uses `LOMM`, `simulation`, `classifier-output score
+channels`, and `paper-facing assets` for the active workflow. Some internal
+environment variables still use `BENCHMARK` or `benchmark` for compatibility
+with existing R runner logic.
