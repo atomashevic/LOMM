@@ -1,7 +1,7 @@
 # LOMM
 
 Reproducibility materials for the paper *A Latent Oscillator Measurement Model
-for Simulating Emotional-Expression Score Dynamics in Video*.
+to Simulate Emotional-Expression Score Dynamics in Video*.
 
 Use this repository to inspect the current manuscript package, rerun the LOMM
 simulations, and rebuild the paper-facing figures and tables. The checked-in
@@ -18,6 +18,8 @@ the results without changing the repository.
 - `paper/figures/` and `paper/tables/`: figures and tables used by the paper.
 - `REPRODUCIBILITY.md`: full rerun instructions for the final simulation
   package.
+- `REVISION_V2_HANDOFF.md`: dry-run validation and future launch instructions
+  for the prepared revision analyses.
 
 ## Code Map
 
@@ -33,6 +35,29 @@ the results without changing the repository.
 The default rerun output location is `simulation_outputs/`, which is ignored by
 Git. Historical local material belongs under ignored `archive/` folders and is
 not part of the public reproducibility surface.
+
+## Revision V2 Pre-Compute Interface
+
+The revision package is prepared through the script-and-orchestration boundary.
+Its default commands inspect or validate prospective work and cannot start an
+estimator. Run the complete dry-run validation with:
+
+```bash
+python3 scripts/simulations/orchestrate_revision_jobs.py validate
+```
+
+Inspect the dependency graph and future launch commands with:
+
+```bash
+python3 scripts/simulations/orchestrate_revision_jobs.py plan
+python3 scripts/simulations/orchestrate_revision_jobs.py next
+python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100_dynega
+```
+
+Every scientific output is namespaced by job ID and configuration hash under
+`simulation_outputs/revision_v2/`. Launch and resume remain guarded pending a
+separate authorization. See `REVISION_V2_HANDOFF.md` for the boundary, expected
+counts, manuscript gates, and exact commands.
 
 ## Quick Checks
 

@@ -36,6 +36,50 @@ Shared scenario and estimator internals live in:
 Some runner internals still use `BENCHMARK_*` environment variables. Those
 names remain in place so existing long-run scripts and checkpoints keep working.
 
+## Revision V2 Pre-Compute Runners
+
+The revision analyses share one prospective specification and one guarded job
+interface:
+
+- `scripts/simulations/revision_spec.R`: canonical grids, panel keys,
+  transformations, partition helpers, estimands, and validation contracts.
+- `scripts/simulations/run_revision_job.R`: named-job dispatcher with mandatory
+  dry-run support.
+- `scripts/simulations/build_revision_results.R`: future aggregation and
+  reporting helpers; syntax-check only during pre-compute preparation.
+- `scripts/figures/build_revision_v2_artifacts.R`: future V2-only figure and
+  table adapter; it reads validated aggregate artifacts and never falls back to
+  the checked-in legacy result paths.
+- `scripts/simulations/revision_jobs.json`: dependency graph and expected
+  artifacts.
+- `scripts/simulations/orchestrate_revision_jobs.py`: validation, status,
+  monitoring, and guarded future launch/resume commands.
+- `scripts/simulations/repair_structure_checkpoint.py`: hash-guarded,
+  atomic repair for structure-job batches serialized under the error-row
+  column order. It requires explicit expected row and panel counts, preserves
+  the original checkpoint as a backup, and writes a repair receipt.
+
+The safe preparation commands are:
+
+```bash
+python3 scripts/simulations/orchestrate_revision_jobs.py plan
+python3 scripts/simulations/orchestrate_revision_jobs.py validate
+python3 scripts/simulations/orchestrate_revision_jobs.py status
+python3 scripts/simulations/orchestrate_revision_jobs.py next
+python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100_dynega
+```
+
+No command in this list fits an estimator. Scientific outputs use
+`simulation_outputs/revision_v2/<job-id>/<config-hash>/`; a configuration
+change therefore creates a separate checkpoint namespace. See
+`REVISION_V2_HANDOFF.md` for future launch guards and manuscript integration
+gates.
+
+Revision DynEGA jobs distinguish physical cadence from the EGAnet GLLA unit:
+LOMM generation and horizon metadata retain `dt = 0.4`, while DynEGA uses
+`delta = 1` observation interval. Both values are recorded in prospective
+manifests and method-result rows.
+
 ## Paper Figures And Tables
 
 The checked-in manuscript renders from files already present under

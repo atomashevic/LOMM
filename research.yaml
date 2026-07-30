@@ -14,6 +14,11 @@ execution:
   python: python3
   r: Rscript
   require_clean_git_for_final: false
+  revision_job_config: scripts/simulations/revision_jobs.json
+  revision_job_runner: scripts/simulations/run_revision_job.R
+  revision_orchestrator: scripts/simulations/orchestrate_revision_jobs.py
+  revision_output_root: simulation_outputs/revision_v2
+  long_run_acknowledgement: LONG-RUNS-AUTHORIZED
 paper:
   engine: quarto
   main: paper/Paper_emotion_dynamics_HGolino_RR.qmd
@@ -22,6 +27,9 @@ checks:
   require_evidence_for_literature_claims: true
   fail_on_stale_figures: true
   fail_on_untracked_generated_outputs: true
+  precompute_validation_only: true
+  prohibit_estimator_fits_during_precompute: true
+  prohibit_revision_tmux_during_precompute: true
 human_checkpoints:
   - change_hypothesis
   - change_construct
@@ -29,3 +37,4 @@ human_checkpoints:
   - change_exclusion_rule
   - add_causal_language
   - infer_sensitive_identity
+  - authorize_long_running_revision_jobs

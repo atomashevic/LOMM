@@ -22,6 +22,9 @@ REVISION_T100_N_EMBED <- c(5L, 10L, 15L, 25L, 50L)
 REVISION_T25_N_EMBED <- c(5L, 6L, 10L, 12L)
 REVISION_SEED_ORIGIN <- 20260715L
 REVISION_CONFIG_VERSION <- "revision_v2"
+REVISION_STRUCTURE_PHYSICAL_DT <- 0.4
+REVISION_DYNEGA_OBSERVATION_DELTA <- 1
+REVISION_DYNEGA_DELTA_UNITS <- "observation_interval"
 
 revision_scalar_or <- function(value, fallback) {
   if (is.null(value) || length(value) == 0L || is.na(value[[1]])) {
@@ -85,30 +88,295 @@ revision_factor_sigma <- function(family_row, archetypes, n_factors) {
   archetypes$sigma_q[seq_len(n_factors)] * family_row$sigma_value[[1]]
 }
 
+revision_oscillator_roots <- function(eta, zeta) {
+  eta <- as.numeric(eta)
+  zeta <- as.numeric(zeta)
+  if (length(eta) != length(zeta) || length(eta) == 0L ||
+      any(!is.finite(eta)) || any(!is.finite(zeta))) {
+    stop("eta and zeta must be aligned finite numeric vectors.", call. = FALSE)
+  }
+  discriminant_root <- sqrt(as.complex(zeta^2 + 4 * eta))
+  roots <- cbind(
+    r_minus = (zeta - discriminant_root) / 2,
+    r_plus = (zeta + discriminant_root) / 2
+  )
+  rownames(roots) <- paste0("factor_", seq_along(eta))
+  roots
+}
+
 revision_stability <- function(eta, zeta, dt) {
-  max_real <- max(vapply(
-    seq_along(eta),
-    function(index) {
-      transition <- matrix(
-        c(0, 1, eta[[index]], zeta[[index]]),
-        nrow = 2L,
-        byrow = TRUE
-      )
-      max(Re(eigen(transition, only.values = TRUE)$values))
-    },
-    numeric(1)
-  ))
+  roots <- revision_oscillator_roots(eta, zeta)
+  max_real <- max(Re(roots))
   spectral_radius <- exp(dt * max_real)
+  anti_damped <- any(eta < 0 & zeta > 0)
+  stability_class <- if (anti_damped) {
+    "anti_damped"
+  } else if (max_real < 0 && spectral_radius < 1) {
+    "asymptotically_stable"
+  } else {
+    "unstable"
+  }
   data.frame(
     continuous_max_real_eigenvalue = max_real,
     discrete_spectral_radius = spectral_radius,
     continuous_stable = max_real < 0,
     discrete_stable = spectral_radius < 1,
-    stability_class = if (max_real < 0 && spectral_radius < 1) {
-      "asymptotically_stable"
+    anti_damped = anti_damped,
+    stability_class = stability_class,
+    stringsAsFactors = FALSE
+  )
+}
+
+revision_integrated_input <- function(system_matrix, transition, dt, eta) {
+  if (abs(eta) > 1e-10) {
+    return(matrix(c((transition[1L, 1L] - 1) / eta, transition[2L, 1L] / eta), ncol = 1L))
+  }
+  input <- matrix(c(0, 1), ncol = 1L)
+  term <- input * dt
+  integrated <- term
+  for (order in seq_len(40L)) {
+    term <- system_matrix %*% term * dt / (order + 1L)
+    integrated <- integrated + term
+    if (max(abs(term)) < 1e-14) {
+      break
+    }
+  }
+  integrated
+}
+
+revision_exact_transition <- function(eta, zeta, dt) {
+  system_matrix <- matrix(c(0, 1, eta, zeta), nrow = 2L, byrow = TRUE)
+  half_trace <- zeta / 2
+  centered <- system_matrix - diag(half_trace, nrow = 2L)
+  discriminant <- half_trace^2 + eta
+  tolerance <- 1e-12
+  if (discriminant > tolerance) {
+    root <- sqrt(discriminant)
+    coefficient <- sinh(root * dt) / root
+    base <- cosh(root * dt)
+  } else if (discriminant < -tolerance) {
+    root <- sqrt(-discriminant)
+    coefficient <- sin(root * dt) / root
+    base <- cos(root * dt)
+  } else {
+    coefficient <- dt
+    base <- 1
+  }
+  transition <- exp(half_trace * dt) * (base * diag(2L) + coefficient * centered)
+  innovation_map <- revision_integrated_input(system_matrix, transition, dt, eta)
+  list(transition = transition, innovation_map = innovation_map)
+}
+
+revision_stationary_state_covariance <- function(eta, zeta, sigma_q, dt) {
+  stability <- revision_stability(eta, zeta, dt)
+  if (!isTRUE(stability$discrete_stable[[1]])) {
+    stop("Stationary initialization requires a stable transition.", call. = FALSE)
+  }
+  transition <- revision_exact_transition(eta, zeta, dt)
+  innovation_covariance <- sigma_q^2 *
+    tcrossprod(transition$innovation_map)
+  system <- diag(4L) - kronecker(transition$transition, transition$transition)
+  covariance <- matrix(solve(system, as.vector(innovation_covariance)), nrow = 2L)
+  (covariance + t(covariance)) / 2
+}
+
+revision_sample_gaussian <- function(covariance) {
+  decomposition <- eigen(covariance, symmetric = TRUE)
+  values <- pmax(Re(decomposition$values), 0)
+  as.numeric(decomposition$vectors %*% (sqrt(values) * stats::rnorm(length(values))))
+}
+
+revision_initial_states <- function(eta, zeta, sigma_q, dt, seed) {
+  set.seed(seed)
+  states <- matrix(NA_real_, nrow = length(eta), ncol = 2L)
+  for (factor_index in seq_along(eta)) {
+    factor_stability <- revision_stability(
+      eta[[factor_index]],
+      zeta[[factor_index]],
+      dt
+    )
+    if (isTRUE(factor_stability$discrete_stable[[1]])) {
+      covariance <- revision_stationary_state_covariance(
+        eta[[factor_index]],
+        zeta[[factor_index]],
+        sigma_q[[factor_index]],
+        dt
+      )
+      states[factor_index, ] <- revision_sample_gaussian(covariance)
     } else {
-      "unstable"
-    },
+      states[factor_index, ] <- c(
+        stats::runif(1L, -0.25, 0.25),
+        stats::runif(1L, -2, 2)
+      )
+    }
+  }
+  colnames(states) <- c("x0", "v0")
+  states
+}
+
+revision_smooth_activity_envelope <- function(active_dimension,
+                                              n_factors,
+                                              active_gain,
+                                              background_gain,
+                                              transition_width = 5L) {
+  active_dimension <- as.integer(active_dimension)
+  envelope <- matrix(
+    background_gain,
+    nrow = length(active_dimension),
+    ncol = n_factors
+  )
+  envelope[cbind(seq_along(active_dimension), active_dimension)] <- active_gain
+  changes <- which(active_dimension[-1L] != active_dimension[-length(active_dimension)]) + 1L
+  if (length(changes) == 0L || transition_width < 1L) {
+    return(envelope)
+  }
+
+  for (change in changes) {
+    old_factor <- active_dimension[[change - 1L]]
+    new_factor <- active_dimension[[change]]
+    indices <- seq.int(change, min(nrow(envelope), change + transition_width - 1L))
+    phase <- if (length(indices) == 1L) {
+      1
+    } else {
+      seq(0, 1, length.out = length(indices))
+    }
+    new_weight <- 0.5 * (1 - cos(pi * phase))
+    old_weight <- 1 - new_weight
+    envelope[indices, old_factor] <- background_gain +
+      (active_gain - background_gain) * old_weight
+    envelope[indices, new_factor] <- background_gain +
+      (active_gain - background_gain) * new_weight
+  }
+  envelope
+}
+
+revision_loading_matrix <- function(n_factors,
+                                    indicators_per_factor,
+                                    primary_loading,
+                                    cross_loadings = FALSE,
+                                    secondary_draws = NULL) {
+  item_count <- n_factors * indicators_per_factor
+  membership <- rep(seq_len(n_factors), each = indicators_per_factor)
+  loadings <- matrix(0, nrow = item_count, ncol = n_factors)
+  loadings[cbind(seq_len(item_count), membership)] <- primary_loading
+  if (isTRUE(cross_loadings)) {
+    secondary <- if (is.null(secondary_draws)) {
+      matrix(
+        stats::rnorm(item_count * n_factors, sd = 0.05),
+        nrow = item_count,
+        ncol = n_factors
+      )
+    } else {
+      matrix(as.numeric(secondary_draws), nrow = item_count, ncol = n_factors)
+    }
+    secondary <- pmin(pmax(secondary, -0.10), 0.10)
+    secondary[cbind(seq_len(item_count), membership)] <- primary_loading
+    loadings <- secondary
+  }
+  secondary_magnitudes <- abs(loadings)
+  secondary_magnitudes[cbind(seq_len(item_count), membership)] <- -Inf
+  if (any(abs(loadings[cbind(seq_len(item_count), membership)]) <=
+          apply(secondary_magnitudes, 1L, max))) {
+    stop("Primary loadings must remain largest after cross-loading generation.", call. = FALSE)
+  }
+  rownames(loadings) <- paste0("Y", seq_len(item_count))
+  colnames(loadings) <- paste0("F", seq_len(n_factors))
+  loadings
+}
+
+revision_equicorrelation_covariance <- function(standard_deviations, rho) {
+  standard_deviations <- as.numeric(standard_deviations)
+  dimension <- length(standard_deviations)
+  lower_bound <- -1 / max(dimension - 1L, 1L)
+  if (!is.finite(rho) || rho <= lower_bound || rho >= 1) {
+    stop("Equicorrelation rho is outside the positive-definite interval.", call. = FALSE)
+  }
+  correlation <- matrix(rho, nrow = dimension, ncol = dimension)
+  diag(correlation) <- 1
+  scales <- diag(standard_deviations, nrow = dimension)
+  scales %*% correlation %*% scales
+}
+
+revision_row_softmax <- function(values, alpha = 0, tau = 1) {
+  values <- as.matrix(values)
+  if (!is.finite(tau) || tau <= 0) {
+    stop("Softmax tau must be positive.", call. = FALSE)
+  }
+  intercept <- rep_len(as.numeric(alpha), ncol(values))
+  shifted <- sweep(values, 2L, intercept, "+") / tau
+  shifted <- shifted - apply(shifted, 1L, max)
+  exponentiated <- exp(shifted)
+  exponentiated / rowSums(exponentiated)
+}
+
+revision_clr <- function(probabilities, epsilon = 1e-12) {
+  probabilities <- pmax(as.matrix(probabilities), epsilon)
+  log_values <- log(probabilities)
+  log_values - rowMeans(log_values)
+}
+
+revision_symmetrize_weights <- function(weight_matrix) {
+  weights <- as.matrix(weight_matrix)
+  if (nrow(weights) != ncol(weights)) {
+    stop("Weight matrix must be square.", call. = FALSE)
+  }
+  weights[!is.finite(weights)] <- 0
+  weights <- (weights + t(weights)) / 2
+  diag(weights) <- 0
+  positive <- pmax(weights, 0)
+  if (sum(positive) == 0) {
+    positive <- abs(weights)
+  }
+  dimnames(positive) <- dimnames(weights)
+  positive
+}
+
+revision_gimme_positive_structure <- function(weight_matrix) {
+  weights <- as.matrix(weight_matrix)
+  if (nrow(weights) != ncol(weights)) {
+    stop("GIMME weight matrix must be square.", call. = FALSE)
+  }
+  weights[!is.finite(weights)] <- 0
+  weights <- (weights + t(weights)) / 2
+  diag(weights) <- 0
+  positive <- pmax(weights, 0)
+  dimnames(positive) <- dimnames(weights)
+  positive
+}
+
+revision_assign_clip_folds <- function(clip_ids,
+                                       strata = NULL,
+                                       clip_lengths = NULL,
+                                       n_folds = 5L) {
+  clip_ids <- as.character(clip_ids)
+  if (anyDuplicated(clip_ids)) {
+    stop("clip_ids must contain one row per clip.", call. = FALSE)
+  }
+  strata <- if (is.null(strata)) rep("all", length(clip_ids)) else as.character(strata)
+  if (length(strata) != length(clip_ids)) {
+    stop("strata must align with clip_ids.", call. = FALSE)
+  }
+  clip_lengths <- if (is.null(clip_lengths)) {
+    rep(NA_integer_, length(clip_ids))
+  } else {
+    as.integer(clip_lengths)
+  }
+  if (length(clip_lengths) != length(clip_ids)) {
+    stop("clip_lengths must align with clip_ids.", call. = FALSE)
+  }
+  folds <- integer(length(clip_ids))
+  offset <- 0L
+  for (stratum in sort(unique(strata))) {
+    indices <- which(strata == stratum)
+    ordered <- indices[order(clip_lengths[indices], clip_ids[indices], na.last = TRUE)]
+    folds[ordered] <- ((seq_along(ordered) - 1L + offset) %% n_folds) + 1L
+    offset <- (offset + length(indices)) %% n_folds
+  }
+  data.frame(
+    clip_id = clip_ids,
+    stratum = strata,
+    clip_length = clip_lengths,
+    fold = folds,
     stringsAsFactors = FALSE
   )
 }
@@ -184,7 +452,7 @@ revision_challenge_variants <- function() {
       "stationary_if_stable_else_uniform",
       rep("legacy_fixed", 5L)
     ),
-    stable_burn_in = c(0L, 25L, rep(0L, 5L)),
+    stable_burn_in = rep(0L, 7L),
     antidamped_x0 = c(NA, "U[-0.25,0.25]", rep(NA, 5L)),
     antidamped_v0 = c(NA, "U[-2,2]", rep(NA, 5L)),
     activity_gate = c("step", "step", "half_cosine", rep("step", 4L)),
@@ -203,73 +471,62 @@ revision_challenge_variants <- function() {
   )
 }
 
-revision_candidate_fallback <- function() {
-  links <- c("identity", "logistic", "logistic_renorm", "softmax")
-  temperatures <- c(0.75, 1.00, 1.50, 2.00)
-  intercepts <- c("none", "empirical_log_mean")
-  rows <- vector("list", length(links) * length(temperatures) * length(intercepts))
-  row_index <- 1L
-  for (link in links) {
-    for (temperature in temperatures) {
-      for (intercept in intercepts) {
-        rows[[row_index]] <- data.frame(
-          candidate_id = row_index,
-          stage = "L_link",
-          candidate_label = sprintf(
-            "link_%s_temp_%.2f_intercept_%s",
-            link,
-            temperature,
-            intercept
-          ),
-          link = link,
-          temperature = temperature,
-          intercept_mode = intercept,
-          candidate_rank = NA_integer_,
-          candidate_source = "fixed_fallback",
-          stringsAsFactors = FALSE
-        )
-        row_index <- row_index + 1L
-      }
-    }
-  }
-  do.call(rbind, rows)
-}
-
-revision_candidate_columns <- function() {
-  c(
-    "candidate_id",
-    "stage",
-    "candidate_label",
-    "link",
-    "temperature",
-    "intercept_mode",
-    "candidate_rank"
+revision_empirical_calibration_axes <- function() {
+  list(
+    eta = c(-0.05, -0.10, -0.20, -0.40, -0.60, -0.80),
+    sigma_q = c(0.05, 0.10, 0.20, 0.40, 0.60),
+    dt = c(0.25, 0.50, 1.00),
+    unconstrained_zeta = c(0.05, 0.10, 0.20, 0.40, 0.60),
+    stable_negative_zeta = c(-0.05, -0.10, -0.20, -0.40, -0.60),
+    tau = c(0.75, 1.00, 1.25)
   )
 }
 
-revision_empirical_candidates <- function(repo_root = ".") {
-  source_path <- file.path(
-    repo_root,
-    "simulation_outputs",
-    "empirical_link_options",
-    "oai-large-100",
-    "metric_comparison_long.csv"
+revision_empirical_candidates <- function() {
+  axes <- revision_empirical_calibration_axes()
+  regimes <- rbind(
+    data.frame(
+      calibration_regime = "unconstrained",
+      zeta = axes$unconstrained_zeta,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      calibration_regime = "stable_negative_zeta",
+      zeta = axes$stable_negative_zeta,
+      stringsAsFactors = FALSE
+    )
   )
-  if (!file.exists(source_path)) {
-    return(revision_candidate_fallback())
-  }
-
-  source_rows <- utils::read.csv(source_path, check.names = FALSE)
-  required <- revision_candidate_columns()
-  if (!all(required %in% names(source_rows))) {
-    return(revision_candidate_fallback())
-  }
-  candidates <- unique(source_rows[, required, drop = FALSE])
-  candidates <- candidates[order(candidates$candidate_id), , drop = FALSE]
-  if (nrow(candidates) != 32L) {
-    return(revision_candidate_fallback())
-  }
-  candidates$candidate_source <- "discovered_metric_comparison_long"
+  candidates <- merge(
+    expand.grid(
+      eta = axes$eta,
+      sigma_q = axes$sigma_q,
+      dt = axes$dt,
+      KEEP.OUT.ATTRS = FALSE,
+      stringsAsFactors = FALSE
+    ),
+    regimes,
+    by = NULL,
+    sort = FALSE
+  )
+  candidates <- candidates[order(
+    candidates$calibration_regime,
+    candidates$eta,
+    candidates$sigma_q,
+    candidates$dt,
+    candidates$zeta
+  ), , drop = FALSE]
+  candidates$candidate_id <- seq_len(nrow(candidates))
+  candidates$candidate_label <- sprintf(
+    "%s_eta_%.2f_zeta_%+.2f_sigma_%.2f_dt_%.2f",
+    candidates$calibration_regime,
+    candidates$eta,
+    candidates$zeta,
+    candidates$sigma_q,
+    candidates$dt
+  )
+  candidates$observation_link <- "softmax"
+  candidates$channel_intercept_rule <- "estimated_from_training_clips"
+  candidates$calibration_scope <- "training_fold_only"
   rownames(candidates) <- NULL
   candidates
 }
@@ -302,7 +559,10 @@ revision_default_config_hash <- function(job_id) {
     REVISION_SEED_ORIGIN,
     sep = "|"
   )
-  sprintf("%08x", revision_hash_int(material))
+  paste0(
+    sprintf("%08x", revision_hash_int(material)),
+    sprintf("%04x", revision_hash_int(paste0(material, "|secondary")) %% 65536L)
+  )
 }
 
 revision_assert_job_id <- function(job_id) {
@@ -339,10 +599,26 @@ revision_panel_keys <- function(grid, scope) {
   )
 }
 
+revision_pair_keys <- function(grid, scope) {
+  paste(
+    REVISION_CONFIG_VERSION,
+    scope,
+    grid$scenario,
+    paste0("N", grid$N),
+    paste0("K", grid$NVAR),
+    sprintf("E%.3f", grid$Error_sd),
+    sprintf("L%.3f", grid$Loadings),
+    sprintf("Q%.2f", grid$Q),
+    paste0("R", sprintf("%03d", grid$rep)),
+    sep = "|"
+  )
+}
+
 revision_add_panel_identity <- function(grid, scope) {
   grid$panel_key <- revision_panel_keys(grid, scope)
+  grid$horizon_pair_key <- revision_pair_keys(grid, "matched_horizon_pair")
   grid$representation_key <- paste(grid$panel_key, grid$representation, sep = "|")
-  grid$seed_base <- vapply(grid$panel_key, revision_seed_from_key, integer(1))
+  grid$seed_base <- vapply(grid$horizon_pair_key, revision_seed_from_key, integer(1))
   grid
 }
 
@@ -426,7 +702,12 @@ revision_challenge_base_grid <- function(reps = 50L) {
     design$challenge_id,
     sep = "|"
   )
-  design$seed_base <- vapply(design$panel_key, revision_seed_from_key, integer(1))
+  design$challenge_pair_key <- revision_pair_keys(design, "challenge_variant_pair")
+  design$seed_base <- vapply(
+    design$challenge_pair_key,
+    revision_seed_from_key,
+    integer(1)
+  )
   design
 }
 
@@ -453,11 +734,12 @@ revision_challenge_panel_grid <- function(reps = 50L) {
 }
 
 revision_empirical_cv_plan <- function(repo_root = ".") {
-  candidates <- revision_empirical_candidates(repo_root)
+  candidates <- revision_empirical_candidates()
+  axes <- revision_empirical_calibration_axes()
   training <- merge(
     expand.grid(
       fold = seq_len(5L),
-      cv_tau = c(0.75, 1.00, 1.25),
+      cv_tau = axes$tau,
       candidate_id = candidates$candidate_id,
       KEEP.OUT.ATTRS = FALSE,
       stringsAsFactors = FALSE
@@ -470,6 +752,12 @@ revision_empirical_cv_plan <- function(repo_root = ".") {
   training$heldout_clip_count <- 20L
   training$training_panel_replicates <- 1L
   training$selection_rule <- "minimum_training_only_continuous_loss"
+  training$calibration_selection_scope <- "training_fold_only"
+  training$channel_intercept_scope <- "estimated_from_training_fold_only"
+  training$alpha_selection_scope <- "training_fold_only"
+  training$tau_selection_scope <- "training_fold_only"
+  training$summarizer_selection_scope <- "training_fold_only"
+  training$heldout_access_during_selection <- FALSE
   training$panel_key <- sprintf(
     "%s|empirical_cv|train|F%d|C%02d|TAU%.2f",
     REVISION_CONFIG_VERSION,
@@ -489,6 +777,10 @@ revision_empirical_cv_plan <- function(repo_root = ".") {
   heldout$heldout_clip_count <- 20L
   heldout$selected_candidate_id <- NA_integer_
   heldout$selected_cv_tau <- NA_real_
+  heldout$selected_calibration_regime <- NA_character_
+  heldout$selected_alpha <- NA_real_
+  heldout$selected_summarizer <- NA_character_
+  heldout$selection_locked_before_heldout <- TRUE
   heldout$panel_key <- sprintf(
     "%s|empirical_cv|heldout|F%d|R%03d",
     REVISION_CONFIG_VERSION,
@@ -497,7 +789,21 @@ revision_empirical_cv_plan <- function(repo_root = ".") {
   )
   heldout$seed_base <- vapply(heldout$panel_key, revision_seed_from_key, integer(1))
 
-  list(candidates = candidates, training = training, heldout = heldout)
+  list(
+    candidates = candidates,
+    training = training,
+    heldout = heldout,
+    training_only_fields = c(
+      "eta",
+      "zeta",
+      "sigma_q",
+      "dt",
+      "channel_intercepts",
+      "alpha",
+      "tau",
+      "summarizer"
+    )
+  )
 }
 
 revision_method_ids <- function(job_id) {
@@ -511,7 +817,7 @@ revision_method_ids <- function(job_id) {
     return("gimme")
   }
   if (grepl("static_oracle$", job_id)) {
-    return(c("static_correlation", "oracle_blocks"))
+    return(c("static_EGA", "oracle_blocks"))
   }
   character()
 }
@@ -528,9 +834,14 @@ revision_readout_specs <- function(method_ids) {
   )
   specs$primary_readout <- specs$community_algorithm == "louvain"
   specs$resolution <- ifelse(specs$primary_readout, 1.0, NA_real_)
-  specs$dynEGA_uni_method <- ifelse(specs$method_id == "dynEGA", "expand", NA)
+  specs$partition_source <- "frozen_method_structure"
+  specs$dynEGA_sensitivity_uni_method <- ifelse(
+    specs$method_id == "dynEGA",
+    "expand",
+    NA
+  )
   specs$correlation_louvain_sensitivity_resolution <- ifelse(
-    specs$method_id == "static_correlation",
+    specs$method_id == "dynEGA",
     0.95,
     NA_real_
   )
@@ -580,7 +891,7 @@ revision_job_catalog <- function() {
       "planned_manuscript_integration"
     ),
     base_panels = c(
-      980L,
+      14000L,
       21600L,
       rep(21600L, 8L),
       rep(4200L, 3L),
@@ -589,7 +900,7 @@ revision_job_catalog <- function() {
       0L
     ),
     representation_panels = c(
-      980L,
+      14000L,
       21600L,
       rep(21600L, 8L),
       rep(4800L, 3L),
@@ -674,14 +985,34 @@ revision_job_plan <- function(job_id, repo_root = ".") {
 }
 
 revision_validate_empirical_plan <- function(plan) {
-  if (nrow(plan$candidates) != 32L) {
-    stop("Empirical CV must preserve 32 calibration candidates.", call. = FALSE)
+  if (nrow(plan$candidates) != 900L) {
+    stop("Empirical CV must contain 900 latent calibration candidates.", call. = FALSE)
   }
-  if (nrow(plan$training) != 480L) {
-    stop("Empirical CV must contain 480 training combinations.", call. = FALSE)
+  if (nrow(plan$training) != 13500L) {
+    stop("Empirical CV must contain 13,500 training evaluations.", call. = FALSE)
   }
   if (nrow(plan$heldout) != 500L) {
     stop("Empirical CV must contain 500 held-out evaluations.", call. = FALSE)
+  }
+  regimes <- sort(unique(plan$candidates$calibration_regime))
+  if (!identical(regimes, c("stable_negative_zeta", "unconstrained"))) {
+    stop("Empirical CV must contain both calibration regimes.", call. = FALSE)
+  }
+  stable <- plan$candidates$calibration_regime == "stable_negative_zeta"
+  if (any(plan$candidates$zeta[stable] >= 0)) {
+    stop("Stable-negative-zeta candidates must enforce zeta < 0.", call. = FALSE)
+  }
+  scope_columns <- grep("_scope$", names(plan$training), value = TRUE)
+  if (length(scope_columns) < 5L || any(vapply(
+    plan$training[scope_columns],
+    function(values) any(values != "training_fold_only" &
+      values != "estimated_from_training_fold_only"),
+    logical(1)
+  ))) {
+    stop("All empirical CV choices must be training-fold only.", call. = FALSE)
+  }
+  if (any(plan$training$heldout_access_during_selection)) {
+    stop("Held-out data cannot be accessed during empirical selection.", call. = FALSE)
   }
   invisible(TRUE)
 }

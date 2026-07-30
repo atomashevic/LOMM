@@ -1,0 +1,700 @@
+{
+  "schema_version": 1,
+  "revision": "revision-v2",
+  "acknowledgement": "LONG-RUNS-AUTHORIZED",
+  "defaults": {
+    "output_root": "simulation_outputs/revision_v2",
+    "status_history": "simulation_outputs/revision_v2/status_history.jsonl",
+    "lock_root": "simulation_outputs/revision_v2/.locks",
+    "max_workers": 24,
+    "max_heavy_jobs": 1,
+    "stall_after_seconds": 1800,
+    "config_hash_length": 12,
+    "tmux_prefix": "lomm-revision",
+    "checkpoint_file": "checkpoint_results.csv",
+    "dry_run_manifest": "dry_run_manifest.json",
+    "prospective_manifest": "prospective_manifest.json",
+    "run_manifest": "run_manifest.json",
+    "success_marker": "_SUCCESS.json",
+    "failure_marker": "_FAILED.json",
+    "exit_code_file": "exit_code.txt",
+    "run_log": "run.log",
+    "job_contract": {
+      "seed_policy": {
+        "origin": 20260715,
+        "derivation": "seed = 1 + (origin + stable_base131_hash(pair_key)) mod 2147483646",
+        "method_independent_pair_keys": true,
+        "matched_horizons_share_pair_keys": true,
+        "challenge_variants_share_pair_keys": true
+      },
+      "config_hash_policy": {
+        "algorithm": "sha256",
+        "length": 12,
+        "inputs": [
+          "schema_version",
+          "revision",
+          "job_except_description_and_stage",
+          "resolved_job_contract",
+          "recursive_dependency_hashes"
+        ]
+      },
+      "path_templates": {
+        "output_dir": "simulation_outputs/revision_v2/{job_id}/{config_hash}",
+        "checkpoint": "{output_dir}/checkpoint_results.csv",
+        "dry_run_manifest": "{output_dir}/dry_run_manifest.json",
+        "prospective_manifest": "{output_dir}/prospective_manifest.json",
+        "run_manifest": "{output_dir}/run_manifest.json",
+        "run_log": "{output_dir}/run.log",
+        "success_marker": "{output_dir}/_SUCCESS.json",
+        "failure_marker": "{output_dir}/_FAILED.json",
+        "exit_code": "{output_dir}/exit_code.txt"
+      },
+      "tmux_name_template": "lomm-revision-{job_id}-{config_hash_prefix8}",
+      "resume_policy": {
+        "automatic": false,
+        "explicit_resume_command_required": true,
+        "checkpoint_first": true,
+        "fresh_launch_refuses_existing_checkpoint": true,
+        "append_run_log": true
+      },
+      "final_validation_conditions": [
+        "no_failure_marker",
+        "prospective_manifest_matches_locked_config",
+        "run_manifest_status_complete_and_matches_locked_command",
+        "observed_unique_units_match_expected_units",
+        "configured_panel_counts_match_checkpoint_and_final_results",
+        "all_expected_output_hashes_match",
+        "success_marker_schema_is_exact"
+      ]
+    }
+  },
+  "jobs": [
+    {
+      "id": "empirical_cv",
+      "stage": 0,
+      "description": "Cross-validated empirical-realism analysis.",
+      "heavy": true,
+      "workers": 12,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 12,
+        "job_timeout_seconds": 172800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": [
+          "required_at_execution:MAFW-derived frame_scores.csv"
+        ]
+      },
+      "required_dependencies": [],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "empirical_cv"
+      },
+      "expected_train_units": 13500,
+      "expected_heldout_units": 500,
+      "expected_units": 14000,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "empirical_cv",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t100_reuse_audit",
+      "stage": 0,
+      "description": "Audit panel keys, seeds, grids, and reusable T=100 artifacts.",
+      "heavy": false,
+      "workers": 1,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "light",
+        "worker_limit": 1,
+        "job_timeout_seconds": 3600,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": [
+          "simulation_outputs/final_simulation_results/graphicalvar_bounded_nvar4/benchmark_results.csv",
+          "simulation_outputs/final_simulation_results/graphicalvar_bounded_nvar4/benchmark_grid_main_full.csv",
+          "simulation_outputs/final_simulation_results/graphicalvar_bounded_nvar4/benchmark_metadata.txt",
+          "simulation_outputs/final_simulation_results/gimme_bounded_nvar4/benchmark_results.csv",
+          "simulation_outputs/final_simulation_results/gimme_bounded_nvar4/benchmark_grid_main_full.csv",
+          "simulation_outputs/final_simulation_results/gimme_bounded_nvar4/benchmark_metadata.txt"
+        ]
+      },
+      "required_dependencies": [],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "reuse_audit",
+        "time_points": 100
+      },
+      "expected_panels": 21600,
+      "expected_units": 21600,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t100_reuse_audit",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t100_dynega",
+      "stage": 1,
+      "description": "Corrected T=100 DynEGA matched run and locked sensitivity readouts.",
+      "heavy": true,
+      "workers": 16,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 16,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "dynega",
+        "time_points": 100,
+        "physical_dt": 0.4,
+        "dynega_observation_delta": 1,
+        "dynega_delta_units": "observation_interval"
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t100_dynega",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t100_static_oracle",
+      "stage": 1,
+      "description": "T=100 static-oracle target-alignment analysis on the matched panels.",
+      "heavy": true,
+      "workers": 12,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 12,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "static_oracle",
+        "time_points": 100
+      },
+      "expected_method_panels": 43200,
+      "expected_readouts": 129600,
+      "expected_units": 129600,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t100_static_oracle",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t100_graphicalvar_fallback",
+      "stage": 1,
+      "description": "Conditional T=100 GraphicalVAR rerun when the reuse audit rejects prior artifacts.",
+      "heavy": true,
+      "workers": 24,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 24,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": 900,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "conditional": {
+        "audit_job": "t100_reuse_audit",
+        "artifact": "reuse_audit.json",
+        "method": "graphicalvar",
+        "run_when_reusable": false
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "graphicalvar",
+        "time_points": 100,
+        "fallback": true
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t100_graphicalvar_fallback",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t100_gimme_fallback",
+      "stage": 1,
+      "description": "Conditional T=100 GIMME rerun when the reuse audit rejects prior artifacts.",
+      "heavy": true,
+      "workers": 24,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 24,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": 900,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "conditional": {
+        "audit_job": "t100_reuse_audit",
+        "artifact": "reuse_audit.json",
+        "method": "gimme",
+        "run_when_reusable": false
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "gimme",
+        "time_points": 100,
+        "fallback": true
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t100_gimme_fallback",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t25_dynega",
+      "stage": 2,
+      "description": "T=25 DynEGA short-series stress test.",
+      "heavy": true,
+      "workers": 16,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 16,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_dynega"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "dynega",
+        "time_points": 25,
+        "physical_dt": 0.4,
+        "dynega_observation_delta": 1,
+        "dynega_delta_units": "observation_interval"
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t25_dynega",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t25_graphicalvar",
+      "stage": 2,
+      "description": "T=25 GraphicalVAR short-series stress test.",
+      "heavy": true,
+      "workers": 24,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 24,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": 900,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [
+        "t100_graphicalvar_fallback"
+      ],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "graphicalvar",
+        "time_points": 25
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t25_graphicalvar",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t25_gimme",
+      "stage": 2,
+      "description": "T=25 GIMME short-series feasibility stress test.",
+      "heavy": true,
+      "workers": 24,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 24,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": 900,
+        "budget_seconds": 900,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [
+        "t100_gimme_fallback"
+      ],
+      "parameters": {
+        "analysis": "method_simulation",
+        "method": "gimme",
+        "time_points": 25,
+        "design_range_status": "out_of_range_short_record"
+      },
+      "expected_panels": 21600,
+      "expected_readouts": 64800,
+      "expected_units": 64800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t25_gimme",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "t25_static_oracle",
+      "stage": 2,
+      "description": "T=25 static-oracle target-alignment analysis.",
+      "heavy": true,
+      "workers": 12,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 12,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_static_oracle"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "static_oracle",
+        "time_points": 25
+      },
+      "expected_method_panels": 43200,
+      "expected_readouts": 129600,
+      "expected_units": 129600,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "t25_static_oracle",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "challenge_dynega",
+      "stage": 3,
+      "description": "DynEGA challenge-grid analysis for richer measurement structures.",
+      "heavy": true,
+      "workers": 16,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 16,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_dynega"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "challenge_simulation",
+        "method": "dynega",
+        "physical_dt": 0.4,
+        "dynega_observation_delta": 1,
+        "dynega_delta_units": "observation_interval"
+      },
+      "expected_base_panels": 4200,
+      "expected_representations": 4800,
+      "expected_readouts": 14400,
+      "expected_units": 14400,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "challenge_dynega",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "challenge_graphicalvar",
+      "stage": 3,
+      "description": "GraphicalVAR challenge-grid analysis for richer measurement structures.",
+      "heavy": true,
+      "workers": 24,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 24,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": 900,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_reuse_audit"
+      ],
+      "optional_dependencies": [
+        "t100_graphicalvar_fallback"
+      ],
+      "parameters": {
+        "analysis": "challenge_simulation",
+        "method": "graphicalvar"
+      },
+      "expected_base_panels": 4200,
+      "expected_representations": 4800,
+      "expected_readouts": 14400,
+      "expected_units": 14400,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "challenge_graphicalvar",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "challenge_static_oracle",
+      "stage": 3,
+      "description": "Static-oracle target-alignment analysis for the challenge grid.",
+      "heavy": true,
+      "workers": 12,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "heavy",
+        "worker_limit": 12,
+        "job_timeout_seconds": 604800,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "t100_static_oracle"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "challenge_static_oracle"
+      },
+      "expected_method_panels": 9600,
+      "expected_readouts": 28800,
+      "expected_units": 28800,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "challenge_static_oracle",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "aggregate_results",
+      "stage": 4,
+      "description": "Aggregate primary, sensitivity, challenge, empirical, and feasibility results.",
+      "heavy": false,
+      "workers": 1,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "light",
+        "worker_limit": 1,
+        "job_timeout_seconds": 14400,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "empirical_cv",
+        "t100_reuse_audit",
+        "t100_dynega",
+        "t100_static_oracle",
+        "t25_dynega",
+        "t25_graphicalvar",
+        "t25_gimme",
+        "t25_static_oracle",
+        "challenge_dynega",
+        "challenge_graphicalvar",
+        "challenge_static_oracle"
+      ],
+      "optional_dependencies": [
+        "t100_graphicalvar_fallback",
+        "t100_gimme_fallback"
+      ],
+      "input_alternatives": [
+        {
+          "method": "graphicalvar",
+          "audit_job": "t100_reuse_audit",
+          "artifact": "reuse_audit.json",
+          "fallback_job": "t100_graphicalvar_fallback"
+        },
+        {
+          "method": "gimme",
+          "audit_job": "t100_reuse_audit",
+          "artifact": "reuse_audit.json",
+          "fallback_job": "t100_gimme_fallback"
+        }
+      ],
+      "parameters": {
+        "analysis": "aggregate_results"
+      },
+      "expected_units": 1,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "aggregate_results",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "rebuild_figures_tables",
+      "stage": 5,
+      "description": "Rebuild manuscript-facing figures, tables, and their provenance manifest.",
+      "heavy": false,
+      "workers": 1,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "light",
+        "worker_limit": 1,
+        "job_timeout_seconds": 7200,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "required_dependencies": [
+        "aggregate_results"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "rebuild_figures_tables"
+      },
+      "expected_units": 1,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "rebuild_figures_tables",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    },
+    {
+      "id": "integrate_manuscript",
+      "stage": 6,
+      "description": "Integrate validated evidence into the manuscript and response-letter surfaces.",
+      "heavy": false,
+      "workers": 1,
+      "contract": {
+        "inherits": "defaults.job_contract",
+        "resource_class": "light",
+        "worker_limit": 1,
+        "job_timeout_seconds": 7200,
+        "per_unit_timeout_seconds": null,
+        "budget_seconds": null,
+        "external_required_inputs": []
+      },
+      "manual_review_before_launch": true,
+      "manual_readiness_receipt": {
+        "filename": "manuscript_integration_readiness.json",
+        "required_status": "approved",
+        "reviewed_dependencies": [
+          "aggregate_results",
+          "rebuild_figures_tables"
+        ]
+      },
+      "required_dependencies": [
+        "rebuild_figures_tables"
+      ],
+      "optional_dependencies": [],
+      "parameters": {
+        "analysis": "integrate_manuscript"
+      },
+      "expected_units": 1,
+      "command": [
+        "Rscript",
+        "scripts/simulations/run_revision_job.R",
+        "--job",
+        "integrate_manuscript",
+        "--config",
+        "scripts/simulations/revision_jobs.json"
+      ]
+    }
+  ]
+}

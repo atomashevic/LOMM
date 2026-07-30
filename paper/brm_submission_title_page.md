@@ -2,7 +2,7 @@
 
 ## Article Title
 
-A Latent Oscillator Measurement Model for Simulating Emotion Dynamics in Video
+A Latent Oscillator Measurement Model to Simulate Emotional-Expression Score Dynamics in Video
 
 ## Authors and Affiliations
 

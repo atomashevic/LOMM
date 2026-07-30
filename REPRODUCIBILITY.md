@@ -140,6 +140,36 @@ Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
 
 ## Dry-Run Grid Checks
 
+### Revision V2 prospective jobs
+
+The unified revision interface validates all prospective grids, manifests,
+dependencies, and commands without fitting DynEGA, GraphicalVAR, GIMME, or
+static EGA:
+
+```bash
+python3 scripts/simulations/orchestrate_revision_jobs.py plan
+python3 scripts/simulations/orchestrate_revision_jobs.py validate
+python3 scripts/simulations/orchestrate_revision_jobs.py status
+python3 scripts/simulations/orchestrate_revision_jobs.py next
+python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100_dynega
+```
+
+The revision grids contain 21,600 canonical panels for each matched
+`T = 100` and `T = 25` study and 4,200 generated conditions in the challenge
+suite. Dry-run artifacts are stored under
+`simulation_outputs/revision_v2/<job-id>/<config-hash>/`. Future launch and
+resume commands require `--execute` together with the literal acknowledgement
+`LONG-RUNS-AUTHORIZED`. The orchestrator does not progress automatically to a
+dependent job. Full details are recorded in `REVISION_V2_HANDOFF.md`.
+
+The structural simulations retain physical `dt = 0.4` for trajectory
+generation and horizon metadata. DynEGA uses `delta = 1` observation interval
+in EGAnet's GLLA implementation. Prospective manifests and result rows record
+these values separately; changing either value changes the corresponding job
+configuration or generator hash.
+
+### Checked-in final-result runners
+
 These commands validate the final grids and write only small grid/manifest files
 to a temporary output tree:
 
@@ -172,7 +202,7 @@ Expected dry-run grid sizes are:
 - GIMME bounded grid: 21,600 structure fits, Louvain/Leiden/Walktrap readouts,
   64,800 method rows.
 
-## Full Simulation Rerun
+## Checked-In Full Simulation Rerun
 
 The tmux launchers are the preferred entrypoints for full reruns because the
 final grids are long-running jobs with checkpoint/resume behavior:

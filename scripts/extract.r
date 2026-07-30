@@ -1833,14 +1833,29 @@ extract_mean_correlation_matrix <- function(panel, series_cols) {
 
 fit_pooled_ord0_dynega <- function(panel,
                                    score_cols = EMPIRICAL_EMOTION_COLUMNS,
+                                   id_col = "clip",
                                    n_embed = 10L,
                                    tau = 1L,
                                    algorithm = "louvain") {
+  required_cols <- c(score_cols, id_col)
+  missing_cols <- setdiff(required_cols, names(panel))
+  if (length(missing_cols) > 0L) {
+    stop(
+      "Pooled DynEGA panel is missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  fit_data <- panel[, required_cols, drop = FALSE]
+  fit_data[[id_col]] <- match(fit_data[[id_col]], unique(fit_data[[id_col]]))
+
   fit <- EGAnet::dynEGA(
-    data = panel[, score_cols, drop = FALSE],
+    data = fit_data,
     level = "population",
     n.embed = n_embed,
     tau = tau,
+    id = length(score_cols) + 1L,
     model = "glasso",
     use.derivatives = 0,
     algorithm = algorithm

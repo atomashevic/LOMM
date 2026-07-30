@@ -19,9 +19,11 @@
 
 \begin{document}
 
+% REVISION_RESULTS_PENDING[aggregate_results,rebuild_figures_tables,integrate_manuscript]; CLAIM_LEDGER[clm-v2-held-out-realism,clm-v2-matched-recovery,clm-v2-short-record,clm-v2-measurement-challenges,clm-v2-runtime-feasibility]: Update quantitative responses, discrepancy terminology, figure and table references, and locations only after every required revision-v2 result manifest validates.
+
 \begin{center}
 {\Large Response to the Editor and Reviewer}\\[0.5em]
-Manuscript: \textit{A Latent Oscillator Measurement Model for Simulating Emotional-Expression Score Dynamics in Video}
+Manuscript: \textit{A Latent Oscillator Measurement Model to Simulate Emotional-Expression Score Dynamics in Video}
 \end{center}
 
 Dear Dr. Epskamp, Editors, and Reviewer,
@@ -44,7 +46,7 @@ Because line numbers can change during production, we refer below to sections, f
   In your revision, I urge you to especially note the reviewer's comments on restructuring the paper, and also consider including a pipeline figure describing how all components interact.
   \end{reviewquote}
   \location{Abstract, p. 1; Introduction, pp. 2--4; Figure 1, p. 4; Method, pp. 7--15; Results, pp. 15--20; Discussion, pp. 21--24.}
-  \response We reorganized the manuscript around one sequence: classifier-output score series, the measurement problem, LOMM, and the benchmark design. The Abstract and Introduction introduce four research questions and distinguish the selected softmax-linked realism check, the broad DynEGA grid, and the matched three-method grid. Figure 1 shows how empirical classifier-output scoring, realism targets, scenario selection, the LOMM observation layer, pre-link recovery panels, and method recovery tests connect.
+  \response We reorganized the manuscript around one sequence: classifier-output score series, the measurement problem, LOMM, and the benchmark design. The Introduction introduces three research questions and distinguishes the held-out softmax-linked realism check, the matched method comparison, and the broader DynEGA extension. Figure 2 shows how empirical classifier-output scoring, realism targets, scenario selection, the LOMM observation layer, pre-link recovery panels, and method recovery tests connect.
 
   \item \point{Editorial guidance on politically sensitive examples}
   \begin{reviewquote}
@@ -133,7 +135,7 @@ Because line numbers can change during production, we refer below to sections, f
   I think the Introduction can be tightened in favor of conceptual clarity, such that the paper quickly comes to the point. Currently, it oscillates between aims, brief snippets of related work, and a restatement of a singular aim (P6L46). I suggest a more brain-friendly structure that briefly introduces emotion recognition, existing difficulties with theory-driven modeling (DLO-MM) and data-driven detection (DL, supervised and zero-shot classification), and how the proposed framework addressed these difficulties. Upon a naive reading, it may currently not become clear whether the authors propose new methods, apply existing methods in a new context, validate their own software, or a hodgepodge of different things revolving around the quantitative analysis of emotion dynamics. Some methodological aspects currently appear out of the blue (e.g., dynEGA) and it is not at all clear which method is being validated for what purpose. For example, only much later does it become clear that DLO-MM will be used as a simulator to validate the accuracy of dynEGA in in silico.
   \end{reviewquote}
   \location{Abstract, p. 1; Introduction, pp. 2--4; Figure 1, p. 4.}
-  \response We rewrote the Introduction to move from classifier-output score series, to the measurement problem, to LOMM, to the benchmark sequence. The Introduction states four research questions and introduces Figure 1 before the model details. DynEGA, GraphicalVAR, and GIMME are presented as dimensional-recovery estimators evaluated under a prespecified simulation design.
+  \response We rewrote the Introduction to move from classifier-output score series, to the measurement problem, to LOMM, to the benchmark sequence. The Introduction states three research questions, and the final Present Research subsection introduces Figure 2 after the model details. DynEGA, GraphicalVAR, GIMME, static EGA, and the true-block oracle are presented as recovery pipelines evaluated under a prespecified simulation design.
 
   \item \point{Connections among CLIP, simulation, and DynEGA}
   \begin{reviewquote}
