@@ -377,7 +377,6 @@ if (!file.exists(pipeline_path)) {
 knitr::include_graphics(pipeline_path)
 ```
 
-
 # Method
 
 The analyses follow the workflow in @fig-pipeline. We first use empirical video-score panels to define selected realism targets for model-derived expression-score series (Panels A--C). We then translate those targets into LOMM scenario conditions (Panel D) and evaluate dimensional-recovery methods on simulated panels whose dimensionality and indicator blocks are specified by the simulation design (Panels E--H).
@@ -1301,7 +1300,7 @@ runtime_accounting_table <- readr::read_csv(runtime_accounting_path, show_col_ty
     `Timeout rows`,
     `Error rows`
   )
-cat("\\begingroup\\scriptsize\\setlength{\\tabcolsep}{2pt}\n")
+cat("\\begingroup\\tiny\\setlength{\\tabcolsep}{2pt}\n")
 print(knitr::kable(
   runtime_accounting_table,
   format = "latex",
@@ -1465,3 +1464,4 @@ cat("\\endgroup\n")
 ```
 
 <!-- REVISION_RESULTS_PENDING[empirical_cv]; CLAIM_LEDGER[clm-v2-held-out-realism]: Report the selected calibration regime only after all fold-specific manifests and held-out summaries validate. -->
+
