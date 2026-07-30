@@ -1300,7 +1300,7 @@ runtime_accounting_table <- readr::read_csv(runtime_accounting_path, show_col_ty
     `Timeout rows`,
     `Error rows`
   )
-cat("\\begingroup\\tiny\\setlength{\\tabcolsep}{2pt}\n")
+cat("\\begingroup\\scriptsize\\setlength{\\tabcolsep}{2pt}\n")
 print(knitr::kable(
   runtime_accounting_table,
   format = "latex",
@@ -1410,7 +1410,7 @@ scenario_vectors <- list(
 
 stability_rows <- list()
 stability_row <- 1L
-for (code in names(scenario_vectors)) {
+for (code in names(scenario_vectors) {
   for (dimension in dimensions) {
     for (factor in seq_len(dimension)) {
       eta_value <- scenario_vectors[[code]]$eta[[factor]]
