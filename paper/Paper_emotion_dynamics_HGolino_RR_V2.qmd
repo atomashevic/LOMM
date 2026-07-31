@@ -221,7 +221,20 @@ G_{x,f}^{\max}(H)
 \right\|_2.
 $$
 
-Reporting $T$, $dt$, $H$, the roots, and the modal-rate factor $g_f(H)$ distinguishes stable oscillation, gated nonstationarity, and finite-horizon amplification regimes; $g_f(H)$ is not interpreted as total finite-horizon amplification.
+The Euclidean matrix norm is coordinate-dependent. Because the state combines level and velocity, whose components have different units, the norm-based amplification diagnostic is conditional on the chosen state coordinates and is interpreted only after fixing a nondimensionalization or an explicit weighted state norm. A coordinate-aware definition is
+
+$$
+G_{f,M}^{\max}(H)
+=
+\sup_{0\leq u\leq H}
+\left\|
+\mathbf{M}^{1/2}\exp(\mathbf{A}_fu)\mathbf{M}^{-1/2}
+\right\|_2,
+$$
+
+for a stated positive-definite state metric $\mathbf{M}$; the unweighted $G_f^{\max}(H)$ corresponds to $\mathbf{M}=\mathbf{I}_2$.
+
+Reporting the roots and the modal-rate factor $g_f(H)$ characterizes the latent modal regime over the observed horizon; $g_f(H)$ is not interpreted as total finite-horizon amplification. Reporting the activity schedule separately distinguishes latent dynamical amplification from gate-induced nonstationarity.
 
 The model uses an uncoupled multivariate system: $\eta_f$, $\zeta_f$, and $\sigma_{qf}$ may vary by factor, and off-diagonal dynamic effects are omitted. The checked-in simulations initialized every factor at $x_{if,1}=0.25$ and $v_{if,1}=2$. The revised robustness protocol uses independent starting states. For a stable factor, it solves
 
@@ -454,14 +467,14 @@ For each simulated video, LOMM first generates latent trajectories from the scen
 
 The simulation begins with latent trajectories and the prespecified number of simulated expressive dimensions (Panel E). The LOMM observation layer maps each observed score channel to one latent dimension through the block loading matrix and adds item-level measurement error (Panel F), producing a pre-link simulated score panel (Panel G). The final step is the dimensional-recovery test, where the estimated number of dimensions and item memberships are compared against the generating measurement structure (Panel H).
 
-The methods are evaluated against a common downstream partition target, although they estimate different structural objects. Each pipeline receives the same generated panel, estimates its method-specific structure, applies a prespecified method-specific graph conversion, and then applies the common community algorithm. The resulting partition is compared with the generating indicator blocks. The target is recovery of LOMM-generated score blocks. Classifier-label validity and method superiority for substantive emotion inference are outside this test.
+The methods are evaluated against a common downstream partition target, although they estimate different structural objects. Each pipeline receives the same generated panel, estimates its method-specific structure, applies a prespecified method-specific graph conversion, and then applies the common community algorithm. The generated panel and the physical time horizon are common to every pipeline; the rows retained after each method's transformation are readout-specific (embedding and boundary losses for the derivative panel, within-video lag pairs for the projection), and no common row intersection is imposed. The resulting partition is compared with the generating indicator blocks. The target is recovery of LOMM-generated score blocks. Classifier-label validity and method superiority for substantive emotion inference are outside this test.
 
 The matched three-pipeline design is the primary comparative analysis. We compare Dynamic Exploratory Graph Analysis [DynEGA; @golino2020modeling] with GraphicalVAR [@epskampggm; @graphicalVAR2024] and GIMME [@gates2012group; @lane2019uncovering] because they represent adjacent approaches to intensive longitudinal structure. DynEGA is the focal dimensional-recovery method because it estimates groups of variables whose changes are coordinated over time. In the present simulation, DynEGA tests direct recovery of the generating score blocks. GraphicalVAR is a dynamic-network comparator that separates lagged temporal relations from contemporaneous partial associations, and its fitted contemporaneous structure is partitioned after estimation. GIMME is an indirect feasibility-stress comparator: it estimates time-series paths for each clip treated as a separate time series, and the resulting contemporaneous structures are aggregated and partitioned. This use of GIMME treats clips as analytic series and should not be read as participant-level idiographic affect modeling.
 
-DynEGA combines time-delay embedding and derivative estimation from dynamical systems with exploratory graph analysis for dimensionality assessment [@glla2010; @golino2017ega1; @golino2019investigating]. We apply DynEGA to the stacked video panel with video identity supplied as the grouping variable. The embedding dimension is selected by minimizing the Total Entropy Fit Index (TEFI) over candidate values [@golino2019entropy], using $n_\mathrm{embed}\in\{5,10,15,\lfloor T/4\rfloor,\lfloor T/2\rfloor\}$ where admissible. The LOMM generator retains the physical step $dt=0.4$ and uses it to calculate the observed horizon. The EGAnet GLLA call records `delta = 1`, corresponding to one observation interval. Expressing the derivatives per unit of physical time would multiply every channel derivative by the common positive factor $1/dt$; this rescaling leaves the derivative correlation matrix and its downstream EBICglasso network unchanged. The run artifacts record physical `dt` and the DynEGA observation-unit `delta` separately. We explicitly set `model = "glasso"` so DynEGA estimates an EBICglasso regularized partial-correlation network from the pooled derivative panel. That network is partitioned into communities interpreted as recovered groups of score channels. The checked-in broad grid uses Louvain community detection [@blondel2008fast] with the expand rule for unidimensional solutions. The checked-in matched grid reports Louvain, Leiden [@traag2019leiden], and Walktrap [@pons2006walktrap] readouts.
+DynEGA combines time-delay embedding and derivative estimation from dynamical systems with exploratory graph analysis for dimensionality assessment [@glla2010; @golino2017ega1; @golino2019investigating]. We apply DynEGA to the stacked video panel with video identity supplied as the grouping variable. The embedding dimension is selected by minimizing the Total Entropy Fit Index (TEFI) over candidate values [@golino2019entropy], using $n_\mathrm{embed}\in\{5,10,15,\lfloor T/4\rfloor,\lfloor T/2\rfloor\}$ where admissible. The LOMM generator retains the physical step $dt=0.4$ and uses it to calculate the observed horizon. The EGAnet GLLA call records `delta = 1`, corresponding to one observation interval, and uses first-order derivatives only (`use.derivatives = 1`). With fixed embedding, retained rows, and missing-data treatment, and with no activation of zero-variance jitter, expressing the derivatives per unit of physical time would multiply every channel derivative by the common positive factor $1/dt$; this rescaling leaves the derivative correlation matrix and its downstream EBICglasso network unchanged. If zero-variance jitter were activated, exact rescaling invariance need not hold, because the injected noise is not necessarily rescaled with the derivative signal; no jitter is used here. The run artifacts record physical `dt` and the DynEGA observation-unit `delta` separately. We explicitly set `model = "glasso"` so DynEGA estimates an EBICglasso regularized partial-correlation network from the pooled derivative panel. That network is partitioned into communities interpreted as recovered groups of score channels. The checked-in broad grid uses Louvain community detection [@blondel2008fast] with the expand rule for unidimensional solutions. The checked-in matched grid reports Louvain, Leiden [@traag2019leiden], and Walktrap [@pons2006walktrap] readouts.
 <!-- REVISION_RESULTS_PENDING[t100_dynega]; CLAIM_LEDGER[clm-v2-matched-recovery]: Replace the checked-in DynEGA partition description with the frozen-network common-partition pipeline, then add the expand and correlation-Louvain 0.95 paired sensitivities. -->
 
-GraphicalVAR estimates a graphical vector autoregressive model for intensive longitudinal data [@epskampggm; @graphicalVAR2024]. In this framework, the temporal network contains directed lag-1 regression parameters, and the contemporaneous network contains partial correlations among residuals at the same time point after lagged effects have been taken into account. In multilevel applications, the model can also distinguish within-person temporal and contemporaneous structure from between-person associations among stationary means. We fit GraphicalVAR to the stacked simulated score panel and use the estimated contemporaneous partial-correlation matrix as the structural matrix for dimensional partitioning, because LOMM recovery targets an undirected grouping of score channels. The diagonal is ignored and the resulting weighted matrix is treated as an undirected graph. Positive edge weights define the graph, with absolute weights used only when no positive edges are available. Louvain, Leiden, and Walktrap are applied to the same fitted contemporaneous structure and are analyzed as the community-detection factor.
+GraphicalVAR estimates a graphical vector autoregressive model for intensive longitudinal data [@epskampggm; @graphicalVAR2024]. In this framework, the temporal network contains directed lag-1 regression parameters, and the contemporaneous network contains partial correlations among residuals at the same time point after lagged effects have been taken into account. In multilevel applications, the model can also distinguish within-person temporal and contemporaneous structure from between-person associations among stationary means. We fit GraphicalVAR with `mlGraphicalVAR` to the stacked simulated score panel, with video identity as the grouping variable, within-clip centering (`centerWithin = TRUE`), variable standardization (`scale = TRUE`), and `gamma = 0.5`; lag-1 predictor--response pairs are constructed only within clips, so no lag crosses a clip boundary. We use the returned fixed contemporaneous partial-correlation matrix `fixedPCC` as the structural matrix for dimensional partitioning, because LOMM recovery targets an undirected grouping of score channels. The diagonal is ignored and the resulting weighted matrix is treated as an undirected graph. Positive edge weights define the graph, with absolute weights used only when no positive edges are available. Louvain, Leiden, and Walktrap are applied to the same fitted contemporaneous structure and are analyzed as the community-detection factor.
 
 GIMME is an automated time-series modeling approach built around unified structural equation modeling and vector autoregressive representations [@gates2012group; @lane2019uncovering]. The algorithm searches for lagged and contemporaneous paths that improve fit across the sample, retains paths that are common to many series, and then allows subgroup-shared or series-specific paths. In this simulation, each video clip is treated as the time series supplied to GIMME. We fit the VAR specification to the video-level score panels with standardized variables. We extract the clip-specific standardized residual covariance matrices returned in `fit$psi`. For usable clips, these matrices are averaged on their standardized scale, the diagonal is removed, numerical asymmetry is removed by averaging the matrix with its transpose, and negative entries are set to zero before community detection. This is a bespoke residual-correlation graph conversion. It is not a directed contemporaneous-path graph and it is not a partial-correlation graph. The variable order is identical across clips because the contemporaneous block is selected by matching variable names, and a matrix with no remaining positive edge yields singleton communities rather than an absolute-weight fallback. Louvain, Leiden, and Walktrap are applied to the same fitted GIMME structure and are analyzed as the community-detection factor.
 
@@ -737,27 +750,27 @@ $$
 
 where $Z_f(t)$ is the activity-scaled latent oscillator for dimension $f$, $\lambda>0$, and $\varepsilon_j(t)$ is measurement error with variance $\psi=s_\varepsilon^2$. Measurement errors are independent across indicators and time in this target, so $\operatorname{Cov}(\varepsilon_j(t),\varepsilon_\ell(s))=0$ whenever $j\neq \ell$ or $t\neq s$.
 
-Population moments are taken over a common retained analysis window $\mathcal{R}$ of video--time rows shared by every pipeline. For any quantity $g$,
+Let $\mathcal{T}$ denote the common raw video--time horizon: the rows of the shared generated panel, identical for every pipeline. Readout $r$ retains its own subset $\mathcal{R}_r\subseteq\mathcal{T}$ of these rows. The GLLA derivative panel loses rows according to the selected embedding length and boundary rule, and the lag-1 projection retains within-video lag pairs, so different readouts retain different rows. The generated panel and the physical horizon are common; the retained rows are readout-specific, and no common row intersection is imposed. Population moments for readout $r$ are taken over its retained rows $\mathcal{R}_r$. For any quantity $g$,
 
 $$
-\langle g\rangle_{\mathcal R}
+\langle g\rangle_{\mathcal R_r}
 =
-\frac{1}{|\mathcal R|}
-\sum_{(i,t)\in\mathcal R}
+\frac{1}{|\mathcal R_r|}
+\sum_{(i,t)\in\mathcal R_r}
 E(g_{it}),
 $$
 
 and, for any filtered process $U$,
 
 $$
-\operatorname{Var}_{\mathcal R}(U)
+\operatorname{Var}_{\mathcal R_r}(U)
 =
 \left\langle
-\{U-\langle U\rangle_{\mathcal R}\}^{2}
-\right\rangle_{\mathcal R}.
+\{U-\langle U\rangle_{\mathcal R_r}\}^{2}
+\right\rangle_{\mathcal R_r}.
 $$
 
-All variances and covariances in this appendix are time-averaged centered second moments over the common analysis window $\mathcal{R}$.
+All variances and covariances in this appendix are time-averaged centered second moments over the retained rows of the readout in question, written as $\mathcal{R}$ with the readout dependence suppressed. Because the gated and anti-damped processes are nonstationary, different retained windows can yield different $V_{L,f}$, $V_{+,f}$, $V_{-,f}$, $C_f$, and $\theta_{r,f}$ even on the same raw panel; the choice of retained rows is therefore not a cosmetic notation difference.
 
 Exact block support is imposed through zero pooled cross-block moments over the retained rows. For every pair $f\neq g$ and every method-relevant filter or projection, the corresponding centered cross-block covariance is assumed to be zero. A sufficient condition is that the oscillator states are independent across factors at all relevant times, have zero conditional mean at every retained row, the activity schedules are deterministic or independent of the states and shocks, and dynamic shocks are independent across factors. Uncoupled dynamic equations alone do not imply zero pooled cross-block covariance.
 
@@ -783,7 +796,7 @@ V_{L,f}=\operatorname{Var}_{\mathcal R}(LZ_f),
 \psi_L=\operatorname{Var}_{\mathcal R}(L\varepsilon_j)
 $$
 
-for the filtered common-signal variance and the filtered noise variance, both centered over the common analysis window. For iid base measurement error,
+for the filtered common-signal variance and the filtered noise variance, both centered over the retained rows of the corresponding readout. For iid base measurement error,
 
 $$
 \psi_L
@@ -890,11 +903,11 @@ $$
 
 Under the equal-loading, equal-error symmetric population target, the partial readout compresses an arbitrarily strong common-source signal toward a ceiling set by block size alone: with four indicators per dimension, no within-block partial-correlation edge can exceed $1/3$ under that symmetric target. Both readout maps are increasing in $\theta$, so filter and readout separate cleanly. The filter sets $\theta_{L,f}$, and the readout maps $\theta_{L,f}$ to the edge weight supplied to community detection.
 
-@fig-readout-curves compares the marginal and partial maps for the matched grid's four indicators per dimension. The marginal map is a pre-conditioning benchmark; neither implemented pipeline uses it. The vertical gap between the curves shows how much compression the partial map applies to the common-source signal. The shaded band marks the $\lambda^2/s_\varepsilon^2$ span of the matched measurement grid, so the simulated loading and error conditions place $\theta_{L,f}$ inside the band up to the filtered common-signal variance $V_{L,f}$. Across that span, the marginal curve rises from mid-range values toward 1. The partial curve is already near its $1/3$ ceiling under the symmetric target: strong measurement conditions widen the common-source signal margin but cannot widen the partial-correlation edge beyond that symmetric-target ceiling.
+@fig-readout-curves compares the marginal and partial maps for the matched grid's four indicators per dimension. The marginal map is a pre-conditioning benchmark; neither implemented pipeline uses it. The vertical gap between the curves shows how much compression the partial map applies to the common-source signal. The shaded band marks the raw loading-to-error-variance ratio $\lambda^2/s_\varepsilon^2$ of the matched measurement grid, not a calibrated range of the filtered signal-to-noise ratio $\theta_{L,f}$. Because $\theta_{L,f}=(\lambda^2/\psi)\,V_{L,f}\big/\sum_r\ell_r^2$ for independent measurement error and a fixed filter $L$, the band locates the grid conditions on the $\theta$ axis only up to the factor $V_{L,f}/\sum_r\ell_r^2$, which varies across scenarios and filters. Across that raw-ratio span, the marginal curve rises from mid-range values toward 1. The partial curve is already near its $1/3$ ceiling under the symmetric target: strong measurement conditions widen the common-source signal margin but cannot widen the partial-correlation edge beyond that symmetric-target ceiling.
 
 ```{r}
 #| label: fig-readout-curves
-#| fig-cap: "Population within-block edge weight as a function of the filtered signal-to-noise ratio for the marginal and partial readouts with four indicators per dimension under the equal-loading, equal-error symmetric population target. The dotted line marks the partial-readout ceiling $1/(k-1)=1/3$ under that symmetric target. The shaded band spans the loading-to-error-variance ratios of the matched simulation grid; the filtered common-signal variance multiplies the signal-to-noise ratio within this band. Higher edge weight means more within-block signal margin before estimation perturbations."
+#| fig-cap: "Population within-block edge weight as a function of the filtered signal-to-noise ratio for the marginal and partial readouts with four indicators per dimension under the equal-loading, equal-error symmetric population target. The dotted line marks the partial-readout ceiling $1/(k-1)=1/3$ under that symmetric target. The shaded band spans the raw loading-to-error-variance ratios $\lambda^2/s_\varepsilon^2$ of the matched simulation grid, shown on the filtered-signal-to-noise axis for reference; it is not a calibrated range of $\theta_{L,f}$, whose value also depends on the filtered common-signal variance $V_{L,f}$ and the filter noise gain $\sum_r\ell_r^2$. Higher edge weight means more within-block signal margin before estimation perturbations."
 #| fig-align: center
 #| out-width: "0.9\\linewidth"
 #| fig-pos: "H"
@@ -908,11 +921,11 @@ knitr::include_graphics(readout_curves_path)
 
 ## A.3 Method-Specific Filters and Signal-to-Noise Ratios
 
-The implemented pipelines are specific readout combinations. DynEGA estimates generalized local linear approximation (GLLA) derivatives of each score channel over a time-delay embedding window and then estimates a regularized partial-correlation network (EBICglasso) on the derivative panel. The implementation uses one observation interval as the GLLA `delta` and retains the generator's physical $dt=0.4$ in separate horizon metadata. Conversion to physical-time derivatives applies the same positive scale factor to every channel and therefore leaves the derivative correlation readout unchanged.
+The implemented pipelines are specific readout combinations. DynEGA estimates generalized local linear approximation (GLLA) derivatives of each score channel over a time-delay embedding window and then estimates a regularized partial-correlation network (EBICglasso) on the derivative panel. The implementation uses one observation interval as the GLLA `delta` and retains the generator's physical $dt=0.4$ in separate horizon metadata. With first-order derivatives only, fixed embedding and retained rows, and no zero-variance jitter, conversion to physical-time derivatives applies the same positive scale factor to every channel and therefore leaves the derivative correlation readout unchanged; activated zero-variance jitter could break this exact invariance.
 
 ### A.3.1 DynEGA and a fixed derivative filter
 
-For a fixed selected GLLA derivative filter with coefficient vector $\boldsymbol{\ell}$, let $R_{Z,f}$ denote the covariance matrix of the latent values entering the embedding window, centered over the common analysis window. Under iid white measurement error, the population filtered signal-to-noise ratio is
+For a fixed selected GLLA derivative filter with coefficient vector $\boldsymbol{\ell}$, let $R_{Z,f}$ denote the covariance matrix of the latent values entering the embedding window, centered over the rows retained by the derivative filter. Under iid white measurement error, the population filtered signal-to-noise ratio is
 
 $$
 \theta_{\mathrm{GLLA},f}
@@ -943,14 +956,14 @@ because independent measurement errors contribute $2\psi$ to the variance of eve
 
 ### A.3.2 GraphicalVAR lag-1 projection
 
-GraphicalVAR reads partial correlations from the residual covariance of a lag-1 vector autoregression. Its population object is defined here by a population unpenalized lag-1 linear projection, $\mathcal{P}_{\mathrm{VAR}}$, rather than by a per-channel filter. For one symmetric block, define centered common-window lag-pair moments
+GraphicalVAR reads partial correlations from the residual covariance of a lag-1 vector autoregression. Its population object is defined here by a population unpenalized lag-1 linear projection, $\mathcal{P}_{\mathrm{VAR}}$, rather than by a per-channel filter. For one symmetric block, using observation indices $n-1$ and $n$ separated by one step $dt$, define centered lag-pair moments over the retained within-video lag pairs
 
 $$
-V_{-,f}=E_{\mathcal R}\{Z_f(t-1)^2\},
+V_{-,f}=E_{\mathcal R}\{Z_{f,n-1}^2\},
 \qquad
-V_{+,f}=E_{\mathcal R}\{Z_f(t)^2\},
+V_{+,f}=E_{\mathcal R}\{Z_{f,n}^2\},
 \qquad
-C_f=E_{\mathcal R}\{Z_f(t)Z_f(t-1)\},
+C_f=E_{\mathcal R}\{Z_{f,n}Z_{f,n-1}\},
 $$
 
 where the expectations are over retained within-video lag pairs after the same centering rule used by the estimator, and no lag pair crosses a clip boundary. Under equal loadings, equal serially independent measurement-error variances, zero cross-block lag-0 and lag-1 moments, and a population unpenalized lag-1 linear projection, the block moment matrices are
@@ -1003,7 +1016,20 @@ k\lambda^4C_f^2
 }.
 $$
 
-With
+By Cauchy--Schwarz, $C_f^2\leq V_{+,f}V_{-,f}$, so
+
+$$
+c_{\mathrm{VAR},f}
+\geq
+\frac{
+\lambda^2V_{+,f}\psi
+}{
+\psi+k\lambda^2V_{-,f}
+}
+>0,
+$$
+
+which places $\theta_{\mathrm{VAR},f}$ on the positive branch of the compression map. With
 
 $$
 \theta_{\mathrm{VAR},f}
@@ -1091,7 +1117,7 @@ w_1^{(r)}(J_k-I_k),\ldots,w_m^{(r)}(J_k-I_k)
 \right),
 $$
 
-where edge weights are on the nonnegative scale supplied to community detection and all $m$ blocks share the same size $k$. For DynEGA and GraphicalVAR, $w_f^{(r)}$ equals $w_f^{P}(\theta_{\mathrm{GLLA},f})$ or $w_f^{P}(\theta_{\mathrm{VAR},f})$ from A.3, evaluated on the common analysis window. Conditional on $U_r=1$, define the perturbation after method-specific graph conversion as
+where edge weights are on the nonnegative scale supplied to community detection and all $m$ blocks share the same size $k$. For DynEGA and GraphicalVAR, $w_f^{(r)}$ equals $w_f^{P}(\theta_{\mathrm{GLLA},f})$ or $w_f^{P}(\theta_{\mathrm{VAR},f})$ from A.3, evaluated on the retained rows of the corresponding readout. Conditional on $U_r=1$, define the perturbation after method-specific graph conversion as
 
 $$
 \delta_r
@@ -1142,7 +1168,7 @@ $$
 
 conditional on a usable graph and on the exact block-support population target. This margin is not a guarantee that Louvain, Leiden, or Walktrap recover the blocks, because exact recovery depends on the implemented community-detection algorithm. The bound has a narrower consequence. Because $\tfrac{k-1}{2k-1}<\tfrac{1}{2}$, the condition forces every estimated cross-block edge below every estimated within-block edge, so any threshold $\tau\in(\delta_r,\,w_{\min}^{(r)}-\delta_r)$ deletes all cross-block edges, keeps each block a connected clique, and reproduces the generating blocks exactly as the connected components of the thresholded graph. Threshold separation alone needs only $\delta_r<w_{\min}^{(r)}/2$.
 
-The margin treats perturbation as symmetric noise on every edge, which makes $\delta_r$ a worst-case envelope. Regularized estimation acts asymmetrically: glasso shrinkage lowers within-block edges, which reduces $w_{\min}^{(r)}$, and sets weak cross-block edges to zero, which supports block separation.
+The margin treats perturbation as symmetric noise on every edge, which makes $\delta_r$ a worst-case envelope. Regularized estimation acts asymmetrically: glasso regularization tends to shrink precision off-diagonal entries toward zero and can remove weak edges, although its effect on each normalized partial correlation need not be monotone. In practice it can reduce $w_{\min}^{(r)}$ while setting weak cross-block edges to zero, which can support block separation.
 
 Under the equal-loading, equal-error symmetric population target, the two population partial-readout pipelines share the same ceiling. DynEGA and GraphicalVAR supply partial-correlation edges to community detection, so under that symmetric target $w_{\min}^{(r)}\leq 1/(k-1)$ for both pipelines, and with $k=4$ the sufficient perturbation margin approaches at most
 
@@ -1156,7 +1182,7 @@ $$
 
 in the high-signal limit of the symmetric target. The population comparison therefore reduces to the two quantities identified in A.3: how close each filtered or projected signal-to-noise ratio keeps $w_{\min}^{(r)}$ to the shared ceiling, and how large each pipeline's realized perturbation $\delta_r$ is. The observed ordering does not identify which method has the larger population signal-to-noise ratio because estimation, regularization, graph conversion, and feasibility differ between pipelines. The full graphical vector-autoregression fit also adds larger estimation and timeout perturbations.
 
-The margin also identifies which blocks are fragile in each scenario family. Activity gating enters the filtered signal directly: $V_{L,f}$ is the time-averaged centered variance of the filtered activity-scaled process over the common analysis window, so a dimension held at background gain contributes a small $\theta_{L,f}$ and a weak within-block edge. All $V_{L,f}$, $w_{\min}^{(r)}$, and $W_*^{(r)}$ are conditional on the common analysis window; this conditioning is essential for anti-damped factors, whose moments grow across the window. In the single-dominance families, background dimensions run at gains of 0.05--0.08 against active gains of 0.35--1.25 (Appendix E). Under comparable ungated filtered variances and error levels, background gains are expected to reduce $\theta_{L,f}$ and often determine the weakest block. The actual weakest block is the factor with the smallest scenario-specific $V_{L,f}$ and must be identified from the generated panel or population calculation; in the low-expression family every dimension sits near background activity. The margin therefore predicts the scenario-family ordering observed in @fig-dimension-recovery for DynEGA and GraphicalVAR: recovery is hardest where the activity schedule holds the weakest block's signal lowest. For GIMME, the same activity envelope is an expected stressor, but its effect is mediated by path search, convergence, extraction, averaging, graph conversion, and completion.
+The margin also identifies which blocks are fragile in each scenario family. Activity gating enters the filtered signal directly: $V_{L,f}$ is the time-averaged centered variance of the filtered activity-scaled process over the retained rows of the corresponding readout, so a dimension held at background gain contributes a small $\theta_{L,f}$ and a weak within-block edge. All $V_{L,f}$, $w_{\min}^{(r)}$, and $W_*^{(r)}$ are conditional on the corresponding retained rows; this conditioning is essential for anti-damped factors, whose moments grow across the window. In the single-dominance families, background dimensions run at gains of 0.05--0.08 against active gains of 0.35--1.25 (Appendix E). Under comparable ungated filtered variances and error levels, background gains are expected to reduce $\theta_{L,f}$ and often determine the weakest block. The actual weakest block is the factor with the smallest scenario-specific $V_{L,f}$ and must be identified from the generated panel or population calculation; in the low-expression family every dimension sits near background activity. The margin therefore predicts the scenario-family ordering observed in @fig-dimension-recovery for DynEGA and GraphicalVAR: recovery is hardest where the activity schedule holds the weakest block's signal lowest. For GIMME, the same activity envelope is an expected stressor, but its effect is mediated by path search, convergence, extraction, averaging, graph conversion, and completion.
 
 ## A.5 GIMME as an Indirect Graph-Conversion Readout
 
@@ -1206,7 +1232,7 @@ perturbation_summary <- tibble::tribble(
   ~Pipeline, ~`Population signal`, ~`Main perturbation`, ~`Expected implication`,
   "DynEGA", "$w_f^P(\\theta_{\\mathrm{GLLA},f})$: partial readout of GLLA derivatives", "Derivative estimation, embedding selection, glasso regularization, finite $N,T$", "Filtered signal-to-noise is scenario and embedding dependent; any advantage over the lag-1 residual readout must be demonstrated from oracle or realized filtered covariances",
   "GraphicalVAR", "$w_f^P(\\theta_{\\mathrm{VAR},f})$: partial readout of lag-1 projection residuals", "VAR estimation, regularization, lag-1 projection attenuation, timeouts", "Under the stated symmetric moment assumptions, the lag-1 projection residual covariance preserves block support and follows the same partial-correlation compression map; its signal-to-noise ratio is given by the A.3 formula",
-  "GIMME", "No closed-form block signal for the implemented readout", "Path search, clip-level fitting, extraction, averaging, timeouts", "Recovery combines fit usability with a documented method-specific residual-covariance or path-matrix graph conversion"
+  "GIMME", "No closed-form block signal for the implemented readout", "Path search, clip-level fitting, extraction, averaging, timeouts", "Recovery combines fit usability with a documented method-specific residual-covariance graph conversion"
 )
 
 cat("\\begingroup\\scriptsize\\setlength{\\tabcolsep}{3pt}\n")
