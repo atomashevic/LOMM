@@ -32,6 +32,7 @@ automatically.
 ## Safe commands used during preparation
 
 ```bash
+export REVISION_EMPIRICAL_FRAME_SCORES=/absolute/path/to/frame_scores.csv
 python3 scripts/simulations/orchestrate_revision_jobs.py plan
 python3 scripts/simulations/orchestrate_revision_jobs.py validate
 python3 scripts/simulations/orchestrate_revision_jobs.py status
@@ -41,7 +42,10 @@ python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100
 
 `validate` invokes every R job with `--dry-run`. A dry run writes only grid,
 count, command, and prospective-manifest artifacts. It does not source or call
-an estimator fit.
+an estimator fit. Full validation requires the empirical frame-score input so
+its content hash is stable from validation through launch and all dependent
+jobs. Use `validate --structural-only` when the input is unavailable; that mode
+checks the graph and static contracts without writing launch-ready manifests.
 
 ## Future commands requiring separate authorization
 

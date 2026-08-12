@@ -281,12 +281,18 @@ interface:
 The safe preparation commands are:
 
 ```bash
+export REVISION_EMPIRICAL_FRAME_SCORES=/absolute/path/to/frame_scores.csv
 python3 scripts/simulations/orchestrate_revision_jobs.py plan
 python3 scripts/simulations/orchestrate_revision_jobs.py validate
 python3 scripts/simulations/orchestrate_revision_jobs.py status
 python3 scripts/simulations/orchestrate_revision_jobs.py next
 python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100_dynega
 ```
+
+Full validation requires the empirical frame-score input so validation and
+launch use the same content-hashed namespace, including for downstream jobs.
+Use `validate --structural-only` for an input-free check of the graph and
+static contracts; it does not create launch-ready dry-run manifests.
 
 No command in this list fits an estimator. Scientific outputs use
 `simulation_outputs/revision_v2/<job-id>/<config-hash>/`; a configuration
