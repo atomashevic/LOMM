@@ -1,5 +1,12 @@
 # LOMM Revision V2 Pre-Compute Handoff
 
+> **Historical evidence surface.** Revision-v2 retains the observation behavior,
+> configuration hashes, panel keys, and output namespaces recorded by its
+> completed jobs. The current public LOMM observation default is the
+> compositional B+S profile in `scripts/lomm/`; it is not injected retroactively
+> into revision-v2. A full benchmark using that default requires a newly
+> versioned job graph.
+
 ## Execution boundary
 
 This preparation package stops before every estimator fit and long-running

@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "pipeline_id": "lomm_1_1_empirical_realism_ablation",
+  "specification_status": "planned",
+  "input_bundle": {
+    "artifact_id": "lomm_1_1_compositional_0cdc11154d8a",
+    "repo_relative_path": "simulation_outputs/lomm_1_1/empirical_compositional_preprocess/0cdc11154d8a",
+    "config_hash": "0cdc11154d8a",
+    "files": {
+      "_SUCCESS.json": "0517998bd320ebfb46c2efc7e433223dd8353843f4a885e7e70bb6ef18ff3ba8",
+      "preprocessing_manifest.json": "60c3ca4a9198e01d2f87f0136d5e1b1ec9a2dfddd90d2b47c082e0c8bd2c9880",
+      "frame_ledger.csv": "0f0bdea7c26c1e929634e93a29148e6ee7f2ca44d7150780631671490cf52ef0",
+      "probability_view.csv": "23752e2d917fe125a2ca4688e001825e4ca1a846711fbe8a81609dcd4861c3d3",
+      "clr_view.csv": "0a4eee7f3ae5a5e95c20de304c57c0dee9e2ea84643c307a7a8fcd2cfb334146",
+      "ilr_view.csv": "e74f82770c0e4fa001b8f0190adb9d67d99b1e4cf20b51e3a9e28ab6b0915052",
+      "ilr_basis.csv": "f5a9a2aa842fe5ab49332e7d4bcfb7095a79522c53d2fc9bc9b8b29d720ebdf9",
+      "clip_qc.csv": "eb2603cf8140466e6c7cad07b681e4ffaede1763393f2891838bf6faa87db8a2"
+    }
+  },
+  "folds": {
+    "count": 5,
+    "unit": "clip",
+    "stratify_by": "truth_label",
+    "order_by": ["complete_rows", "clip"],
+    "heldout_clips_per_fold": 20,
+    "selection_view": "complete_case",
+    "sensitivity_view": "ilr_gap2"
+  },
+  "variants": [
+    {"variant_id": "000", "variant_label": "core", "B": 0, "S": 0, "G": 0},
+    {"variant_id": "100", "variant_label": "between_clip", "B": 1, "S": 0, "G": 0},
+    {"variant_id": "010", "variant_label": "scale", "B": 0, "S": 1, "G": 0},
+    {"variant_id": "001", "variant_label": "gate", "B": 0, "S": 0, "G": 1},
+    {"variant_id": "110", "variant_label": "between_clip_scale", "B": 1, "S": 1, "G": 0},
+    {"variant_id": "101", "variant_label": "between_clip_gate", "B": 1, "S": 0, "G": 1},
+    {"variant_id": "011", "variant_label": "scale_gate", "B": 0, "S": 1, "G": 1},
+    {"variant_id": "111", "variant_label": "full", "B": 1, "S": 1, "G": 1}
+  ],
+  "axes": {
+    "period_frames": [8, 12, 24],
+    "damping_ratio": [0.05, 0.20, 0.50],
+    "kappa": [0.75, 1.00, 1.25]
+  },
+  "dynamics": {
+    "dt": 1.0,
+    "omega_rule": "2*pi/period_frames",
+    "eta_rule": "-omega^2",
+    "zeta_rule": "-2*damping_ratio*omega",
+    "transition": "exact_zero_order_hold",
+    "initialization": "independent_stationary_gaussian",
+    "innovation_normalization": "discrete_lyapunov_unit_position_variance",
+    "lyapunov_tolerance": 1e-10,
+    "anti_damped_allowed": false
+  },
+  "measurement": {
+    "coordinate_system": "locked_10d_ilr",
+    "n_latent_directions": 3,
+    "training_center": "complete_case_training_mean_ilr",
+    "loading_basis": "top3_within_clip_centered_ilr_eigenvectors",
+    "loading_relative_scale": "sqrt_eigenvalue_divided_by_root_mean_eigenvalue",
+    "loading_sign_rule": "largest_absolute_entry_positive",
+    "between_clip_covariance": "half_full_half_diagonal_clip_mean_ilr_covariance",
+    "between_clip_psd_floor": 1e-8,
+    "residual_sd": 0.25,
+    "tau": 1.0,
+    "common_logit_shift": 0.0,
+    "clip_scale_distribution": "Uniform(0.5,1.5)",
+    "gate_low": 0.25,
+    "gate_high": 1.0,
+    "gate_initial_high_probability": 0.5,
+    "gate_dwell_rule": "min(24,4+Geometric(p=1/8))",
+    "gate_transition_observations": 3
+  },
+  "randomness": {
+    "seed_origin": 11082026,
+    "training_replicates": 3,
+    "heldout_replicates": 100,
+    "substreams": [
+      "between_clip_baseline",
+      "clip_scale",
+      "gate_schedule",
+      "initial_state",
+      "innovations",
+      "residuals"
+    ],
+    "training_pairing": "fold_core_candidate_replicate",
+    "heldout_pairing": "fold_replicate",
+    "stream_state_derivation": "sha256_full_key_to_lecuyer_cmrg_v1",
+    "seed_base_role": "auditable_pairing_namespace_checksum",
+    "component_substreams_consumed_when_disabled": true
+  },
+  "metrics": {
+    "families": ["probability", "logratio"],
+    "univariate": [
+      "level_median",
+      "level_iqr",
+      "difference_iqr",
+      "lag1_correlation",
+      "run_length_entropy",
+      "spectral_entropy"
+    ],
+    "multivariate": ["effective_rank", "total_variance"],
+    "probability_columns": 11,
+    "logratio_named_columns": 11,
+    "logratio_multivariate_coordinates": 10,
+    "segment_boundary_rule": "never_bridge",
+    "scale_fallback": ["IQR", "1.4826*MAD", "SD", "1"],
+    "metric_discrepancy": "max(abs_median_difference_scaled,wasserstein1_scaled)",
+    "family_weights": {"probability": 0.5, "logratio": 0.5}
+  },
+  "selection": {
+    "scope": "complete_case_training_clips_only",
+    "separate_by": ["fold", "variant_id"],
+    "candidate_count_per_selection": 27,
+    "replicate_pooling": "three_paired_training_panels",
+    "order": [
+      "selection_loss_ascending",
+      "max_metric_discrepancy_ascending",
+      "absolute_kappa_minus_one_ascending",
+      "damping_ratio_descending",
+      "candidate_id_ascending"
+    ],
+    "heldout_access": false,
+    "sensitivity_access": false
+  },
+  "future_execution": {
+    "worker_limit": 12,
+    "blas_threads_per_worker": 1,
+    "job_timeout_seconds": 21600,
+    "panel_timeout_seconds": 300,
+    "authorization_token": "LOMM-1.1-REALISM-AUTHORIZED",
+    "requires_full_prospective_manifest_sha256": true,
+    "automatic_progression": false
+  },
+  "expected_counts": {
+    "candidates": 216,
+    "fold_candidates": 1080,
+    "training_panels": 3240,
+    "selections": 40,
+    "heldout_panels": 4000,
+    "heldout_view_evaluations": 8000,
+    "generated_panels": 7240,
+    "checkpoint_units": 11240,
+    "training_metric_discrepancies": 51840,
+    "heldout_metric_discrepancies": 128000,
+    "clip_metric_contributions": 21760000,
+    "paired_ablation_effects": 272,
+    "primary_frames": 3557,
+    "primary_segments": 188,
+    "sensitivity_frames": 3632,
+    "sensitivity_segments": 129,
+    "imputed_sensitivity_frames": 75
+  },
+  "claim_scope": {
+    "supported_target": "heldout_similarity_to_the_same_100_clip_mafw_clip_score_sample",
+    "excluded_claims": [
+      "emotion_factor_validity",
+      "affect_mechanism_identification",
+      "classifier_validity",
+      "external_dataset_generalization",
+      "dimensional_recovery_performance",
+      "anti_damped_superiority_or_inferiority"
+    ]
+  }
+}

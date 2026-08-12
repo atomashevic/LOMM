@@ -9,6 +9,40 @@ PDFs, figures, and tables are the current shared materials for collaborators.
 Long reruns write to ignored local directories, so collaborators can reproduce
 the results without changing the repository.
 
+## Default Observation Pipeline
+
+The public LOMM observation pipeline uses the compositional B+S profile by
+default. It generates an additive clip baseline (`B`) in an identified contrast
+space, applies a positive clip-specific scale (`S`) to the dynamic signal and
+measurement residual, and maps the result to the probability simplex when an
+ILR basis is supplied. The default bounded observation call requires that
+basis; callers must select the linear-contrast surface explicitly when they
+need pre-link output.
+
+```r
+source("scripts/lomm/observation_profile.R")
+lomm_default_observation_profile()
+```
+
+The baseline geometry is always explicit:
+
+- `empirical`: the default, using a supplied training-derived between-clip
+  covariance in the active contrast coordinates;
+- `loading_aligned`: a known-truth option with
+  `b_i = Lambda %*% beta_i`;
+- `none`: a zero baseline. Clip scale remains independently configurable, and
+  the `homogeneous` profile sets `baseline_mode = "none"` and disables clip
+  scale exactly.
+
+The public model name is `LOMM`. Manifests retain the internal profile ID
+`lomm_1_1_mafw_clip_bs_v1` as calibration ancestry, together with its schema
+version, source hashes, the active geometry hashes, and historical
+`simulation_outputs/lomm_1_1/` paths for reproducibility. All revision-v2
+generators retain their original versioned behavior. The completed broad and
+matched recovery generators remain historical homogeneous linear surfaces;
+the softmax realism and bounded challenge surfaces remain separate historical
+revision-v2 analyses.
+
 ## Where To Start
 
 - `paper/Paper_emotion_dynamics_HGolino_RR.qmd`: manuscript source.
@@ -23,8 +57,14 @@ the results without changing the repository.
 
 ## Code Map
 
-- `scripts/extract.r`: core LOMM implementation, empirical-target helpers, and
-  estimator wrappers.
+- `scripts/lomm/observation_profile.R`: public LOMM observation entrypoint;
+  defaults to compositional B+S and exposes the three baseline modes.
+- `scripts/lomm/observation_profile_config.json`: public defaults plus retained
+  internal schema, profile, calibration, and evidence identifiers.
+- `scripts/lomm/evidence/`: tracked receipts for the ignored calibration and
+  bridge artifacts cited by the public default.
+- `scripts/extract.r`: historical core implementation, empirical-target
+  helpers, and estimator wrappers retained for completed simulations.
 - `scripts/simulations/`: final simulation runners, tmux launchers, shared
   runner internals, and the manuscript-comparison builder.
 - `scripts/figures/`: scripts that regenerate paper-facing figures and tables.

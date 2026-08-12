@@ -228,16 +228,22 @@ draw_measurement_icon <- function(x, y) {
     }
   }
   grid.text(
-    "block loadings",
+    "B+S default",
     x = npc(x),
-    y = npc(y - 0.045),
-    gp = gpar(col = "grey18", fontsize = 6.3)
+    y = npc(y - 0.036),
+    gp = gpar(col = "grey18", fontsize = 6.2, fontface = "bold")
   )
   grid.text(
-    "z = Lambda x_tilde + error",
+    "empirical | loading-aligned | none",
     x = npc(x),
-    y = npc(y - 0.073),
-    gp = gpar(col = "grey18", fontsize = 5.7)
+    y = npc(y - 0.059),
+    gp = gpar(col = "grey18", fontsize = 4.8)
+  )
+  grid.text(
+    "surface declared per profile",
+    x = npc(x),
+    y = npc(y - 0.081),
+    gp = gpar(col = "grey18", fontsize = 5.5)
   )
 }
 
@@ -308,20 +314,59 @@ draw_figure <- function() {
   draw_node(xs[[1]], bottom_y, box_w, box_h, "Latent trajectories", okabe[["green"]], "#F7FFF9", "E")
   draw_latent_icon(xs[[1]], bottom_y)
 
-  draw_node(xs[[2]], bottom_y, box_w, box_h, "Observation layer", okabe[["green"]], "#F7FFF9", "F")
+  draw_node(xs[[2]], bottom_y, box_w, box_h, "Observation profiles", okabe[["green"]], "#F7FFF9", "F")
   draw_measurement_icon(xs[[2]], bottom_y)
 
-  draw_node(xs[[3]], bottom_y, box_w, box_h, "Simulated panels", okabe[["green"]], "#F7FFF9", "G")
-  draw_line_icon(xs[[3]], bottom_y + 0.005, w = 0.120, h = 0.095, noisy = TRUE)
-  grid.text("indicator blocks", x = npc(xs[[3]]), y = npc(bottom_y - 0.073), gp = gpar(col = "grey18", fontsize = 6.7))
+  draw_node(xs[[3]], bottom_y, box_w, box_h, "Versioned outputs", okabe[["green"]], "#F7FFF9", "G")
+  draw_line_icon(xs[[3]], bottom_y + 0.014, w = 0.120, h = 0.070, noisy = TRUE)
+  grid.text(
+    "bounded composition -> realism",
+    x = npc(xs[[3]]),
+    y = npc(bottom_y - 0.053),
+    gp = gpar(col = "grey18", fontsize = 5.2)
+  )
+  grid.text(
+    "linear_z -> recovery",
+    x = npc(xs[[3]]),
+    y = npc(bottom_y - 0.077),
+    gp = gpar(col = "grey18", fontsize = 5.2)
+  )
 
   draw_node(xs[[4]], bottom_y, box_w, box_h, "Recovery test", okabe[["green"]], "#F7FFF9", "H")
   draw_recovery_icon(xs[[4]], bottom_y)
+  grid.text(
+    "declared linear surface",
+    x = npc(xs[[4]]),
+    y = npc(bottom_y - 0.078),
+    gp = gpar(col = "grey18", fontsize = 5.3)
+  )
 
   for (idx in seq_len(length(xs) - 1L)) {
     draw_arrow(xs[[idx]] + box_w / 2 + 0.012, top_y, xs[[idx + 1L]] - box_w / 2 - 0.012, top_y)
-    draw_arrow(xs[[idx]] + box_w / 2 + 0.012, bottom_y, xs[[idx + 1L]] - box_w / 2 - 0.012, bottom_y)
   }
+  for (idx in 1:2) {
+    draw_arrow(
+      xs[[idx]] + box_w / 2 + 0.012, bottom_y,
+      xs[[idx + 1L]] - box_w / 2 - 0.012, bottom_y
+    )
+  }
+  draw_arrow(
+    xs[[3]] + box_w / 2 + 0.012, bottom_y - 0.050,
+    xs[[4]] - box_w / 2 - 0.012, bottom_y - 0.050,
+    col = okabe[["green"]]
+  )
+
+  draw_arrow(
+    xs[[3]], bottom_y + box_h / 2 + 0.014,
+    xs[[3]], top_y - box_h / 2 - 0.014,
+    col = okabe[["blue"]], lty = 2
+  )
+  grid.text(
+    "realism check",
+    x = npc(xs[[3]] + 0.040),
+    y = npc(0.498),
+    gp = gpar(col = okabe[["blue"]], fontsize = 6.5, fontface = "italic")
+  )
 
   draw_poly_arrow(
     c(xs[[4]], xs[[4]]),
