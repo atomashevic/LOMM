@@ -80,11 +80,17 @@ not part of the public reproducibility surface.
 
 The revision package is prepared through the script-and-orchestration boundary.
 Its default commands inspect or validate prospective work and cannot start an
-estimator. Run the complete dry-run validation with:
+estimator. Run the complete dry-run validation with the empirical frame-score
+input bound before configuration hashes are calculated:
 
 ```bash
+export REVISION_EMPIRICAL_FRAME_SCORES=/absolute/path/to/frame_scores.csv
 python3 scripts/simulations/orchestrate_revision_jobs.py validate
 ```
+
+When that external input is unavailable, validate only the job graph and
+static contracts with `validate --structural-only`; this mode does not write
+hash-namespaced dry-run manifests.
 
 Inspect the dependency graph and future launch commands with:
 

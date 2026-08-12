@@ -219,12 +219,44 @@ class OrchestratorFixtureTests(unittest.TestCase):
             (output_dir / "results.csv").write_text("unit_key\nforbidden\n", encoding="utf-8")
             return SimpleNamespace(returncode=0)
 
-        with mock.patch.object(ORCHESTRATOR.subprocess, "run", side_effect=fake_run):
-            with self.assertRaisesRegex(
-                ORCHESTRATOR.OrchestratorError,
-                "dry-run created forbidden artifacts: results.csv",
-            ):
-                ORCHESTRATOR.command_validate(self.registry, args)
+        source = self.repo_root / "frame_scores.csv"
+        source.write_text("clip,frame_index,anger\na,1,0.5\n", encoding="utf-8")
+        with mock.patch.dict(
+            os.environ,
+            {"REVISION_EMPIRICAL_FRAME_SCORES": str(source)},
+        ):
+            with mock.patch.object(ORCHESTRATOR.subprocess, "run", side_effect=fake_run):
+                with self.assertRaisesRegex(
+                    ORCHESTRATOR.OrchestratorError,
+                    "dry-run created forbidden artifacts: results.csv",
+                ):
+                    ORCHESTRATOR.command_validate(self.registry, args)
+
+    def test_validate_requires_external_input_dependency_before_hashing(self) -> None:
+        args = argparse.Namespace(
+            job="aggregate_results",
+            job_positional=None,
+            structural_only=False,
+        )
+        environment_name = "REVISION_EMPIRICAL_FRAME_SCORES"
+        with mock.patch.dict(os.environ, {environment_name: ""}):
+            with mock.patch.object(ORCHESTRATOR.subprocess, "run") as run:
+                with self.assertRaisesRegex(
+                    ORCHESTRATOR.OrchestratorError,
+                    f"set {environment_name}",
+                ):
+                    ORCHESTRATOR.command_validate(self.registry, args)
+                run.assert_not_called()
+
+            structural_args = argparse.Namespace(
+                job="aggregate_results",
+                job_positional=None,
+                structural_only=True,
+            )
+            self.assertEqual(
+                ORCHESTRATOR.command_validate(self.registry, structural_args),
+                0,
+            )
 
     def test_resume_wrapper_appends_to_log(self) -> None:
         wrapper = ORCHESTRATOR.shell_wrapper(self.registry, self.job_id, resume=True)
@@ -359,6 +391,104 @@ class OrchestratorFixtureTests(unittest.TestCase):
                 repo_root=self.repo_root,
             )
             self.assertNotEqual(first_hash, second_registry.config_hash("empirical_cv"))
+
+    def test_external_input_hash_namespace_is_stable_through_downstream_jobs(self) -> None:
+        environment_name = "REVISION_EMPIRICAL_FRAME_SCORES"
+        source = self.repo_root / "frame_scores.csv"
+        source.write_text("clip,frame_index,anger\na,1,0.5\n", encoding="utf-8")
+        downstream_jobs = (
+            "empirical_cv",
+            "aggregate_results",
+            "rebuild_figures_tables",
+            "integrate_manuscript",
+        )
+
+        with mock.patch.dict(os.environ, {environment_name: str(source)}):
+            validation_registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            validation_registry.require_validation_external_inputs(
+                ["integrate_manuscript"]
+            )
+            validation_hashes = {
+                job_id: validation_registry.config_hash(job_id)
+                for job_id in downstream_jobs
+            }
+            empirical_job = validation_registry.get("empirical_cv")
+            expected_counts = {
+                key: value
+                for key, value in empirical_job.items()
+                if key.startswith("expected_")
+            }
+            write_json(
+                validation_registry.artifact("empirical_cv", "dry_run_manifest"),
+                {
+                    "status": "planned",
+                    "dry_run": True,
+                    "expected_counts": expected_counts,
+                },
+            )
+            write_json(
+                validation_registry.artifact("empirical_cv", "prospective_manifest"),
+                {
+                    "status": "planned",
+                    "dry_run": True,
+                    "job_id": "empirical_cv",
+                    "config_hash": validation_registry.config_hash("empirical_cv"),
+                    "command": validation_registry.command("empirical_cv"),
+                    "parameters": {"configured": empirical_job["parameters"]},
+                    "seed": {"origin": 20260715, "rule": "fixture"},
+                    "required_inputs": {"frame_scores": str(source)},
+                    "expected_outputs": ["checkpoint_results.csv"],
+                    "software_versions": {"R": "fixture"},
+                    "expected_counts": expected_counts,
+                },
+            )
+            validation_registry.persist_external_inputs("empirical_cv")
+
+        with mock.patch.dict(os.environ, {environment_name: ""}):
+            launch_registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            launch_hashes = {
+                job_id: launch_registry.config_hash(job_id)
+                for job_id in downstream_jobs
+            }
+            processes = {job_id: [] for job_id in launch_registry.jobs}
+            empirical_status = ORCHESTRATOR.job_status(
+                launch_registry,
+                "empirical_cv",
+                sessions=set(),
+                processes=processes,
+            )
+            self.assertEqual(empirical_status["state"], "READY")
+            ORCHESTRATOR.verify_launch_state(
+                launch_registry,
+                "empirical_cv",
+                resume=False,
+                statuses={"empirical_cv": empirical_status},
+            )
+        self.assertEqual(launch_hashes, validation_hashes)
+
+        source.write_text("clip,frame_index,anger\na,1,0.6\n", encoding="utf-8")
+        with mock.patch.dict(os.environ, {environment_name: str(source)}):
+            changed_registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            changed_status = ORCHESTRATOR.job_status(
+                changed_registry,
+                "empirical_cv",
+                sessions=set(),
+                processes={job_id: [] for job_id in changed_registry.jobs},
+            )
+        self.assertNotEqual(
+            changed_status["config_hash"],
+            validation_hashes["empirical_cv"],
+        )
+        self.assertEqual(changed_status["state"], "PLANNED")
 
     def test_reuse_or_fallback_alternatives_are_exclusive(self) -> None:
         audit_path = self.registry.output_dir("t100_reuse_audit") / "reuse_audit.json"

@@ -611,6 +611,26 @@ class Registry:
             resolved[environment] = path
         return resolved
 
+    def require_validation_external_inputs(self, job_ids: Iterable[str]) -> None:
+        visited: set[str] = set()
+
+        def visit(job_id: str) -> None:
+            if job_id in visited:
+                return
+            visited.add(job_id)
+            job = self.get(job_id)
+            for dependency in [
+                *job.get("required_dependencies", []),
+                *job.get("optional_dependencies", []),
+            ]:
+                visit(dependency)
+            if job_id in EXTERNAL_INPUT_ENVIRONMENTS:
+                self.external_inputs(job_id, require=True)
+
+        for job_id in job_ids:
+            visit(job_id)
+        self._hashes.clear()
+
     def persist_external_inputs(self, job_id: str) -> None:
         if job_id not in EXTERNAL_INPUT_ENVIRONMENTS:
             return
@@ -1432,6 +1452,7 @@ def command_validate(registry: Registry, args: argparse.Namespace) -> int:
     print(f"Manifest valid: {len(registry.jobs)} jobs; max workers 24; max heavy jobs 1.")
     if args.structural_only:
         return 0
+    registry.require_validation_external_inputs(job_ids)
     failures: list[str] = []
     for job_id in job_ids:
         command = registry.command(job_id, dry_run=True)
@@ -1446,7 +1467,7 @@ def command_validate(registry: Registry, args: argparse.Namespace) -> int:
             registry.job_environment(
                 job_id,
                 resume=False,
-                require_external_inputs=False,
+                require_external_inputs=True,
             )
         )
         env["REVISION_JOB_VALIDATE"] = "1"

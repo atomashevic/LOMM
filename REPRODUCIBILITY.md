@@ -163,12 +163,17 @@ dependencies, and commands without fitting DynEGA, GraphicalVAR, GIMME, or
 static EGA:
 
 ```bash
+export REVISION_EMPIRICAL_FRAME_SCORES=/absolute/path/to/frame_scores.csv
 python3 scripts/simulations/orchestrate_revision_jobs.py plan
 python3 scripts/simulations/orchestrate_revision_jobs.py validate
 python3 scripts/simulations/orchestrate_revision_jobs.py status
 python3 scripts/simulations/orchestrate_revision_jobs.py next
 python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job t100_dynega
 ```
+
+The full validation binds the empirical frame-score file before deriving job
+hashes. If the file is unavailable, `validate --structural-only` checks the job
+graph and static contracts without producing launch-ready dry-run manifests.
 
 The revision grids contain 21,600 canonical panels for each matched
 `T = 100` and `T = 25` study and 4,200 generated conditions in the challenge
