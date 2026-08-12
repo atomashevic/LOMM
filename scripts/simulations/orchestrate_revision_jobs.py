@@ -40,6 +40,9 @@ REQUIRED_JOB_IDS = (
     "rebuild_figures_tables",
     "integrate_manuscript",
 )
+EXTERNAL_INPUT_ENVIRONMENTS = {
+    "empirical_cv": ("REVISION_EMPIRICAL_FRAME_SCORES",),
+}
 
 
 class OrchestratorError(RuntimeError):
@@ -362,9 +365,20 @@ def validate_job_contract(job_id: str, job: dict[str, Any]) -> list[str]:
         isinstance(value, str) and value for value in inputs
     ):
         errors.append(f"{job_id}: contract external_required_inputs must be a string array")
+    elif len(
+        [value for value in inputs if value.startswith("required_at_execution:")]
+    ) != len(EXTERNAL_INPUT_ENVIRONMENTS.get(job_id, ())):
+        errors.append(
+            f"{job_id}: each external required input must map to an environment variable"
+        )
     parameters = job.get("parameters")
     if not isinstance(parameters, dict) or not parameters:
         errors.append(f"{job_id}: parameters must be a non-empty object")
+    elif job_id == "empirical_cv":
+        if parameters.get("frozen_dynega_ncores") != 1:
+            errors.append("empirical_cv: frozen_dynega_ncores must equal 1")
+        if parameters.get("outer_parallel_backend") != "psock":
+            errors.append("empirical_cv: outer_parallel_backend must equal psock")
     elif job_id == "t25_gimme":
         if parameters.get("design_range_status") != "out_of_range_short_record":
             errors.append("t25_gimme: design_range_status must equal out_of_range_short_record")
@@ -374,6 +388,11 @@ def validate_job_contract(job_id: str, job: dict[str, Any]) -> list[str]:
         ):
             errors.append(
                 "t25_gimme: per_unit_timeout_seconds and budget_seconds must both equal 900"
+            )
+    elif job_id == "rebuild_figures_tables":
+        if parameters.get("publication_schema_revision") != 2:
+            errors.append(
+                "rebuild_figures_tables: publication_schema_revision must equal 2"
             )
     return errors
 
@@ -478,6 +497,12 @@ class Registry:
                 dependency: self.config_hash(dependency) for dependency in dependency_ids
             },
         }
+        external_inputs = self.external_inputs(job_id, require=False)
+        if external_inputs:
+            payload["external_input_hashes"] = {
+                environment: sha256_file(path)
+                for environment, path in sorted(external_inputs.items())
+            }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         length = int(self.defaults["config_hash_length"])
         value = hashlib.sha256(encoded).hexdigest()[:length]
@@ -515,7 +540,108 @@ class Registry:
             command.append("--dry-run")
         return command
 
-    def job_environment(self, job_id: str, resume: bool) -> dict[str, str]:
+    def external_input_receipt_path(self, job_id: str) -> Path:
+        return (
+            self.repo_root
+            / self.defaults["output_root"]
+            / ".external_inputs"
+            / f"{job_id}.json"
+        )
+
+    def external_inputs_from_receipt(
+        self,
+        job_id: str,
+        environment_names: tuple[str, ...],
+    ) -> dict[str, Path]:
+        receipt_path = self.external_input_receipt_path(job_id)
+        receipt = read_json(receipt_path)
+        if receipt is None:
+            return {}
+        if receipt.get("job_id") != job_id:
+            raise OrchestratorError(f"external input receipt job mismatch: {receipt_path}")
+        entries = receipt.get("external_inputs")
+        if not isinstance(entries, dict) or set(entries) != set(environment_names):
+            raise OrchestratorError(f"external input receipt schema mismatch: {receipt_path}")
+        resolved: dict[str, Path] = {}
+        for environment, entry in entries.items():
+            if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
+                raise OrchestratorError(f"external input receipt schema mismatch: {receipt_path}")
+            path_value = entry.get("path")
+            expected_hash = entry.get("sha256")
+            if not isinstance(path_value, str) or not isinstance(expected_hash, str):
+                raise OrchestratorError(f"external input receipt schema mismatch: {receipt_path}")
+            path = Path(path_value)
+            if not path.is_file():
+                raise OrchestratorError(f"external input does not exist: {path}")
+            if sha256_file(path) != expected_hash:
+                raise OrchestratorError(f"external input hash changed: {path}")
+            resolved[environment] = path
+        return resolved
+
+    def external_inputs(self, job_id: str, require: bool) -> dict[str, Path]:
+        specifications = [
+            value
+            for value in self.get(job_id)["contract"]["external_required_inputs"]
+            if value.startswith("required_at_execution:")
+        ]
+        environment_names = EXTERNAL_INPUT_ENVIRONMENTS.get(job_id, ())
+        configured = {
+            environment: os.environ.get(environment, "").strip()
+            for environment in environment_names
+        }
+        if environment_names and not any(configured.values()):
+            received = self.external_inputs_from_receipt(job_id, environment_names)
+            if received:
+                return received
+        resolved: dict[str, Path] = {}
+        for environment, specification in zip(environment_names, specifications):
+            value = configured[environment]
+            if not value:
+                if require:
+                    raise OrchestratorError(
+                        f"set {environment} to {specification.removeprefix('required_at_execution:')}"
+                    )
+                continue
+            path = Path(value).expanduser()
+            if not path.is_absolute():
+                path = self.repo_root / path
+            path = path.resolve()
+            if not path.is_file():
+                raise OrchestratorError(f"external input does not exist: {path}")
+            resolved[environment] = path
+        return resolved
+
+    def persist_external_inputs(self, job_id: str) -> None:
+        if job_id not in EXTERNAL_INPUT_ENVIRONMENTS:
+            return
+        resolved = self.external_inputs(job_id, require=True)
+        receipt_path = self.external_input_receipt_path(job_id)
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "job_id": job_id,
+            "external_inputs": {
+                environment: {
+                    "path": str(path),
+                    "sha256": sha256_file(path),
+                }
+                for environment, path in sorted(resolved.items())
+            },
+        }
+        temporary = receipt_path.with_name(f".{receipt_path.name}.{os.getpid()}.tmp")
+        try:
+            with temporary.open("w", encoding="utf-8") as handle:
+                json.dump(payload, handle, sort_keys=True)
+                handle.write("\n")
+            os.replace(temporary, receipt_path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    def job_environment(
+        self,
+        job_id: str,
+        resume: bool,
+        require_external_inputs: bool = True,
+    ) -> dict[str, str]:
         job = self.get(job_id)
         contract = job["contract"]
         inputs = {
@@ -544,6 +670,15 @@ class Registry:
             environment["REVISION_GRAPHICALVAR_TIMEOUT_SEC"] = str(per_unit_timeout)
         if per_unit_timeout is not None and method == "gimme":
             environment["REVISION_GIMME_TIMEOUT_SEC"] = str(per_unit_timeout)
+        environment.update(
+            {
+                name: str(path)
+                for name, path in self.external_inputs(
+                    job_id,
+                    require=require_external_inputs,
+                ).items()
+            }
+        )
         return environment
 
 
@@ -1158,6 +1293,16 @@ def resolved_required_inputs(registry: Registry, job_id: str) -> dict[str, Any]:
     return {
         "dependency_outputs": dependencies,
         "external_artifacts": list(job["contract"]["external_required_inputs"]),
+        "resolved_external_artifacts": [
+            {
+                "environment": environment,
+                "path": registry.display_path(path),
+                "sha256": sha256_file(path),
+            }
+            for environment, path in sorted(
+                registry.external_inputs(job_id, require=False).items()
+            )
+        ],
     }
 
 
@@ -1297,7 +1442,13 @@ def command_validate(registry: Registry, args: argparse.Namespace) -> int:
             if path.is_file()
         } if output_dir.is_dir() else set()
         env = os.environ.copy()
-        env.update(registry.job_environment(job_id, resume=False))
+        env.update(
+            registry.job_environment(
+                job_id,
+                resume=False,
+                require_external_inputs=False,
+            )
+        )
         env["REVISION_JOB_VALIDATE"] = "1"
         print(f"[{job_id}] {shlex.join(command)}", flush=True)
         result = subprocess.run(command, cwd=registry.repo_root, env=env, check=False)
@@ -1816,6 +1967,7 @@ def verify_launch_state(
     statuses: dict[str, dict[str, Any]],
 ) -> None:
     status = statuses[job_id]
+    registry.external_inputs(job_id, require=True)
     if status["state"] == "COMPLETE":
         raise OrchestratorError(f"{job_id} is already complete")
     if status["session_active"] or status["process_active"]:
@@ -1898,6 +2050,7 @@ def command_launch(registry: Registry, args: argparse.Namespace, resume: bool) -
     statuses = {status["job_id"]: status for status in statuses_list}
     verify_launch_state(registry, job_id, resume, statuses)
     verify_capacity(registry, job_id, statuses, sessions)
+    registry.persist_external_inputs(job_id)
     if shutil.which("tmux") is None:
         raise OrchestratorError("tmux is required for launch and resume")
     if shutil.which("timeout") is None:

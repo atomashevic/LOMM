@@ -121,6 +121,45 @@ revision_validate_dynega_config <- function(job_id, job) {
   invisible(TRUE)
 }
 
+revision_validate_empirical_config <- function(job_id, job) {
+  if (!identical(job_id, "empirical_cv")) {
+    return(invisible(TRUE))
+  }
+  ncores <- job$parameters$frozen_dynega_ncores
+  if (length(ncores) != 1L ||
+      !is.numeric(ncores) ||
+      !is.finite(ncores) ||
+      ncores != 1) {
+    stop(
+      "Empirical CV must configure frozen_dynega_ncores = 1.",
+      call. = FALSE
+    )
+  }
+  backend <- job$parameters$outer_parallel_backend
+  if (length(backend) != 1L || !identical(backend, "psock")) {
+    stop(
+      "Empirical CV must configure outer_parallel_backend = psock.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
+revision_validate_publication_config <- function(job_id, job) {
+  if (!identical(job_id, "rebuild_figures_tables")) {
+    return(invisible(TRUE))
+  }
+  revision <- job$parameters$publication_schema_revision
+  if (length(revision) != 1L || !is.numeric(revision) ||
+      !is.finite(revision) || revision != 2) {
+    stop(
+      "Figure/table rebuild must configure publication_schema_revision = 2.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
 revision_expected_counts <- function(job) {
   names_to_keep <- grep("^expected_", names(job), value = TRUE)
   counts <- job[names_to_keep]
@@ -2022,13 +2061,19 @@ revision_empirical_continuous_loss <- function(target, synthetic) {
   if (length(components) == 0L || any(!is.finite(components))) Inf else mean(components)
 }
 
-revision_fit_training_frozen_summary <- function(training_panel, score_columns) {
+revision_fit_training_frozen_summary <- function(training_panel,
+                                                  score_columns,
+                                                  ncores,
+                                                  seed) {
   fit <- fit_pooled_ord0_dynega(
     training_panel,
     score_cols = score_columns,
     n_embed = 10L,
     tau = 1,
-    algorithm = "louvain"
+    algorithm = "louvain",
+    ncores = ncores,
+    seed = seed,
+    verbose = FALSE
   )
   center <- vapply(
     training_panel[, score_columns, drop = FALSE],
@@ -2054,7 +2099,8 @@ revision_fit_training_frozen_summary <- function(training_panel, score_columns) 
 revision_empirical_fold_summary <- function(training_panel,
                                             score_columns,
                                             fold,
-                                            context) {
+                                            context,
+                                            ncores) {
   directory <- file.path(context$output_dir, "empirical_fold_summaries")
   dir.create(directory, recursive = TRUE, showWarnings = FALSE)
   model_path <- file.path(directory, sprintf("fold_%02d.rds", fold))
@@ -2083,7 +2129,12 @@ revision_empirical_fold_summary <- function(training_panel,
     sep = "|"
   ))
   set.seed(seed)
-  model <- revision_fit_training_frozen_summary(training_panel, score_columns)
+  model <- revision_fit_training_frozen_summary(
+    training_panel,
+    score_columns,
+    ncores,
+    seed
+  )
   model$fold <- fold
   model$config_hash <- context$config_hash
   model$training_data_hash <- training_hash
@@ -2426,6 +2477,120 @@ revision_evaluate_empirical_training <- function(row,
   )
 }
 
+revision_empirical_worker_exports <- function() {
+  candidates <- ls(envir = .GlobalEnv)
+  grep(
+    "^(revision_|compute_run_length_entropy$|compute_spectral_entropy$|safe_effective_rank$)",
+    candidates,
+    value = TRUE
+  )
+}
+
+revision_start_empirical_cluster <- function(workers) {
+  workers <- as.integer(workers)
+  if (workers <= 1L) {
+    return(NULL)
+  }
+  cluster <- parallel::makePSOCKcluster(workers)
+  initialized <- FALSE
+  on.exit({
+    if (!initialized) {
+      parallel::stopCluster(cluster)
+    }
+  }, add = TRUE)
+  parallel::clusterExport(
+    cluster,
+    revision_empirical_worker_exports(),
+    envir = .GlobalEnv
+  )
+  invisible(parallel::clusterCall(cluster, function() {
+    Sys.setenv(
+      OMP_NUM_THREADS = "1",
+      OPENBLAS_NUM_THREADS = "1",
+      MKL_NUM_THREADS = "1"
+    )
+    TRUE
+  }))
+  initialized <- TRUE
+  cluster
+}
+
+revision_stop_empirical_cluster <- function(cluster) {
+  if (!is.null(cluster)) {
+    parallel::stopCluster(cluster)
+  }
+  invisible(TRUE)
+}
+
+revision_empirical_worker_inputs <- function(rows,
+                                             score_columns,
+                                             clip_lengths,
+                                             intercepts,
+                                             target,
+                                             frozen_model,
+                                             secondary_target,
+                                             context,
+                                             source_hash,
+                                             input_spec_hash) {
+  list(
+    rows = rows,
+    score_columns = score_columns,
+    clip_lengths = clip_lengths,
+    intercepts = intercepts,
+    target = target,
+    frozen_model = frozen_model,
+    secondary_target = secondary_target,
+    context = context,
+    source_hash = source_hash,
+    input_spec_hash = input_spec_hash
+  )
+}
+
+revision_evaluate_empirical_worker_input <- function(index, inputs) {
+  revision_evaluate_empirical_training(
+    inputs$rows[index, , drop = FALSE],
+    inputs$score_columns,
+    inputs$clip_lengths,
+    inputs$intercepts,
+    inputs$target,
+    inputs$frozen_model,
+    inputs$secondary_target,
+    inputs$context,
+    inputs$source_hash,
+    inputs$input_spec_hash
+  )
+}
+
+revision_evaluate_empirical_psock_index <- function(index) {
+  inputs <- get("REVISION_EMPIRICAL_WORKER_INPUTS", envir = .GlobalEnv)
+  revision_evaluate_empirical_worker_input(index, inputs)
+}
+
+revision_configure_empirical_cluster <- function(cluster, inputs) {
+  if (is.null(cluster)) {
+    return(invisible(TRUE))
+  }
+  invisible(parallel::clusterCall(cluster, function(value) {
+    assign("REVISION_EMPIRICAL_WORKER_INPUTS", value, envir = .GlobalEnv)
+    TRUE
+  }, inputs))
+}
+
+revision_evaluate_empirical_batch <- function(cluster, indices, inputs) {
+  if (is.null(cluster)) {
+    return(lapply(
+      indices,
+      revision_evaluate_empirical_worker_input,
+      inputs = inputs
+    ))
+  }
+  parallel::parLapplyLB(
+    cluster,
+    indices,
+    revision_evaluate_empirical_psock_index
+  )
+}
+
 revision_run_empirical_cv <- function(plan, context, config) {
   source_path <- Sys.getenv("REVISION_EMPIRICAL_FRAME_SCORES", "")
   if (!nzchar(source_path) || !file.exists(source_path)) {
@@ -2434,7 +2599,11 @@ revision_run_empirical_cv <- function(plan, context, config) {
       call. = FALSE
     )
   }
+  job <- revision_config_job(config, context$job_id)
+  frozen_dynega_ncores <- as.integer(job$parameters$frozen_dynega_ncores)
   revision_source_estimation_core()
+  cluster <- revision_start_empirical_cluster(context$workers)
+  on.exit(revision_stop_empirical_cluster(cluster), add = TRUE)
   cleaned <- clean_empirical_frame_scores(
     source_path,
     model_name = "revision_v2"
@@ -2487,7 +2656,8 @@ revision_run_empirical_cv <- function(plan, context, config) {
       training_panel,
       score_columns,
       fold,
-      context
+      context,
+      frozen_dynega_ncores
     )
     frozen_training <- revision_apply_training_frozen_summary(
       training_panel,
@@ -2502,24 +2672,25 @@ revision_run_empirical_cv <- function(plan, context, config) {
     rows <- plan$panels$training[plan$panels$training$fold == fold, , drop = FALSE]
     rows <- rows[!rows$panel_key %in% completed, , drop = FALSE]
     if (nrow(rows) > 0L) {
+      worker_inputs <- revision_empirical_worker_inputs(
+        rows,
+        score_columns,
+        training_lengths,
+        training_intercepts,
+        target,
+        frozen_model,
+        secondary_target,
+        context,
+        source_hash,
+        input_spec_hash
+      )
+      revision_configure_empirical_cluster(cluster, worker_inputs)
       batches <- split(seq_len(nrow(rows)), ceiling(seq_len(nrow(rows)) / context$workers))
       for (indices in batches) {
-        evaluated <- parallel::mclapply(
+        evaluated <- revision_evaluate_empirical_batch(
+          cluster,
           indices,
-          function(index) revision_evaluate_empirical_training(
-            rows[index, , drop = FALSE],
-            score_columns,
-            training_lengths,
-            training_intercepts,
-            target,
-            frozen_model,
-            secondary_target,
-            context,
-            source_hash,
-            input_spec_hash
-          ),
-          mc.cores = min(context$workers, length(indices)),
-          mc.preschedule = FALSE
+          worker_inputs
         )
         frame <- do.call(rbind, evaluated)
         revision_append_checkpoint(frame, checkpoint_path)
@@ -2957,6 +3128,133 @@ revision_dependency_output_dir <- function(context, job_id) {
   normalizePath(path, mustWork = TRUE)
 }
 
+revision_publication_artifact_names <- function() {
+  c(
+    "figure4_empirical_realism.pdf",
+    "figure4_empirical_realism.png",
+    "figure5_dimension_recovery.pdf",
+    "figure5_dimension_recovery.png",
+    "figure6_factor_effects.pdf",
+    "figure6_factor_effects.png",
+    "figure7_runtime_feasibility.pdf",
+    "figure7_runtime_feasibility.png",
+    "empirical_realism_table.csv",
+    "table1_method_overall.csv",
+    "figure5_condition_key.csv",
+    "figure6_factor_effects_table.csv",
+    "figure6_factor_effects_eta_screen.csv",
+    "table2_score_quality_marginal_means.csv",
+    "table3_runtime_feasibility.csv",
+    "table3_runtime_feasibility_accounting.csv"
+  )
+}
+
+revision_publication_destinations <- function(names) {
+  directory <- ifelse(grepl("\\.csv$", names), "tables", "figures")
+  file.path(REVISION_REPO_ROOT, "paper", directory, names)
+}
+
+revision_publish_hashed_artifacts <- function(sources, destinations) {
+  if (length(sources) == 0L || length(sources) != length(destinations) ||
+      anyDuplicated(destinations) ||
+      any(!file.exists(sources) | file.info(sources)$size <= 0L)) {
+    stop("Publication transaction received invalid source artifacts.", call. = FALSE)
+  }
+  for (directory in unique(dirname(destinations))) {
+    dir.create(directory, recursive = TRUE, showWarnings = FALSE)
+  }
+  suffix <- paste0(".revision-v2-", Sys.getpid())
+  staged <- paste0(destinations, suffix, ".new")
+  backups <- paste0(destinations, suffix, ".previous")
+  if (any(file.exists(c(staged, backups)))) {
+    stop("Publication transaction staging paths already exist.", call. = FALSE)
+  }
+  copied <- file.copy(sources, staged, overwrite = FALSE)
+  if (!all(copied) || !identical(
+    unname(vapply(sources, revision_sha256, character(1))),
+    unname(vapply(staged, revision_sha256, character(1)))
+  )) {
+    unlink(staged[file.exists(staged)])
+    stop("Could not stage a hash-identical publication artifact set.", call. = FALSE)
+  }
+  had_previous <- file.exists(destinations)
+  moved_previous <- rep(FALSE, length(destinations))
+  installed <- rep(FALSE, length(destinations))
+  rollback <- function() {
+    unlink(destinations[installed & file.exists(destinations)])
+    for (index in rev(which(moved_previous))) {
+      if (file.exists(backups[[index]])) {
+        file.rename(backups[[index]], destinations[[index]])
+      }
+    }
+    unlink(staged[file.exists(staged)])
+    unlink(backups[file.exists(backups)])
+  }
+  outcome <- tryCatch({
+    for (index in seq_along(destinations)) {
+      if (had_previous[[index]]) {
+        if (!file.rename(destinations[[index]], backups[[index]])) {
+          stop("Could not preserve prior artifact: ", destinations[[index]])
+        }
+        moved_previous[[index]] <- TRUE
+      }
+      if (!file.rename(staged[[index]], destinations[[index]])) {
+        stop("Could not install rebuilt artifact: ", destinations[[index]])
+      }
+      installed[[index]] <- TRUE
+    }
+    if (!identical(
+      unname(vapply(sources, revision_sha256, character(1))),
+      unname(vapply(destinations, revision_sha256, character(1)))
+    )) {
+      stop("Published artifact hashes differ from the rebuilt set.")
+    }
+    TRUE
+  }, error = function(error) error)
+  if (inherits(outcome, "error")) {
+    rollback()
+    stop(conditionMessage(outcome), call. = FALSE)
+  }
+  unlink(backups[file.exists(backups)])
+  invisible(destinations)
+}
+
+revision_validate_published_artifact_hashes <- function(publication) {
+  artifact_names <- revision_publication_artifact_names()
+  required_metadata <- c(
+    "artifact_schema_version", "job_id", "config_hash", "published_root",
+    "aggregate_output_dir", "aggregate_success_hash", "builder_hash"
+  )
+  schema_version <- if (is.list(publication)) {
+    publication$artifact_schema_version
+  } else {
+    NULL
+  }
+  if (!is.list(publication) || length(schema_version) != 1L ||
+      !identical(as.integer(schema_version), 2L) ||
+      !identical(publication$published_root, "paper") ||
+      !setequal(names(publication), c(required_metadata, artifact_names))) {
+    stop("Publication artifact manifest has an invalid schema.", call. = FALSE)
+  }
+  expected_hashes <- unlist(publication[artifact_names], use.names = FALSE)
+  if (length(expected_hashes) != length(artifact_names) ||
+      any(!grepl("^[0-9a-f]{64}$", expected_hashes))) {
+    stop("Publication artifact manifest contains an invalid SHA-256.", call. = FALSE)
+  }
+  destinations <- revision_publication_destinations(artifact_names)
+  if (any(!file.exists(destinations) | file.info(destinations)$size <= 0L)) {
+    stop("A manuscript-facing figure or table is missing.", call. = FALSE)
+  }
+  observed_hashes <- vapply(destinations, revision_sha256, character(1))
+  if (!identical(unname(observed_hashes), unname(expected_hashes))) {
+    stop(
+      "Manuscript-facing figure/table hashes differ from the completed rebuild.",
+      call. = FALSE
+    )
+  }
+  invisible(destinations)
+}
+
 revision_run_rebuild_job <- function(context, config) {
   aggregate_dir <- revision_dependency_output_dir(context, "aggregate_results")
   aggregate_files <- c(
@@ -3019,25 +3317,19 @@ revision_run_rebuild_job <- function(context, config) {
   if (any(!file.exists(generated))) {
     stop("Figure/table rebuild did not produce every declared artifact.", call. = FALSE)
   }
-  destinations <- file.path(
-    REVISION_REPO_ROOT,
-    "paper",
-    c(rep("figures", 8L), rep("tables", 8L)),
-    basename(generated)
-  )
-  dir.create(file.path(REVISION_REPO_ROOT, "paper", "figures"), recursive = TRUE)
-  dir.create(file.path(REVISION_REPO_ROOT, "paper", "tables"), recursive = TRUE)
-  copied <- file.copy(generated, destinations, overwrite = TRUE)
-  if (!all(copied) || !identical(
-    unname(vapply(generated, revision_sha256, character(1))),
-    unname(vapply(destinations, revision_sha256, character(1)))
-  )) {
-    stop("Could not publish every revision-v2 figure/table artifact.", call. = FALSE)
+  artifact_names <- revision_publication_artifact_names()
+  if (!identical(basename(generated), artifact_names) ||
+      any(file.info(generated)$size <= 0L)) {
+    stop("Rebuilt artifact names or file sizes violate the publication contract.", call. = FALSE)
   }
+  destinations <- revision_publication_destinations(artifact_names)
+  revision_publish_hashed_artifacts(generated, destinations)
   artifacts <- c(
     list(
+      artifact_schema_version = 2L,
       job_id = context$job_id,
       config_hash = context$config_hash,
+      published_root = "paper",
       aggregate_output_dir = aggregate_dir,
       aggregate_success_hash = revision_sha256(
         file.path(aggregate_dir, "_SUCCESS.json")
@@ -3050,6 +3342,7 @@ revision_run_rebuild_job <- function(context, config) {
     artifacts,
     file.path(context$output_dir, "publication_artifacts.json")
   )
+  revision_validate_published_artifact_hashes(artifacts)
   revision_singleton_checkpoint(
     context,
     config,
@@ -3133,6 +3426,7 @@ revision_readiness_dependency_hashes <- function(context, config) {
     stop("Rebuild dependency lacks completion evidence.", call. = FALSE)
   }
   publication <- jsonlite::fromJSON(publication_path, simplifyVector = FALSE)
+  revision_validate_published_artifact_hashes(publication)
   aggregate_dir <- publication$aggregate_output_dir
   if (is.null(aggregate_dir) || length(aggregate_dir) != 1L || !dir.exists(aggregate_dir)) {
     stop("Rebuild provenance lacks its aggregate output directory.", call. = FALSE)
@@ -3281,6 +3575,8 @@ revision_main <- function() {
   config <- config_input$value
   job <- revision_config_job(config, cli$job)
   revision_validate_dynega_config(cli$job, job)
+  revision_validate_empirical_config(cli$job, job)
+  revision_validate_publication_config(cli$job, job)
   expected_counts <- revision_expected_counts(job)
   context <- revision_runtime_context(
     cli$job,

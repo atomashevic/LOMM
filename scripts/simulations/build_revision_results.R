@@ -1320,6 +1320,14 @@ rr_align_memberships <- function(truth, estimate) {
   truth <- rr_membership_vector(truth)
   estimate <- rr_membership_vector(estimate)
   if (!is.null(names(truth)) || !is.null(names(estimate))) {
+    if (!is.null(names(truth)) && !is.null(names(estimate)) &&
+        !setequal(names(truth), names(estimate))) {
+      stripped_estimate <- sub("\\.Ord[[:digit:]]+$", "", names(estimate))
+      if (!anyDuplicated(stripped_estimate) &&
+          setequal(names(truth), stripped_estimate)) {
+        names(estimate) <- stripped_estimate
+      }
+    }
     if (is.null(names(truth)) || is.null(names(estimate)) ||
         !setequal(names(truth), names(estimate))) {
       return(NULL)
@@ -1330,6 +1338,24 @@ rr_align_memberships <- function(truth, estimate) {
     return(NULL)
   }
   list(truth = unname(truth), estimate = unname(estimate))
+}
+
+rr_assignment_accuracy <- function(truth, estimate) {
+  aligned <- rr_align_memberships(truth, estimate)
+  if (is.null(aligned)) {
+    return(NA_real_)
+  }
+  if (!requireNamespace("clue", quietly = TRUE)) {
+    rr_stop("Package 'clue' is required for assignment accuracy.")
+  }
+  contingency <- unclass(table(aligned$truth, aligned$estimate))
+  size <- max(dim(contingency))
+  padded <- matrix(0, nrow = size, ncol = size)
+  padded[seq_len(nrow(contingency)), seq_len(ncol(contingency))] <- contingency
+  maximum <- if (length(padded) == 0L) 0 else max(padded)
+  assignment <- clue::solve_LSAP(maximum - padded)
+  matched <- sum(padded[cbind(seq_len(size), assignment)])
+  matched / length(aligned$truth)
 }
 
 rr_choose_two <- function(value) {
@@ -1392,15 +1418,18 @@ rr_variation_information <- function(truth, estimate) {
 rr_partition_metric <- function(data, aliases, truth_column, estimate_column,
                                 metric) {
   present <- aliases[aliases %in% names(data)]
+  result <- rep(NA_real_, nrow(data))
   if (length(present) > 0L) {
-    return(suppressWarnings(as.numeric(data[[present[[1]]]])))
+    result <- suppressWarnings(as.numeric(data[[present[[1]]]]))
   }
   if (!(truth_column %in% names(data) && estimate_column %in% names(data))) {
-    return(rep(NA_real_, nrow(data)))
+    return(result)
   }
-  vapply(seq_len(nrow(data)), function(index) {
+  missing <- which(!is.finite(result))
+  result[missing] <- vapply(missing, function(index) {
     metric(data[[truth_column]][[index]], data[[estimate_column]][[index]])
   }, numeric(1))
+  result
 }
 
 rr_total_runtime <- function(data) {
@@ -1456,7 +1485,13 @@ rr_canonical_method_results <- function(long_results) {
     NA_real_
   )
   data$absolute_dimension_error <- abs(data$signed_dimension_error)
-  data$assignment_accuracy <- rr_numeric_column(data, "assignment_accuracy")
+  data$assignment_accuracy <- rr_partition_metric(
+    data,
+    "assignment_accuracy",
+    "true_membership",
+    "estimated_membership",
+    rr_assignment_accuracy
+  )
   data$adjusted_rand_index <- rr_partition_metric(
     data,
     c("adjusted_rand_index", "ari", "ARI"),
@@ -2001,6 +2036,45 @@ rr_statistic_function <- function(name) {
   )
 }
 
+rr_worker_count <- function() {
+  value <- suppressWarnings(as.integer(Sys.getenv("REVISION_JOB_WORKERS", "1")))
+  if (!is.finite(value) || value < 1L) 1L else value
+}
+
+rr_parallel_lapply <- function(values, callback, workers = rr_worker_count()) {
+  parallel_enabled <- length(values) > 1L && workers > 1L &&
+    .Platform$OS.type != "windows"
+  results <- if (parallel_enabled) {
+    parallel::mclapply(
+      values,
+      callback,
+      mc.cores = min(as.integer(workers), length(values)),
+      mc.preschedule = TRUE,
+      mc.set.seed = FALSE
+    )
+  } else {
+    lapply(values, callback)
+  }
+  if (length(results) != length(values)) {
+    rr_stop("Parallel aggregation returned an incomplete result list.")
+  }
+  failed <- vapply(results, function(result) {
+    is.null(result) || inherits(result, "try-error")
+  }, logical(1))
+  if (any(failed)) {
+    messages <- unique(trimws(as.character(results[failed])))
+    rr_stop(
+      "Parallel aggregation task failed: ",
+      paste(messages, collapse = "; ")
+    )
+  }
+  invalid <- !vapply(results, is.data.frame, logical(1))
+  if (any(invalid)) {
+    rr_stop("Aggregation callbacks must return one data frame per group.")
+  }
+  results
+}
+
 rr_seed_from_text <- function(value) {
   if (exists("revision_seed_from_key", mode = "function")) {
     return(revision_seed_from_key(paste0("revision_results|", value)))
@@ -2013,7 +2087,69 @@ rr_seed_from_text <- function(value) {
   as.integer(hash + 1)
 }
 
-rr_cluster_mcse <- function(values, clusters, statistic) {
+rr_complement_order_statistic <- function(sorted_values, removed_positions,
+                                          rank) {
+  total <- length(sorted_values)
+  remaining <- total - length(removed_positions)
+  rank <- as.integer(rank)
+  if (rank < 1L || rank > remaining) {
+    rr_stop("Complement order-statistic rank is out of range.")
+  }
+  lower <- rank
+  upper <- min(total, rank + length(removed_positions))
+  while (lower < upper) {
+    middle <- as.integer(floor((lower + upper) / 2))
+    retained <- middle - findInterval(middle, removed_positions)
+    if (retained >= rank) {
+      upper <- middle
+    } else {
+      lower <- middle + 1L
+    }
+  }
+  sorted_values[[lower]]
+}
+
+rr_complement_type8_quantile <- function(sorted_values, removed_positions,
+                                         probability) {
+  remaining <- length(sorted_values) - length(removed_positions)
+  if (remaining < 1L) {
+    rr_stop("Deleting a cluster leaves no observations.")
+  }
+  position <- (remaining + 1 / 3) * probability + 1 / 3
+  fuzz <- 4 * .Machine$double.eps
+  lower_rank <- floor(position * (1 + fuzz))
+  fraction <- position - lower_rank
+  if (abs(fraction) < fuzz) {
+    fraction <- 0
+  }
+  if (lower_rank < 1L) {
+    return(rr_complement_order_statistic(
+      sorted_values,
+      removed_positions,
+      1L
+    ))
+  }
+  if (lower_rank >= remaining) {
+    return(rr_complement_order_statistic(
+      sorted_values,
+      removed_positions,
+      remaining
+    ))
+  }
+  lower <- rr_complement_order_statistic(
+    sorted_values,
+    removed_positions,
+    lower_rank
+  )
+  upper <- rr_complement_order_statistic(
+    sorted_values,
+    removed_positions,
+    lower_rank + 1L
+  )
+  (1 - fraction) * lower + fraction * upper
+}
+
+rr_cluster_mcse <- function(values, clusters, statistic_name) {
   keep <- is.finite(values) & !is.na(clusters) & nzchar(clusters)
   values <- values[keep]
   clusters <- as.character(clusters[keep])
@@ -2022,9 +2158,49 @@ rr_cluster_mcse <- function(values, clusters, statistic) {
   if (count < 2L) {
     return(NA_real_)
   }
-  leave_one_out <- vapply(unique_clusters, function(cluster) {
-    statistic(values[clusters != cluster])
-  }, numeric(1))
+  cluster_index <- match(clusters, unique_clusters)
+  cluster_sizes <- tabulate(cluster_index, nbins = count)
+  if (any(length(values) - cluster_sizes < 1L)) {
+    return(NA_real_)
+  }
+  if (identical(statistic_name, "mean")) {
+    cluster_sums <- as.numeric(rowsum(
+      values,
+      cluster_index,
+      reorder = FALSE
+    ))
+    leave_one_out <- (
+      sum(values) - cluster_sums
+    ) / (length(values) - cluster_sizes)
+  } else if (statistic_name %in% c("median", "iqr")) {
+    ordering <- order(values, method = "radix")
+    sorted_values <- values[ordering]
+    sorted_clusters <- cluster_index[ordering]
+    removed <- split(
+      seq_along(sorted_values),
+      factor(sorted_clusters, levels = seq_len(count))
+    )
+    leave_one_out <- vapply(removed, function(removed_positions) {
+      if (identical(statistic_name, "median")) {
+        return(rr_complement_type8_quantile(
+          sorted_values,
+          removed_positions,
+          0.5
+        ))
+      }
+      rr_complement_type8_quantile(
+        sorted_values,
+        removed_positions,
+        0.75
+      ) - rr_complement_type8_quantile(
+        sorted_values,
+        removed_positions,
+        0.25
+      )
+    }, numeric(1))
+  } else {
+    rr_stop("Unknown result statistic: ", statistic_name)
+  }
   center <- mean(leave_one_out)
   sqrt((count - 1) / count * sum((leave_one_out - center)^2))
 }
@@ -2077,14 +2253,14 @@ rr_estimate_values <- function(values, clusters, statistic_name, key,
   bootstrap <- rr_cluster_bootstrap(values, clusters, statistic, reps, seed)
   interval <- stats::quantile(
     bootstrap,
-    probabilities = c(0.025, 0.975),
+    probs = c(0.025, 0.975),
     names = FALSE,
     type = 8,
     na.rm = TRUE
   )
   list(
     estimate = statistic(values),
-    monte_carlo_se = rr_cluster_mcse(values, clusters, statistic),
+    monte_carlo_se = rr_cluster_mcse(values, clusters, statistic_name),
     bootstrap_se = stats::sd(bootstrap),
     conf_low = interval[[1]],
     conf_high = interval[[2]],
@@ -2260,13 +2436,17 @@ rr_group_indices <- function(data, columns) {
   split(seq_len(nrow(data)), rr_frame_key(data, columns), drop = TRUE)
 }
 
-rr_summary_descriptor <- function(group, level) {
+rr_summary_descriptor <- function(group, level, group_columns) {
   fields <- c(
     "analysis_scope", "method_id", "community_algorithm", "scenario_family",
     "stability_class", "TimeP", "challenge_id", "representation"
   )
   values <- lapply(fields, function(field) {
-    if (field %in% names(group)) as.character(group[[field]][[1]]) else NA_character_
+    if (field %in% group_columns) {
+      as.character(group[[field]][[1]])
+    } else {
+      NA_character_
+    }
   })
   names(values) <- fields
   c(list(summary_level = level), values)
@@ -2275,10 +2455,10 @@ rr_summary_descriptor <- function(group, level) {
 rr_build_group_estimates <- function(data, level, group_columns, reps = 2000L) {
   groups <- rr_group_indices(data, group_columns)
   catalog <- rr_metric_catalog()
-  rows <- list()
-  for (group_key in names(groups)) {
+  rows <- rr_parallel_lapply(names(groups), function(group_key) {
     group <- data[groups[[group_key]], , drop = FALSE]
-    descriptor <- rr_summary_descriptor(group, level)
+    descriptor <- rr_summary_descriptor(group, level, group_columns)
+    group_rows <- list()
     for (index in seq_len(nrow(catalog))) {
       estimand <- catalog$estimand_id[[index]]
       statistic <- catalog$statistic[[index]]
@@ -2289,13 +2469,14 @@ rr_build_group_estimates <- function(data, level, group_columns, reps = 2000L) {
         paste(level, group_key, estimand, sep = "|"),
         reps
       )
-      rows[[length(rows) + 1L]] <- as.data.frame(c(
+      group_rows[[length(group_rows) + 1L]] <- as.data.frame(c(
         descriptor,
         list(estimand_id = estimand, statistic = statistic),
         result
       ), stringsAsFactors = FALSE)
     }
-  }
+    rr_bind_rows_fill(group_rows)
+  })
   rr_bind_rows_fill(rows)
 }
 
@@ -2366,8 +2547,7 @@ rr_summarize_pair <- function(left, right, key_column, comparison_type,
   }
   group_columns <- paste0(descriptor_columns, ".left")
   groups <- rr_group_indices(paired, group_columns)
-  rows <- list()
-  for (group_key in names(groups)) {
+  rows <- rr_parallel_lapply(names(groups), function(group_key) {
     group <- paired[groups[[group_key]], , drop = FALSE]
     descriptor <- rr_pair_descriptor(
       group,
@@ -2375,6 +2555,7 @@ rr_summarize_pair <- function(left, right, key_column, comparison_type,
       left_label,
       right_label
     )
+    group_rows <- list()
     for (index in seq_len(nrow(metrics))) {
       estimand <- metrics$estimand_id[[index]]
       statistic <- metrics$statistic[[index]]
@@ -2388,7 +2569,7 @@ rr_summarize_pair <- function(left, right, key_column, comparison_type,
         paste(comparison_type, left_label, right_label, group_key, estimand, sep = "|"),
         reps
       )
-      rows[[length(rows) + 1L]] <- cbind(
+      group_rows[[length(group_rows) + 1L]] <- cbind(
         descriptor,
         data.frame(
           estimand_id = estimand,
@@ -2406,7 +2587,8 @@ rr_summarize_pair <- function(left, right, key_column, comparison_type,
         )
       )
     }
-  }
+    rr_bind_rows_fill(group_rows)
+  })
   rr_bind_rows_fill(rows)
 }
 
@@ -2629,61 +2811,158 @@ rr_build_empirical_estimands <- function(long_results, reps = 2000L) {
     contributions,
     c("family", "metric")
   )
-  for (group_key in names(contribution_groups)) {
-    group <- contributions[contribution_groups[[group_key]], , drop = FALSE]
-    family <- group$family[[1]]
-    metric <- group$metric[[1]]
-    empirical_scale <- rr_empirical_metric_scale(group$empirical)
-    family_estimand <- if (identical(family, "observable_primary")) {
-      "empirical_observable_primary_discrepancy"
-    } else {
-      "empirical_secondary_frozen_summary_discrepancy"
-    }
-    result <- rr_estimate_clustered_functionals(
-      group,
-      group$clip,
-      rr_empirical_distribution_functionals,
-      paste(family_estimand, metric, sep = "|"),
-      reps
-    )
-    for (measure in names(result$estimate)) {
-      rows[[length(rows) + 1L]] <- data.frame(
-        summary_level = "heldout_clip_cluster",
-        analysis_scope = "empirical_cv",
-        method_id = NA_character_,
-        community_algorithm = NA_character_,
-        scenario_family = NA_character_,
-        stability_class = NA_character_,
-        TimeP = NA_character_,
-        challenge_id = NA_character_,
-        representation = NA_character_,
-        empirical_family = family,
-        empirical_metric = metric,
-        empirical_scale = empirical_scale,
-        contribution = measure,
-        estimand_id = family_estimand,
-        statistic = "distribution_functional",
-        estimate = result$estimate[[measure]],
-        monte_carlo_se = result$monte_carlo_se[[measure]],
-        bootstrap_se = result$bootstrap_se[[measure]],
-        conf_low = result$conf_low[[measure]],
-        conf_high = result$conf_high[[measure]],
-        n_rows = result$n_rows,
-        n_panels = result$n_panels,
-        bootstrap_reps = result$bootstrap_reps,
-        bootstrap_seed = result$bootstrap_seed,
-        stringsAsFactors = FALSE
+  contribution_rows <- rr_parallel_lapply(
+    names(contribution_groups),
+    function(group_key) {
+      group <- contributions[contribution_groups[[group_key]], , drop = FALSE]
+      family <- group$family[[1]]
+      metric <- group$metric[[1]]
+      empirical_scale <- rr_empirical_metric_scale(group$empirical)
+      family_estimand <- if (identical(family, "observable_primary")) {
+        "empirical_observable_primary_discrepancy"
+      } else {
+        "empirical_secondary_frozen_summary_discrepancy"
+      }
+      result <- rr_estimate_clustered_functionals(
+        group,
+        group$clip,
+        rr_empirical_distribution_functionals,
+        paste(family_estimand, metric, sep = "|"),
+        reps
       )
+      group_rows <- list()
+      for (measure in names(result$estimate)) {
+        group_rows[[length(group_rows) + 1L]] <- data.frame(
+          summary_level = "heldout_clip_cluster",
+          analysis_scope = "empirical_cv",
+          method_id = NA_character_,
+          community_algorithm = NA_character_,
+          scenario_family = NA_character_,
+          stability_class = NA_character_,
+          TimeP = NA_character_,
+          challenge_id = NA_character_,
+          representation = NA_character_,
+          empirical_family = family,
+          empirical_metric = metric,
+          empirical_scale = empirical_scale,
+          contribution = measure,
+          estimand_id = family_estimand,
+          statistic = "distribution_functional",
+          estimate = result$estimate[[measure]],
+          monte_carlo_se = result$monte_carlo_se[[measure]],
+          bootstrap_se = result$bootstrap_se[[measure]],
+          conf_low = result$conf_low[[measure]],
+          conf_high = result$conf_high[[measure]],
+          n_rows = result$n_rows,
+          n_panels = result$n_panels,
+          bootstrap_reps = result$bootstrap_reps,
+          bootstrap_seed = result$bootstrap_seed,
+          stringsAsFactors = FALSE
+        )
+      }
+      rr_bind_rows_fill(group_rows)
     }
-  }
+  )
+  rows <- c(rows, contribution_rows)
   rr_bind_rows_fill(rows)
 }
 
 rr_run_fixture_tests <- function(reps = 50L) {
+  valid_group_results <- rr_parallel_lapply(
+    list(1L, 2L),
+    function(value) data.frame(value = value),
+    workers = min(2L, rr_worker_count())
+  )
+  stopifnot(
+    length(valid_group_results) == 2L,
+    all(vapply(valid_group_results, is.data.frame, logical(1)))
+  )
+  null_group_result <- try(
+    rr_parallel_lapply(list(1L), function(value) NULL, workers = 1L),
+    silent = TRUE
+  )
+  non_frame_result <- try(
+    rr_parallel_lapply(list(1L), identity, workers = 1L),
+    silent = TRUE
+  )
+  stopifnot(
+    inherits(null_group_result, "try-error"),
+    inherits(non_frame_result, "try-error")
+  )
+
+  brute_cluster_mcse <- function(values, clusters, statistic_name) {
+    keep <- is.finite(values) & !is.na(clusters) & nzchar(clusters)
+    values <- values[keep]
+    clusters <- as.character(clusters[keep])
+    unique_clusters <- unique(clusters)
+    if (length(unique_clusters) < 2L) {
+      return(NA_real_)
+    }
+    statistic <- rr_statistic_function(statistic_name)
+    leave_one_out <- vapply(unique_clusters, function(cluster) {
+      statistic(values[clusters != cluster])
+    }, numeric(1))
+    center <- mean(leave_one_out)
+    sqrt(
+      (length(unique_clusters) - 1) / length(unique_clusters) *
+        sum((leave_one_out - center)^2)
+    )
+  }
+  set.seed(20260807)
+  for (iteration in seq_len(30L)) {
+    count <- sample(20:300, 1L)
+    cluster_count <- sample(2:min(30L, count), 1L)
+    clusters <- sample(sprintf("c%03d", seq_len(cluster_count)), count, TRUE)
+    clusters[seq_len(cluster_count)] <- sprintf("c%03d", seq_len(cluster_count))
+    values <- round(stats::rnorm(count), sample(0:4, 1L))
+    for (statistic_name in c("mean", "median", "iqr")) {
+      stopifnot(isTRUE(all.equal(
+        rr_cluster_mcse(values, clusters, statistic_name),
+        brute_cluster_mcse(values, clusters, statistic_name),
+        tolerance = 1e-11
+      )))
+    }
+  }
+  filtered_values <- c(seq_len(20L), NA_real_, Inf, 99)
+  filtered_clusters <- c(
+    rep("large", 15L), paste0("s", seq_len(5L)), "large", "s1", ""
+  )
+  for (statistic_name in c("mean", "median", "iqr")) {
+    stopifnot(isTRUE(all.equal(
+      rr_cluster_mcse(filtered_values, filtered_clusters, statistic_name),
+      brute_cluster_mcse(filtered_values, filtered_clusters, statistic_name),
+      tolerance = 1e-11
+    )))
+  }
+  stopifnot(is.na(rr_cluster_mcse(1:3, rep("one", 3L), "mean")))
+
   truth <- c(1, 1, 2, 2)
+  named_truth <- "Y1=1;Y2=1;Y3=2;Y4=2"
+  ordered_estimate <- "Y4.Ord1=8;Y3.Ord1=8;Y2.Ord1=7;Y1.Ord1=7"
+  missing_metric_fixture <- data.frame(
+    assignment_accuracy = NA_real_,
+    adjusted_rand_index = NA_real_,
+    variation_information = NA_real_,
+    true_membership = named_truth,
+    estimated_membership = ordered_estimate,
+    stringsAsFactors = FALSE
+  )
   stopifnot(
     identical(rr_adjusted_rand_index(truth, truth), 1),
     abs(rr_variation_information(truth, truth)) < 1e-12,
+    identical(rr_adjusted_rand_index(named_truth, ordered_estimate), 1),
+    abs(rr_variation_information(named_truth, ordered_estimate)) < 1e-12,
+    identical(rr_assignment_accuracy(named_truth, ordered_estimate), 1),
+    identical(
+      rr_partition_metric(
+        missing_metric_fixture,
+        "assignment_accuracy",
+        "true_membership",
+        "estimated_membership",
+        rr_assignment_accuracy
+      ),
+      1
+    ),
     identical(
       rr_adjusted_rand_index("Y1=1;Y2=1;Y3=2;Y4=2", "Y4=8;Y3=8;Y2=7;Y1=7"),
       1
@@ -2730,7 +3009,83 @@ rr_run_fixture_tests <- function(reps = 50L) {
   fixture$challenge_id <- NA_character_
   fixture$representation <- "linear_z"
   canonical <- rr_canonical_method_results(fixture)
+  descriptor_fixture <- data.frame(
+    analysis_scope = "challenge",
+    method_id = "dynEGA",
+    community_algorithm = "louvain",
+    scenario_family = "old_low_single_stable",
+    stability_class = "asymptotically_stable",
+    TimeP = 100L,
+    challenge_id = "softmax_bounded",
+    representation = "clr",
+    stringsAsFactors = FALSE
+  )
+  descriptor_fields <- c(
+    "analysis_scope", "method_id", "community_algorithm", "scenario_family",
+    "stability_class", "TimeP", "challenge_id", "representation"
+  )
+  descriptor_levels <- list(
+    overall = c("analysis_scope", "method_id", "community_algorithm"),
+    stability = c(
+      "analysis_scope", "method_id", "community_algorithm", "stability_class"
+    ),
+    horizon = c(
+      "analysis_scope", "method_id", "community_algorithm", "TimeP"
+    ),
+    stability_horizon = c(
+      "analysis_scope", "method_id", "community_algorithm", "stability_class",
+      "TimeP"
+    ),
+    scenario_family = c(
+      "analysis_scope", "method_id", "community_algorithm", "scenario_family"
+    ),
+    challenge = c(
+      "analysis_scope", "method_id", "community_algorithm", "challenge_id",
+      "representation"
+    )
+  )
+  for (summary_level in names(descriptor_levels)) {
+    grouped_fields <- descriptor_levels[[summary_level]]
+    descriptor <- rr_summary_descriptor(
+      descriptor_fixture,
+      summary_level,
+      grouped_fields
+    )
+    stopifnot(
+      identical(descriptor$summary_level, summary_level),
+      all(vapply(grouped_fields, function(field) {
+        identical(
+          descriptor[[field]],
+          as.character(descriptor_fixture[[field]][[1]])
+        )
+      }, logical(1))),
+      all(vapply(setdiff(descriptor_fields, grouped_fields), function(field) {
+        is.na(descriptor[[field]])
+      }, logical(1)))
+    )
+  }
   estimates <- rr_build_method_estimands(canonical, reps)
+  descriptor_fields <- c(
+    "scenario_family", "stability_class", "TimeP", "challenge_id",
+    "representation"
+  )
+  assert_descriptor_level <- function(level, present) {
+    level_rows <- estimates[estimates$summary_level == level, , drop = FALSE]
+    absent <- setdiff(descriptor_fields, present)
+    stopifnot(
+      nrow(level_rows) > 0L,
+      all(vapply(level_rows[absent], function(value) all(is.na(value)), logical(1))),
+      all(vapply(level_rows[present], function(value) all(!is.na(value)), logical(1)))
+    )
+  }
+  assert_descriptor_level("overall", character())
+  assert_descriptor_level("stability", "stability_class")
+  assert_descriptor_level("horizon", "TimeP")
+  assert_descriptor_level(
+    "stability_horizon",
+    c("stability_class", "TimeP")
+  )
+  assert_descriptor_level("scenario_family", "scenario_family")
   overall <- estimates[
     estimates$summary_level == "overall",
     ,
@@ -2758,9 +3113,39 @@ rr_run_fixture_tests <- function(reps = 50L) {
   )
   first <- rr_cluster_bootstrap(1:4, panels, mean, reps, 42L)
   second <- rr_cluster_bootstrap(1:4, panels, mean, reps, 42L)
+  interval_values <- seq_len(20L)
+  interval_clusters <- paste0("interval_", seq_along(interval_values))
+  interval_key <- "fixture|interval|mean"
+  interval_result <- rr_estimate_values(
+    interval_values,
+    interval_clusters,
+    "mean",
+    interval_key,
+    reps
+  )
+  interval_bootstrap <- rr_cluster_bootstrap(
+    interval_values,
+    interval_clusters,
+    mean,
+    reps,
+    interval_result$bootstrap_seed
+  )
+  expected_interval <- stats::quantile(
+    interval_bootstrap,
+    probs = c(0.025, 0.975),
+    names = FALSE,
+    type = 8
+  )
   stopifnot(
     identical(first, second),
-    abs(rr_cluster_mcse(1:4, panels, mean) - stats::sd(1:4) / 2) < 1e-12,
+    abs(rr_cluster_mcse(1:4, panels, "mean") - stats::sd(1:4) / 2) < 1e-12,
+    isTRUE(all.equal(
+      c(interval_result$conf_low, interval_result$conf_high),
+      expected_interval,
+      tolerance = 1e-12
+    )),
+    interval_result$conf_low <= interval_result$estimate,
+    interval_result$estimate <= interval_result$conf_high,
     identical(as.integer(formals(rr_cluster_bootstrap)$reps), 2000L)
   )
   differences <- rr_build_paired_differences(canonical, reps)
@@ -2896,6 +3281,22 @@ rr_run_fixture_tests <- function(reps = 50L) {
   )
   challenge_input$component_hash_linear_z <- paste(rep("e", 64L), collapse = "")
   challenge_canonical <- rr_canonical_method_results(challenge_input)
+  challenge_descriptor <- rr_summary_descriptor(
+    challenge_canonical[1L, , drop = FALSE],
+    "challenge",
+    c(
+      "analysis_scope", "method_id", "community_algorithm", "challenge_id",
+      "representation"
+    )
+  )
+  stopifnot(
+    !is.na(challenge_descriptor$challenge_id),
+    nzchar(challenge_descriptor$challenge_id),
+    !is.na(challenge_descriptor$representation),
+    is.na(challenge_descriptor$scenario_family),
+    is.na(challenge_descriptor$stability_class),
+    is.na(challenge_descriptor$TimeP)
+  )
   identity_input <- rr_bind_rows_fill(list(matched_canonical, challenge_canonical))
   identity <- rr_validate_panel_identity(identity_input)
   stopifnot(

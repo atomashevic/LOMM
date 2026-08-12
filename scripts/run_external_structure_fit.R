@@ -43,6 +43,18 @@ source(file.path(repo_root, "scripts", "simulations", "run_method_simulation.R")
 
 payload <- readRDS(input_path)
 
+fit_seed <- payload$cfg$lomm11_bridge_fit_seed
+if (!is.null(fit_seed)) {
+  valid_seed <- length(fit_seed) == 1L && is.numeric(fit_seed) &&
+    is.finite(fit_seed) && fit_seed >= 1 && fit_seed <= .Machine$integer.max &&
+    fit_seed == floor(fit_seed)
+  if (!valid_seed) {
+    stop("The optional LOMM 1.1 bridge fit seed must be one positive integer.",
+         call. = FALSE)
+  }
+  set.seed(as.integer(fit_seed))
+}
+
 result <- tryCatch(
   {
     if (identical(method, "gimme")) {
