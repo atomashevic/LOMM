@@ -12,7 +12,10 @@ tables.
 
 - `paper/`: manuscript source, response letter, bibliography, figures, tables,
   and rendered PDFs.
-- `scripts/extract.r`: core LOMM functions and estimator wrappers.
+- `scripts/lomm/`: the public LOMM observation profile, default configuration,
+  and focused contract tests.
+- `scripts/extract.r`: historical core functions and estimator wrappers used by
+  completed simulation packages.
 - `scripts/simulations/`: final method-comparison runners and summary builders.
 - `scripts/figures/`: figure and table builders for the manuscript.
 - `simulation_outputs/`: ignored local output directory used by reruns.
@@ -115,7 +118,7 @@ The script writes intermediate outputs under
 The workflow uses R, Quarto, XeLaTeX, Python 3, and tmux for long runs. The main
 R packages used by the retained scripts are `EGAnet`, `dplyr`, `tidyr`, `purrr`,
 `MASS`, `ggplot2`, `readr`, `stringr`, `scales`, `patchwork`, `igraph`, `clue`,
-`graphicalVAR`, `gimme`, `cowplot`, and `jpeg`.
+`graphicalVAR`, `gimme`, `cowplot`, `jpeg`, `digest`, and `jsonlite`.
 
 The final simulation launchers limit BLAS-style thread pools. For direct
 foreground runs, set these variables first if the machine uses multithreaded
@@ -132,7 +135,20 @@ export NUMEXPR_NUM_THREADS=1
 
 ## Quick Integrity Check
 
-Load the core implementation without running the expensive extraction pipeline:
+Validate the public compositional B+S default, the empirical,
+loading-aligned, and none baseline modes, exact homogeneous nesting, and the
+retained internal hashes:
+
+```bash
+Rscript scripts/lomm/test_observation_profile.R
+```
+
+The check always validates tracked adoption receipts under
+`scripts/lomm/evidence/`. It also validates the full realism and bridge outputs
+when their ignored `simulation_outputs/` artifacts are available locally.
+
+Load the historical core implementation without running the expensive
+extraction pipeline:
 
 ```bash
 Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
@@ -167,6 +183,13 @@ generation and horizon metadata. DynEGA uses `delta = 1` observation interval
 in EGAnet's GLLA implementation. Prospective manifests and result rows record
 these values separately; changing either value changes the corresponding job
 configuration or generator hash.
+
+Revision-v2 is a preserved historical evidence surface. Its generators retain
+their original versioned observation behavior: the broad and matched recovery
+panels remain homogeneous linear, while the softmax-realism and bounded-
+challenge surfaces remain their historical variants. The public LOMM default
+is `compositional_bs`; applying it to a future full benchmark requires a new
+job/configuration version and output namespace.
 
 ### Checked-in final-result runners
 

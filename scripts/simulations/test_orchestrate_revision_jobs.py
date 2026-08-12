@@ -249,6 +249,116 @@ class OrchestratorFixtureTests(unittest.TestCase):
         self.assertEqual(environment["REVISION_JOB_PER_UNIT_TIMEOUT_SECONDS"], "900")
         self.assertEqual(environment["REVISION_JOB_BUDGET_SECONDS"], "900")
         self.assertEqual(environment["REVISION_GIMME_TIMEOUT_SEC"], "900")
+        self.assertEqual(
+            self.registry.get("empirical_cv")["parameters"]["frozen_dynega_ncores"],
+            1,
+        )
+        self.assertEqual(
+            self.registry.get("empirical_cv")["parameters"]["outer_parallel_backend"],
+            "psock",
+        )
+        self.assertEqual(
+            self.registry.get("rebuild_figures_tables")["parameters"][
+                "publication_schema_revision"
+            ],
+            2,
+        )
+
+    def test_empirical_parallel_contract_rejects_internal_multicore(self) -> None:
+        manifest = json.loads(
+            MODULE_PATH.with_name("revision_jobs.json").read_text(encoding="utf-8")
+        )
+        empirical = next(job for job in manifest["jobs"] if job["id"] == "empirical_cv")
+        empirical["parameters"]["frozen_dynega_ncores"] = 2
+        errors = ORCHESTRATOR.validate_manifest(manifest)
+        self.assertIn("empirical_cv: frozen_dynega_ncores must equal 1", errors)
+
+    def test_empirical_parallel_contract_rejects_fork_backend(self) -> None:
+        manifest = json.loads(
+            MODULE_PATH.with_name("revision_jobs.json").read_text(encoding="utf-8")
+        )
+        empirical = next(job for job in manifest["jobs"] if job["id"] == "empirical_cv")
+        empirical["parameters"]["outer_parallel_backend"] = "fork"
+        errors = ORCHESTRATOR.validate_manifest(manifest)
+        self.assertIn("empirical_cv: outer_parallel_backend must equal psock", errors)
+
+    def test_rebuild_contract_rejects_stale_publication_schema(self) -> None:
+        manifest = json.loads(
+            MODULE_PATH.with_name("revision_jobs.json").read_text(encoding="utf-8")
+        )
+        rebuild = next(
+            job for job in manifest["jobs"] if job["id"] == "rebuild_figures_tables"
+        )
+        rebuild["parameters"]["publication_schema_revision"] = 1
+        errors = ORCHESTRATOR.validate_manifest(manifest)
+        self.assertIn(
+            "rebuild_figures_tables: publication_schema_revision must equal 2",
+            errors,
+        )
+
+    def test_empirical_external_input_is_required_hashed_and_exported(self) -> None:
+        environment_name = "REVISION_EMPIRICAL_FRAME_SCORES"
+        source = self.repo_root / "frame_scores.csv"
+        source.write_text("clip,frame_index,anger\na,1,0.5\n", encoding="utf-8")
+
+        with mock.patch.dict(os.environ, {environment_name: ""}):
+            registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            with self.assertRaisesRegex(
+                ORCHESTRATOR.OrchestratorError,
+                f"set {environment_name}",
+            ):
+                registry.job_environment("empirical_cv", resume=False)
+            dry_environment = registry.job_environment(
+                "empirical_cv",
+                resume=False,
+                require_external_inputs=False,
+            )
+            self.assertNotIn(environment_name, dry_environment)
+
+        with mock.patch.dict(os.environ, {environment_name: str(source)}):
+            first_registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            first_hash = first_registry.config_hash("empirical_cv")
+            environment = first_registry.job_environment("empirical_cv", resume=False)
+            self.assertEqual(environment[environment_name], str(source.resolve()))
+            self.assertIn(
+                f"export {environment_name}={source.resolve()}",
+                ORCHESTRATOR.shell_wrapper(first_registry, "empirical_cv", resume=False),
+            )
+            resolved = ORCHESTRATOR.resolved_required_inputs(
+                first_registry,
+                "empirical_cv",
+            )["resolved_external_artifacts"]
+            self.assertEqual(resolved[0]["sha256"], file_hash(source))
+
+            first_registry.persist_external_inputs("empirical_cv")
+            with mock.patch.dict(os.environ, {environment_name: ""}):
+                receipt_registry = ORCHESTRATOR.Registry(
+                    MODULE_PATH.with_name("revision_jobs.json"),
+                    repo_root=self.repo_root,
+                )
+                self.assertEqual(
+                    receipt_registry.config_hash("empirical_cv"),
+                    first_hash,
+                )
+                self.assertEqual(
+                    receipt_registry.job_environment("empirical_cv", resume=False)[
+                        environment_name
+                    ],
+                    str(source.resolve()),
+                )
+
+            source.write_text("clip,frame_index,anger\na,1,0.6\n", encoding="utf-8")
+            second_registry = ORCHESTRATOR.Registry(
+                MODULE_PATH.with_name("revision_jobs.json"),
+                repo_root=self.repo_root,
+            )
+            self.assertNotEqual(first_hash, second_registry.config_hash("empirical_cv"))
 
     def test_reuse_or_fallback_alternatives_are_exclusive(self) -> None:
         audit_path = self.registry.output_dir("t100_reuse_audit") / "reuse_audit.json"

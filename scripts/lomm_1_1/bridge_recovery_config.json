@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "pipeline_id": "lomm_1_1_block_recovery_bridge",
+  "purpose": "Paired screening sensitivity for the effect of the canonical B+S observation profile on known-block recovery.",
+  "source_realism_run": {
+    "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_runs/854e8722d647",
+    "config_hash": "854e8722d647ae1564a58459b66f66c87abf91217258fb04d0360ed26d8a4729",
+    "success_sha256": "63db6991f23b706da4e0e0aba001e379374ba131b1bf08746c88b4860ef96460"
+  },
+  "canonical_profile": {
+    "profile_id": "lomm_1_1_mafw_clip_bs_v1",
+    "config_path": "scripts/lomm_1_1/canonical_observation_profile_config.json",
+    "config_sha256": "f889b21161a3b201c29e6272972adb05aa410c80341fb1c2e1ccff4f330c2e83",
+    "implementation_path": "scripts/lomm_1_1/canonical_observation_profile.R",
+    "implementation_sha256": "07ee2ff1896a0bb9985df5ca0242db83a39cf0a1ca181e0ba73e1962ba0d11c0"
+  },
+  "design": {
+    "scenario_families": [
+      "old_low_single_stable",
+      "old_high_single_stable",
+      "old_high_switch_stable",
+      "old_high_switch_volatile"
+    ],
+    "true_dimensions": [2, 3],
+    "replicates": 10,
+    "profiles": ["homogeneous", "between_clip_scale"],
+    "videos_per_panel": 100,
+    "observations_per_video": 100,
+    "indicators_per_dimension": 4,
+    "primary_loading": 0.6,
+    "measurement_error_sd": 0.25,
+    "initialization": "independent_stationary",
+    "representation": "linear_z",
+    "community_algorithms": ["louvain", "leiden", "walktrap"]
+  },
+  "between_clip": {
+    "enabled_profile": "between_clip_scale",
+    "constraint": "loading_span",
+    "factor_distribution": "isotropic_gaussian",
+    "factor_sd": 1.848702551941885,
+    "calibration_rule": "sqrt(mean_fold_trace_between_clip_covariance/10)/primary_loading",
+    "mean_fold_trace_between_clip_covariance": 12.303724052003171
+  },
+  "clip_scale": {
+    "enabled_profile": "between_clip_scale",
+    "distribution": "uniform",
+    "minimum": 0.5,
+    "maximum": 1.5,
+    "expected_value": 1.0,
+    "applies_to": "within_clip_signal_plus_measurement_residual"
+  },
+  "randomness": {
+    "profile_component_seed_origin": 11082026,
+    "base_panel_seed_origin": 20260715,
+    "pairing": "scenario_dimension_replicate",
+    "state_derivation": "sha256_full_key_to_lecuyer_cmrg_v1",
+    "profile_substreams_consumed_when_disabled": true,
+    "fit_seed_pairing": "same_pair_method_seed_across_profiles_and_attempts",
+    "readout_seed_pairing": "same_pair_method_algorithm_seed_across_profiles_and_attempts"
+  },
+  "methods": ["dynEGA", "graphicalVAR", "gimme", "static_EGA", "oracle_blocks"],
+  "execution": {
+    "workers": 8,
+    "blas_threads_per_worker": 1,
+    "graphicalvar_timeout_seconds": 300,
+    "gimme_timeout_seconds": 600,
+    "job_timeout_seconds": 21600,
+    "max_attempts_per_fit": 2,
+    "authorization_token": "LOMM-1.1-BRIDGE-AUTHORIZED",
+    "output_root": "simulation_outputs/lomm_1_1/recovery_bridge",
+    "run_output_root": "simulation_outputs/lomm_1_1/recovery_bridge_runs"
+  },
+  "analysis": {
+    "primary_outcome": "usable_and_correct_dimension",
+    "secondary_outcomes": [
+      "usable",
+      "dimension_exact_conditional_on_usable",
+      "assignment_accuracy",
+      "adjusted_rand_index",
+      "variation_information",
+      "restricted_runtime_seconds"
+    ],
+    "estimand_definitions": {
+      "usable": "status_ok_and_finite_dimension; all 80 paired panels remain in each profile denominator",
+      "usable_and_correct_dimension": "status_ok_and_dimension_exact; all 80 paired panels remain in each profile denominator",
+      "conditional_recovery": "profile summaries condition on that profile being usable; paired effects use only pair keys with finite values in both profiles",
+      "restricted_runtime_seconds": "min(recorded_runtime_seconds,900); missing or nonfinite runtime is assigned 900 seconds"
+    },
+    "paired_contrast": "between_clip_scale_minus_homogeneous",
+    "bootstrap_replicates": 2000,
+    "bootstrap_unit": "paired_panel",
+    "bootstrap_strata": "scenario_family_by_true_dimension",
+    "runtime_cap_seconds": 900,
+    "status_inclusive_denominator": true
+  },
+  "expected_counts": {
+    "scenario_dimension_cells": 8,
+    "paired_panel_sets": 80,
+    "generated_panels": 160,
+    "structure_fits": 800,
+    "result_rows": 2400
+  },
+  "claim_scope": {
+    "supported": "screening evidence about whether block-preserving B+S changes known-block recovery in the selected stable T=100 conditions",
+    "excluded": [
+      "external_dataset_generalization",
+      "classifier_validity",
+      "affect_mechanism_identification",
+      "equivalence across the complete revision_v2 grid",
+      "causal claims about empirical emotion dynamics"
+    ]
+  }
+}

@@ -1836,7 +1836,10 @@ fit_pooled_ord0_dynega <- function(panel,
                                    id_col = "clip",
                                    n_embed = 10L,
                                    tau = 1L,
-                                   algorithm = "louvain") {
+                                   algorithm = "louvain",
+                                   ncores = 1L,
+                                   seed = NULL,
+                                   verbose = FALSE) {
   required_cols <- c(score_cols, id_col)
   missing_cols <- setdiff(required_cols, names(panel))
   if (length(missing_cols) > 0L) {
@@ -1858,7 +1861,10 @@ fit_pooled_ord0_dynega <- function(panel,
     id = length(score_cols) + 1L,
     model = "glasso",
     use.derivatives = 0,
-    algorithm = algorithm
+    algorithm = algorithm,
+    ncores = ncores,
+    seed = seed,
+    verbose = verbose
   )
 
   score_obj <- fit$dynEGA$population

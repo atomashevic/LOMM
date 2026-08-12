@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "model_name": "LOMM",
+  "default_profile": "compositional_bs",
+  "public_api": {
+    "api_version": 1,
+    "rng_state_version": "lomm11_lecuyer_cmrg_v1",
+    "rng_state_derivation": "sha256_full_key_to_lecuyer_cmrg_v1",
+    "shared_segment": "__clip_shared__",
+    "component_streams": [
+      "between_clip_baseline",
+      "clip_scale"
+    ]
+  },
+  "profiles": {
+    "compositional_bs": {
+      "baseline_mode": "empirical",
+      "clip_scale_enabled": true,
+      "activity_gate_enabled": false,
+      "default_observation_surface": "bounded_composition"
+    },
+    "loading_aligned_bs": {
+      "baseline_mode": "loading_aligned",
+      "clip_scale_enabled": true,
+      "activity_gate_enabled": false,
+      "default_observation_surface": "linear_contrast"
+    },
+    "homogeneous": {
+      "baseline_mode": "none",
+      "clip_scale_enabled": false,
+      "activity_gate_enabled": false,
+      "default_observation_surface": "linear_contrast"
+    }
+  },
+  "baseline_modes": {
+    "empirical": {
+      "law": "zero_mean_multivariate_gaussian",
+      "space": "identified_contrast",
+      "requires": "named_positive_semidefinite_between_clip_covariance"
+    },
+    "loading_aligned": {
+      "law": "zero_mean_loading_coefficient_gaussian",
+      "space": "column_space_of_Lambda",
+      "requires": "full_column_rank_loadings_and_beta_covariance_or_beta_sd",
+      "equation": "b_i=Lambda*beta_i"
+    },
+    "none": {
+      "law": "point_mass_zero",
+      "space": "identified_contrast",
+      "requires": "none"
+    }
+  },
+  "clip_scale": {
+    "law": "uniform",
+    "lower": 0.5,
+    "upper": 1.5,
+    "population_mean": 1.0,
+    "placement": "multiplies_dynamic_signal_plus_residual"
+  },
+  "calibrated_defaults": {
+    "period_frames": 12,
+    "damping_ratio": 0.5,
+    "kappa": 1.0,
+    "tau": 1.0,
+    "residual_sd": 0.25,
+    "activity_gate_enabled": false
+  },
+  "internal_source_contract": {
+    "schema_version": 1,
+    "profile_id": "lomm_1_1_mafw_clip_bs_v1",
+    "role": "calibration_ancestry",
+    "config_path": "scripts/lomm_1_1/canonical_observation_profile_config.json",
+    "config_sha256": "f889b21161a3b201c29e6272972adb05aa410c80341fb1c2e1ccff4f330c2e83",
+    "implementation_path": "scripts/lomm_1_1/canonical_observation_profile.R",
+    "implementation_sha256": "07ee2ff1896a0bb9985df5ca0242db83a39cf0a1ca181e0ba73e1962ba0d11c0",
+    "calibration_run_config_hash": "854e8722d647ae1564a58459b66f66c87abf91217258fb04d0360ed26d8a4729"
+  },
+  "adoption_evidence": {
+    "realism_aggregate": {
+      "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_aggregates/854e8722d647/9769e6dd7fd1/paired_ablation_effects.csv",
+      "sha256": "e06eedb8ff9c46236ef895c12b90e1dcd990e2c1350a827e29b2ef01a457c7d3",
+      "receipt_path": "scripts/lomm/evidence/realism_adoption_receipt.json",
+      "receipt_sha256": "b592db43a71dd58c6692f443ada0e7fca2fecffa9105f916022527edb4e64b44"
+    },
+    "recovery_bridge": {
+      "path": "simulation_outputs/lomm_1_1/recovery_bridge_runs/991d45f9c90f/paired_bootstrap_effects.csv",
+      "sha256": "36be9ef8b854fbcbc729db3377e3765a4055548a52161d1af194fa49b5aeec35",
+      "receipt_path": "scripts/lomm/evidence/recovery_bridge_adoption_receipt.json",
+      "receipt_sha256": "7d1f8f071f81289601b9d2cbea7bba841ebb4fb2e83491646912ece6a10d5b82",
+      "representation": "linear_z",
+      "baseline_geometry": "loading_aligned"
+    }
+  },
+  "claim_scope": {
+    "supported": [
+      "calibrated_default_for_the_same_retained_100_clip_MAFW_CLIP_score_surface",
+      "exact_homogeneous_nested_sensitivity",
+      "loading_aligned_known_truth_recovery_option"
+    ],
+    "excluded": [
+      "bounded_probability_recovery_validation",
+      "emotion_factor_validity",
+      "classifier_validity",
+      "external_dataset_generalization",
+      "causal_affect_mechanism"
+    ]
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "profile_id": "lomm_1_1_mafw_clip_bs_v1",
+  "status": "canonical_nested_specification",
+  "coordinate_system": {
+    "component_count": 11,
+    "contrast_dimension": 10,
+    "basis": "locked_orthonormal_ilr",
+    "basis_constraints": [
+      "crossprod(V)=I",
+      "crossprod(V,1)=0",
+      "fixed_component_order"
+    ],
+    "identified_coordinate": "ilr_V(p_it)=V^T*log(p_it)",
+    "bounded_inverse": "p_it=softmax(V*u_it/tau)",
+    "common_logit_shift": "excluded_unidentified_direction"
+  },
+  "observation_model": {
+    "contrast_equation": "u_it=mu+b_i+kappa*s_i*(Lambda*x_it+epsilon_it)",
+    "center": {
+      "symbol": "mu",
+      "constraint": "fixed_in_locked_ilr_basis",
+      "source": "complete_case_training_mean_ilr"
+    },
+    "clip_baseline": {
+      "symbol": "b_i",
+      "space": "ilr",
+      "population_mean": "zero",
+      "calibration_covariance": "half_full_half_diagonal_clip_mean_ilr_covariance"
+    },
+    "clip_scale": {
+      "symbol": "s_i",
+      "support": "strictly_positive",
+      "population_mean": 1.0,
+      "family": "uniform",
+      "lower": 0.5,
+      "upper": 1.5
+    },
+    "residual_placement": "epsilon_it_is_inside_kappa_times_s_i",
+    "homogeneous_nested_case": {
+      "baseline": "b_i=0",
+      "scale": "s_i=1",
+      "equation": "u_it=mu+kappa*(Lambda*x_it+epsilon_it)"
+    }
+  },
+  "calibrated_preset": {
+    "label": "MAFW_retained100_CLIP_oai_large",
+    "measurement_surface": "11_channel_prompt_relative_classifier_probabilities",
+    "variant_id": "110",
+    "B": true,
+    "S": true,
+    "G": false,
+    "period_frames": 12,
+    "damping_ratio": 0.5,
+    "kappa": 1.0,
+    "tau": 1.0,
+    "residual_sd": 0.25,
+    "selected_folds": [1, 2, 3, 4, 5],
+    "core_candidate_id": "CORE017",
+    "latent_position_variance": 1.0
+  },
+  "known_truth_recovery": {
+    "baseline_mode": "loading_space",
+    "equation": "b_i=Lambda*beta_i",
+    "beta_population_mean": "zero",
+    "loading_requirement": "fixed_full_column_rank_with_locked_orientation",
+    "block_preservation": "b_i_lies_in_column_space_of_Lambda"
+  },
+  "provenance": {
+    "adopted_on": "2026-08-10",
+    "calibration_run_config_hash": "854e8722d647ae1564a58459b66f66c87abf91217258fb04d0360ed26d8a4729",
+    "source_files": [
+      {
+        "path": "scripts/lomm_1_1/realism_generator.R",
+        "sha256": "3e43cf3a018e1735dda81f028f78632ee957f62687d56ec17c3ee217552adcaa",
+        "role": "calibration_generator"
+      },
+      {
+        "path": "scripts/lomm_1_1/realism_ablation_config.json",
+        "sha256": "46b36c838818d88c77eb9f99fdc085b3a2075cd3f1f1b6ab43573a1d1f8d4259",
+        "role": "calibration_design"
+      },
+      {
+        "path": "simulation_outputs/lomm_1_1/empirical_compositional_preprocess/0cdc11154d8a/ilr_basis.csv",
+        "sha256": "f5a9a2aa842fe5ab49332e7d4bcfb7095a79522c53d2fc9bc9b8b29d720ebdf9",
+        "role": "locked_ilr_basis"
+      },
+      {
+        "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_runs/854e8722d647/selected_candidates.csv",
+        "sha256": "f6a07a0eb6b2f867b5d84cb9df0d0849691f5c014ad7e5c04fab8c6778084278",
+        "role": "training_only_selections"
+      },
+      {
+        "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_runs/854e8722d647/_SUCCESS.json",
+        "sha256": "63db6991f23b706da4e0e0aba001e379374ba131b1bf08746c88b4860ef96460",
+        "role": "completed_run_receipt"
+      },
+      {
+        "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_runs/854e8722d647/run_manifest.json",
+        "sha256": "84a4f471d312c3379affa96b0d354aca92ebb2f66780a4f39a45f23b1c9d306a",
+        "role": "completed_run_manifest"
+      }
+    ],
+    "implementation": {
+      "path": "scripts/lomm_1_1/canonical_observation_profile.R",
+      "sha256": "07ee2ff1896a0bb9985df5ca0242db83a39cf0a1ca181e0ba73e1962ba0d11c0"
+    }
+  },
+  "claim_scope": {
+    "supported": [
+      "nested_LOMM_observation_profile",
+      "heldout_similarity_to_same_100_clip_MAFW_CLIP_score_sample",
+      "known_truth_block_preserving_simulation_option"
+    ],
+    "excluded": [
+      "emotion_factor_validity",
+      "classifier_validity",
+      "external_dataset_generalization",
+      "causal_affect_mechanism"
+    ]
+  }
+}

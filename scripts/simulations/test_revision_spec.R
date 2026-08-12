@@ -188,6 +188,142 @@ test_dynega_time_scale_contract <- function() {
   }
 }
 
+test_empirical_dynega_parallel_contract <- function() {
+  config <- revision_read_config(
+    file.path(test_root, "scripts", "simulations", "revision_jobs.json")
+  )$value
+  job <- revision_config_job(config, "empirical_cv")
+  expect_true(
+    isTRUE(revision_validate_empirical_config("empirical_cv", job)),
+    "Empirical DynEGA parallel contract rejected the locked configuration."
+  )
+  invalid <- job
+  invalid$parameters$frozen_dynega_ncores <- 2L
+  expect_error(
+    revision_validate_empirical_config("empirical_cv", invalid),
+    "frozen_dynega_ncores = 1",
+    "Empirical CV accepted internal DynEGA parallelism."
+  )
+  invalid <- job
+  invalid$parameters$outer_parallel_backend <- "fork"
+  expect_error(
+    revision_validate_empirical_config("empirical_cv", invalid),
+    "outer_parallel_backend = psock",
+    "Empirical CV accepted a fork backend after DynEGA."
+  )
+
+  extract_environment <- new.env(parent = globalenv())
+  previous_option <- getOption("run_extract_pipeline")
+  on.exit(options(run_extract_pipeline = previous_option), add = TRUE)
+  options(run_extract_pipeline = FALSE)
+  sys.source(
+    file.path(test_root, "scripts", "extract.r"),
+    envir = extract_environment
+  )
+  wrapper <- extract_environment$fit_pooled_ord0_dynega
+  expect_equal(
+    formals(wrapper)$ncores,
+    1L,
+    message = "Pooled DynEGA does not default to one internal core."
+  )
+  wrapper_body <- paste(deparse(body(wrapper)), collapse = "\n")
+  expect_true(
+    grepl("ncores = ncores", wrapper_body, fixed = TRUE),
+    "Pooled DynEGA does not forward its locked ncores value."
+  )
+  expect_true(
+    grepl("seed = seed", wrapper_body, fixed = TRUE),
+    "Pooled DynEGA does not forward its reproducibility seed."
+  )
+  runner_body <- paste(deparse(body(revision_run_empirical_cv)), collapse = "\n")
+  expect_true(
+    !grepl("mclapply", runner_body, fixed = TRUE),
+    "Empirical CV still forks after fitting DynEGA."
+  )
+  expect_true(
+    grepl("revision_start_empirical_cluster", runner_body, fixed = TRUE),
+    "Empirical CV does not initialize its PSOCK worker pool."
+  )
+}
+
+test_empirical_psock_evaluation <- function() {
+  revision_source_estimation_core()
+  score_columns <- c("anger", "fear")
+  clip_lengths <- c(clip_a = 12L, clip_b = 12L)
+  empirical_panel <- data.frame(
+    anger = c(seq(0.1, 0.7, length.out = 12L), seq(0.2, 0.8, length.out = 12L)),
+    fear = c(seq(0.8, 0.2, length.out = 12L), seq(0.7, 0.1, length.out = 12L)),
+    clip = rep(names(clip_lengths), clip_lengths),
+    frame_index = rep(seq_len(12L), 2L),
+    stringsAsFactors = FALSE
+  )
+  target <- revision_empirical_metric_distribution(empirical_panel, score_columns)
+  frozen_model <- list(
+    community_map = setNames(seq_along(score_columns), score_columns),
+    center = vapply(empirical_panel[, score_columns], mean, numeric(1)),
+    scale = vapply(empirical_panel[, score_columns], stats::sd, numeric(1)),
+    n_dim = length(score_columns)
+  )
+  frozen_panel <- revision_apply_training_frozen_summary(
+    empirical_panel,
+    frozen_model,
+    score_columns
+  )
+  frozen_columns <- setdiff(names(frozen_panel), c("clip", "frame_index"))
+  secondary_target <- revision_empirical_metric_distribution(
+    frozen_panel,
+    frozen_columns
+  )
+  rows <- data.frame(
+    panel_key = c("psock-test-1", "psock-test-2"),
+    fold = c(1L, 1L),
+    candidate_id = c(1L, 2L),
+    calibration_regime = c("stable", "stable"),
+    eta = c(-1, -0.8),
+    zeta = c(-0.2, -0.2),
+    sigma_q = c(0.1, 0.1),
+    dt = c(0.4, 0.4),
+    cv_tau = c(1, 1),
+    seed_base = c(1001L, 1002L),
+    stringsAsFactors = FALSE
+  )
+  context <- list(config_hash = "psock-test", generator_hash = "psock-test")
+  inputs <- revision_empirical_worker_inputs(
+    rows,
+    score_columns,
+    clip_lengths,
+    c(anger = 0, fear = 0),
+    target,
+    frozen_model,
+    secondary_target,
+    context,
+    "source-test",
+    "input-test"
+  )
+  cluster <- revision_start_empirical_cluster(2L)
+  on.exit(revision_stop_empirical_cluster(cluster), add = TRUE)
+  worker_pids <- unlist(parallel::clusterCall(cluster, Sys.getpid), use.names = FALSE)
+  expect_true(
+    length(unique(worker_pids)) == 2L && !Sys.getpid() %in% worker_pids,
+    "Empirical PSOCK workers are not independent R processes."
+  )
+  revision_configure_empirical_cluster(cluster, inputs)
+  evaluated <- revision_evaluate_empirical_batch(cluster, seq_len(nrow(rows)), inputs)
+  expect_equal(length(evaluated), 2L)
+  expect_true(
+    all(vapply(evaluated, function(row) row$status[[1]] == "ok", logical(1))),
+    "Empirical PSOCK evaluation did not return successful rows."
+  )
+  expect_true(
+    all(vapply(
+      evaluated,
+      function(row) is.finite(row$continuous_loss[[1]]),
+      logical(1)
+    )),
+    "Empirical PSOCK evaluation returned a non-finite loss."
+  )
+}
+
 test_grids_and_folds <- function() {
   t100 <- revision_matched_panel_grid(100)
   t25 <- revision_matched_panel_grid(25)
@@ -371,10 +507,83 @@ test_identity_and_manifest_contracts <- function() {
   expect_equal(selected$contribution, "max_discrepancy")
 }
 
+test_revision_v2_artifact_builder <- function() {
+  config <- revision_read_config(
+    file.path(test_root, "scripts", "simulations", "revision_jobs.json")
+  )$value
+  rebuild_job <- revision_config_job(config, "rebuild_figures_tables")
+  expect_true(
+    isTRUE(revision_validate_publication_config("rebuild_figures_tables", rebuild_job)),
+    "Publication schema revision contract rejected the configured revision."
+  )
+  invalid_rebuild <- rebuild_job
+  invalid_rebuild$parameters$publication_schema_revision <- 1
+  expect_error(
+    revision_validate_publication_config("rebuild_figures_tables", invalid_rebuild),
+    "publication_schema_revision = 2",
+    "Publication schema revision contract accepted a stale revision."
+  )
+  expect_true(
+    isTRUE(revision_v2_run_fixture_tests()),
+    "Revision-v2 artifact fixture tests failed."
+  )
+  root <- tempfile("revision-publication-transaction-")
+  dir.create(file.path(root, "source"), recursive = TRUE)
+  dir.create(file.path(root, "destination"), recursive = TRUE)
+  sources <- file.path(root, "source", c("first.txt", "second.txt"))
+  destinations <- file.path(
+    root,
+    "destination",
+    c("first.txt", "second.txt")
+  )
+  writeLines("new first", sources[[1L]])
+  writeLines("new second", sources[[2L]])
+  writeLines("old first", destinations[[1L]])
+  writeLines("old second", destinations[[2L]])
+  revision_publish_hashed_artifacts(sources, destinations)
+  expect_equal(
+    vapply(destinations, readLines, character(1)),
+    c("new first", "new second"),
+    message = "Publication transaction did not install the rebuilt artifacts."
+  )
+  leftovers <- list.files(root, recursive = TRUE, all.files = TRUE)
+  expect_true(
+    !any(grepl("revision-v2-.*\\.(new|previous)$", leftovers)),
+    "Publication transaction left staging or backup files behind."
+  )
+  unlink(root, recursive = TRUE, force = TRUE)
+}
+
+test_aggregate_builder_fixture <- function() {
+  environment_name <- "REVISION_RESULTS_NO_MAIN"
+  previous <- Sys.getenv(environment_name, unset = NA_character_)
+  Sys.setenv(REVISION_RESULTS_NO_MAIN = "1")
+  on.exit({
+    if (is.na(previous)) {
+      Sys.unsetenv(environment_name)
+    } else {
+      do.call(Sys.setenv, setNames(list(previous), environment_name))
+    }
+  }, add = TRUE)
+  aggregate_environment <- new.env(parent = globalenv())
+  source(
+    file.path(test_root, "scripts", "simulations", "build_revision_results.R"),
+    local = aggregate_environment
+  )
+  expect_true(
+    isTRUE(aggregate_environment$rr_run_fixture_tests(reps = 20L)),
+    "Aggregate result-builder fixture tests failed."
+  )
+}
+
 test_transition_and_stability()
 test_observation_helpers()
 test_dynega_time_scale_contract()
+test_empirical_dynega_parallel_contract()
+test_empirical_psock_evaluation()
 test_grids_and_folds()
 test_partition_and_checkpoint_helpers()
 test_identity_and_manifest_contracts()
+test_revision_v2_artifact_builder()
+test_aggregate_builder_fixture()
 cat("revision specification pure tests: PASS\n")

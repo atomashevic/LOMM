@@ -89,7 +89,9 @@
       "required_dependencies": [],
       "optional_dependencies": [],
       "parameters": {
-        "analysis": "empirical_cv"
+        "analysis": "empirical_cv",
+        "frozen_dynega_ncores": 1,
+        "outer_parallel_backend": "psock"
       },
       "expected_train_units": 13500,
       "expected_heldout_units": 500,
@@ -568,12 +570,12 @@
       "id": "aggregate_results",
       "stage": 4,
       "description": "Aggregate primary, sensitivity, challenge, empirical, and feasibility results.",
-      "heavy": false,
-      "workers": 1,
+      "heavy": true,
+      "workers": 12,
       "contract": {
         "inherits": "defaults.job_contract",
-        "resource_class": "light",
-        "worker_limit": 1,
+        "resource_class": "heavy",
+        "worker_limit": 12,
         "job_timeout_seconds": 14400,
         "per_unit_timeout_seconds": null,
         "budget_seconds": null,
@@ -611,7 +613,8 @@
         }
       ],
       "parameters": {
-        "analysis": "aggregate_results"
+        "analysis": "aggregate_results",
+        "aggregation_schema_revision": 5
       },
       "expected_units": 1,
       "command": [
@@ -643,7 +646,8 @@
       ],
       "optional_dependencies": [],
       "parameters": {
-        "analysis": "rebuild_figures_tables"
+        "analysis": "rebuild_figures_tables",
+        "publication_schema_revision": 2
       },
       "expected_units": 1,
       "command": [
