@@ -390,9 +390,9 @@ def validate_job_contract(job_id: str, job: dict[str, Any]) -> list[str]:
                 "t25_gimme: per_unit_timeout_seconds and budget_seconds must both equal 900"
             )
     elif job_id == "rebuild_figures_tables":
-        if parameters.get("publication_schema_revision") != 2:
+        if parameters.get("publication_schema_revision") != 4:
             errors.append(
-                "rebuild_figures_tables: publication_schema_revision must equal 2"
+                "rebuild_figures_tables: publication_schema_revision must equal 4"
             )
     return errors
 

@@ -151,9 +151,9 @@ revision_validate_publication_config <- function(job_id, job) {
   }
   revision <- job$parameters$publication_schema_revision
   if (length(revision) != 1L || !is.numeric(revision) ||
-      !is.finite(revision) || revision != 2) {
+      !is.finite(revision) || revision != 4) {
     stop(
-      "Figure/table rebuild must configure publication_schema_revision = 2.",
+      "Figure/table rebuild must configure publication_schema_revision = 4.",
       call. = FALSE
     )
   }
@@ -439,6 +439,7 @@ revision_expected_outputs <- function(job_id) {
       "upstream_artifact_manifest.csv",
       "revision_results_long.csv",
       "identity_validation.csv",
+      "partition_metric_recomputation_audit.csv",
       "revision_estimand_results.csv",
       "revision_paired_differences.csv",
       "checkpoint_results.csv",
@@ -3138,6 +3139,10 @@ revision_publication_artifact_names <- function() {
     "figure6_factor_effects.png",
     "figure7_runtime_feasibility.pdf",
     "figure7_runtime_feasibility.png",
+    "figureS1_dimension_recovery_readout_sensitivity.pdf",
+    "figureS1_dimension_recovery_readout_sensitivity.png",
+    "figureS2_factor_effects_readout_sensitivity.pdf",
+    "figureS2_factor_effects_readout_sensitivity.png",
     "empirical_realism_table.csv",
     "table1_method_overall.csv",
     "figure5_condition_key.csv",
@@ -3145,7 +3150,10 @@ revision_publication_artifact_names <- function() {
     "figure6_factor_effects_eta_screen.csv",
     "table2_score_quality_marginal_means.csv",
     "table3_runtime_feasibility.csv",
-    "table3_runtime_feasibility_accounting.csv"
+    "table3_runtime_feasibility_accounting.csv",
+    "supplementary_method_readout_sensitivity.csv",
+    "supplementary_score_quality_readout_sensitivity.csv",
+    "supplementary_factor_effects_readout_sensitivity.csv"
   )
 }
 
@@ -3231,7 +3239,7 @@ revision_validate_published_artifact_hashes <- function(publication) {
     NULL
   }
   if (!is.list(publication) || length(schema_version) != 1L ||
-      !identical(as.integer(schema_version), 2L) ||
+      !identical(as.integer(schema_version), 4L) ||
       !identical(publication$published_root, "paper") ||
       !setequal(names(publication), c(required_metadata, artifact_names))) {
     stop("Publication artifact manifest has an invalid schema.", call. = FALSE)
@@ -3262,6 +3270,7 @@ revision_run_rebuild_job <- function(context, config) {
     "upstream_artifact_manifest.csv",
     "revision_results_long.csv",
     "identity_validation.csv",
+    "partition_metric_recomputation_audit.csv",
     "revision_estimand_results.csv",
     "revision_paired_differences.csv",
     "_SUCCESS.json"
@@ -3292,8 +3301,8 @@ revision_run_rebuild_job <- function(context, config) {
   generated <- file.path(
     publication_root,
     c(
-      rep("figures", 8L),
-      rep("tables", 8L)
+      rep("figures", 12L),
+      rep("tables", 11L)
     ),
     c(
       "figure4_empirical_realism.pdf",
@@ -3304,6 +3313,10 @@ revision_run_rebuild_job <- function(context, config) {
       "figure6_factor_effects.png",
       "figure7_runtime_feasibility.pdf",
       "figure7_runtime_feasibility.png",
+      "figureS1_dimension_recovery_readout_sensitivity.pdf",
+      "figureS1_dimension_recovery_readout_sensitivity.png",
+      "figureS2_factor_effects_readout_sensitivity.pdf",
+      "figureS2_factor_effects_readout_sensitivity.png",
       "empirical_realism_table.csv",
       "table1_method_overall.csv",
       "figure5_condition_key.csv",
@@ -3311,7 +3324,10 @@ revision_run_rebuild_job <- function(context, config) {
       "figure6_factor_effects_eta_screen.csv",
       "table2_score_quality_marginal_means.csv",
       "table3_runtime_feasibility.csv",
-      "table3_runtime_feasibility_accounting.csv"
+      "table3_runtime_feasibility_accounting.csv",
+      "supplementary_method_readout_sensitivity.csv",
+      "supplementary_score_quality_readout_sensitivity.csv",
+      "supplementary_factor_effects_readout_sensitivity.csv"
     )
   )
   if (any(!file.exists(generated))) {
@@ -3326,7 +3342,7 @@ revision_run_rebuild_job <- function(context, config) {
   revision_publish_hashed_artifacts(generated, destinations)
   artifacts <- c(
     list(
-      artifact_schema_version = 2L,
+      artifact_schema_version = 4L,
       job_id = context$job_id,
       config_hash = context$config_hash,
       published_root = "paper",

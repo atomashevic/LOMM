@@ -614,7 +614,7 @@
       ],
       "parameters": {
         "analysis": "aggregate_results",
-        "aggregation_schema_revision": 5
+        "aggregation_schema_revision": 7
       },
       "expected_units": 1,
       "command": [
@@ -647,7 +647,7 @@
       "optional_dependencies": [],
       "parameters": {
         "analysis": "rebuild_figures_tables",
-        "publication_schema_revision": 2
+        "publication_schema_revision": 4
       },
       "expected_units": 1,
       "command": [

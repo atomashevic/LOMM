@@ -520,7 +520,7 @@ test_revision_v2_artifact_builder <- function() {
   invalid_rebuild$parameters$publication_schema_revision <- 1
   expect_error(
     revision_validate_publication_config("rebuild_figures_tables", invalid_rebuild),
-    "publication_schema_revision = 2",
+    "publication_schema_revision = 4",
     "Publication schema revision contract accepted a stale revision."
   )
   expect_true(

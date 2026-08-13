@@ -293,7 +293,7 @@ class OrchestratorFixtureTests(unittest.TestCase):
             self.registry.get("rebuild_figures_tables")["parameters"][
                 "publication_schema_revision"
             ],
-            2,
+            4,
         )
 
     def test_empirical_parallel_contract_rejects_internal_multicore(self) -> None:
@@ -324,7 +324,7 @@ class OrchestratorFixtureTests(unittest.TestCase):
         rebuild["parameters"]["publication_schema_revision"] = 1
         errors = ORCHESTRATOR.validate_manifest(manifest)
         self.assertIn(
-            "rebuild_figures_tables: publication_schema_revision must equal 2",
+            "rebuild_figures_tables: publication_schema_revision must equal 4",
             errors,
         )
 
