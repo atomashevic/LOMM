@@ -1,16 +1,84 @@
-Factor,Level,Usable score-summary rows,Mean Score r,Mean Score NRMSE
-Method,DynEGA,64800,0.725,0.649
-Method,GraphicalVAR,62616,0.717,0.659
-Method,GIMME,45882,0.604,0.842
-Scenario family,A: low-expression single-dominance,32400,0.396,1.167
-Scenario family,B: high-expression single-dominance,31791,0.634,0.972
-Scenario family,C: high-expression switching,31800,0.581,0.894
-Scenario family,D: high-expression rapid switching,30909,0.716,0.686
-Scenario family,E: ranked-persistence,23910,0.985,0.118
-Scenario family,F: broad switching-geometry,22488,0.999,0.034
-Measurement-error SD,0.125,54771,0.814,0.561
-Measurement-error SD,0.25,59181,0.704,0.694
-Measurement-error SD,0.5,59346,0.562,0.845
-Loading strength,0.4,59466,0.631,0.767
-Loading strength,0.6,58428,0.703,0.686
-Loading strength,0.8,55404,0.74,0.654
+"horizon_design","time_points","method_id","method_label","community_algorithm","estimand_id","estimand_label","estimate","monte_carlo_se","conf_low","conf_high","n_panels","n_structure_fits","n_usable_fits","n_usable_correct_dimension","bootstrap_reps"
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","signed_dimension_error","Signed dimension error",0.165740740740741,0.00567036890655439,0.154212962962963,0.17662037037037,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","absolute_dimension_error","Absolute dimension error",0.168425925925926,0.0056667045074732,0.157330632716049,0.179612654320988,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","adjusted_rand_index","Adjusted Rand index",0.935303491615552,0.00153214001718381,0.932290182423688,0.938277732027209,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","variation_information","Variation of information",0.0953499858650961,0.00228484559787612,0.0910169878590062,0.0998951600535179,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.964685570987654,0.000875339176216384,0.962965551054527,0.966413306970165,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.549084900309021,0.00140985244525513,0.546207074725506,0.551970612441058,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",1.43488319650405,0.00134742331077632,1.43226041678729,1.43758321081925,21600,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","signed_dimension_error","Signed dimension error",0.978798760391559,0.017066431563835,0.946726351517536,1.01116508436224,20329,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","absolute_dimension_error","Absolute dimension error",0.978798760391559,0.017066431563835,0.945284240903799,1.01194967780019,20329,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","adjusted_rand_index","Adjusted Rand index",0.867328296740707,0.00222170908819552,0.863026079700873,0.8716004337264,20329,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","variation_information","Variation of information",0.182891003231158,0.00306569374399239,0.176918052610322,0.188772206350965,20329,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.902454621476708,0.00164380128146936,0.899266117505916,0.90550933668924,20329,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.667593383882143,0.001986372957127,0.663719271876029,0.671245788824804,21600,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.753394826010845,0.00357560903484939,0.746251049986035,0.759969076539852,21600,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","signed_dimension_error","Signed dimension error",0.319438712340074,0.0109778409550719,0.297841862704636,0.341035561975512,4846,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","absolute_dimension_error","Absolute dimension error",0.319438712340074,0.0109778409550719,0.297635506947311,0.340622850460861,4846,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","adjusted_rand_index","Adjusted Rand index",0.732867244685475,0.00569611056020873,0.721627551762265,0.743826546214475,4846,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","variation_information","Variation of information",0.337106149648546,0.00734090038010004,0.322945674960163,0.351268953203013,4846,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.87739888567891,0.00267676145094156,0.872129075526207,0.882417271403678,4846,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.132301423094481,0.0018568218594982,0.128679204069321,0.136169840085049,21600,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",1.74898857548225,0.00339872089173497,1.74248074716168,1.75559702368927,21600,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","signed_dimension_error","Signed dimension error",0.798708538511568,0.0158711985477747,0.770216637244882,0.829492629068723,21526,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","absolute_dimension_error","Absolute dimension error",0.798708538511568,0.0158711985477747,0.766610145870111,0.829399718170275,21526,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","adjusted_rand_index","Adjusted Rand index",0.893574708942033,0.00206189714398409,0.889412028159614,0.89780533894426,21526,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","variation_information","Variation of information",0.147443348738764,0.00285888791900961,0.142083980905254,0.153395594598333,21526,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.921738053206975,0.00152000637478747,0.918857347574509,0.924620178311499,21526,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.726646659692527,0.00170024866874119,0.72327052316273,0.730106051502419,21600,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.640954702853535,0.00310357377119002,0.634749771381338,0.646770841548788,21600,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","signed_dimension_error","Signed dimension error",0,0,0,0,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","absolute_dimension_error","Absolute dimension error",0,0,0,0,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","adjusted_rand_index","Adjusted Rand index",1,0,1,1,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","variation_information","Variation of information",0,0,0,0,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",1,0,1,1,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.729134833344757,0.0016749542861543,0.725703158739547,0.732523800248007,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.642371717747381,0.00310190121521678,0.636374250783511,0.648842883750411,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","signed_dimension_error","Signed dimension error",0.491898148148148,0.0102178387872562,0.471498456790123,0.511959104938272,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","absolute_dimension_error","Absolute dimension error",0.494398148148148,0.0102122509533043,0.474491898148148,0.514505401234568,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","adjusted_rand_index","Adjusted Rand index",0.902438908942952,0.0018052172549373,0.898801315711797,0.905993802605436,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","variation_information","Variation of information",0.137390430542158,0.00254629568283515,0.132417274046058,0.142606885638853,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.93501350308642,0.00123709430925595,0.932664769804527,0.937548836162551,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.610548538690023,0.00114605854637661,0.60829980209568,0.612804948536302,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",1.41152397911462,0.00122345915530553,1.40920563029918,1.41382632080811,21600,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","signed_dimension_error","Signed dimension error",1.04782427359933,0.0153746986841565,1.01727064893338,1.07578278264362,21579,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","absolute_dimension_error","Absolute dimension error",1.04782427359933,0.0153746986841565,1.01639016327602,1.07978281353785,21579,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","adjusted_rand_index","Adjusted Rand index",0.858762450049596,0.00204841614000445,0.854850477322285,0.862694300446479,21579,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","variation_information","Variation of information",0.200474330468112,0.00284381582091589,0.194643701365893,0.205998849100398,21579,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.892600058699044,0.00153351300753467,0.889721762026868,0.895652408977864,21579,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.798814739886392,0.00116419849531859,0.796455683275508,0.801076926899327,21600,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.586683560368697,0.00227719092446152,0.582269665938448,0.591275429148421,21600,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"gimme","GIMME","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0,0,0,0,21600,21600,0,0,2000
+"Short-record design (T = 25)",25,"gimme","GIMME","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",2,0,2,2,21600,21600,0,0,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","signed_dimension_error","Signed dimension error",0.576296365071259,0.013552986452956,0.55124375222444,0.602571839747458,21541,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","absolute_dimension_error","Absolute dimension error",0.576296365071259,0.013552986452956,0.549512557448586,0.602618262847593,21541,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","adjusted_rand_index","Adjusted Rand index",0.921920192359325,0.00178671597133828,0.918510941816475,0.925537051123134,21541,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","variation_information","Variation of information",0.108011101135306,0.00247386009123809,0.103145413295372,0.112783570722655,21541,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",0.94262298252944,0.00131701136167767,0.940001640927637,0.945205880001444,21541,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.800897817145807,0.00116718858324377,0.798570230353199,0.803207476843838,21600,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.595396295804431,0.00237071493614629,0.590738239269501,0.600016853392996,21600,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","signed_dimension_error","Signed dimension error",0,0,0,0,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","absolute_dimension_error","Absolute dimension error",0,0,0,0,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","adjusted_rand_index","Adjusted Rand index",1,0,1,1,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","variation_information","Variation of information",0,0,0,0,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","assignment_accuracy_conditional","Assignment accuracy given usable",1,0,1,1,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","score_correlation_marginal","Score correlation (status-aware marginal)",0.798308674616958,0.00120382098704445,0.79592810827604,0.800646254190031,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","score_nrmse_marginal","Score NRMSE (status-aware marginal)",0.600820359701745,0.00240444019956098,0.596146147202981,0.605418695080476,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.653592011001015,0.000970025211738822,0.651621160312831,0.65542667233785,18636,21600,21600,18636,2000
+"Short-record design (T = 25)",25,"dynEGA","DynEGA","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",1.38243731237112,0.00126713785215163,1.3797952043498,1.385036686057,18636,21600,21600,18636,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.574197634611303,0.00131644805948328,0.571681690394726,0.576776593812669,20282,21600,21600,20282,2000
+"Primary record design (T = 100)",100,"dynEGA","DynEGA","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",1.41827883627373,0.0013500065561967,1.41564534416612,1.42083298302873,20282,21600,21600,20282,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.871363927328741,0.000818462084169342,0.869785270994537,0.873001413488085,16641,21600,21579,16641,2000
+"Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.465533085282976,0.00217200255300092,0.461090141852897,0.469812785406758,16641,21600,21579,16641,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.791262017618162,0.00141657756892107,0.788500743813962,0.794297662849213,16784,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.56796068300943,0.00312046061430003,0.562005011137538,0.573663664188856,16784,21600,20329,16784,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.606475328432318,0.00343423926958448,0.599526949905646,0.612883969420733,3795,21600,4846,3795,2000
+"Primary record design (T = 100)",100,"gimme","GIMME","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.897702044040025,0.00500844973989763,0.887787380479952,0.907314535776806,3795,21600,4846,3795,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.836059130216285,0.000936233398577996,0.834278173466024,0.837884208588478,19721,21600,21541,19721,2000
+"Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.548281955938271,0.00230509085161876,0.543655673225359,0.552928361651308,19721,21600,21541,19721,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.786816434933863,0.00142604153018694,0.783985638797551,0.789490671843625,19093,21600,21526,19093,2000
+"Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.562935077110194,0.00307402365596358,0.557013305506688,0.56887382373906,19093,21600,21526,19093,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.798308674616958,0.00120382098704442,0.795950199930315,0.800685077850152,21600,21600,21600,21600,2000
+"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.600820359701745,0.00240444019956103,0.596194691326991,0.605430297968975,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","score_correlation_correct_dimension","Score correlation (correct-dimensional usable fits)",0.729134833344757,0.00167495428615431,0.725928720178741,0.732462349245309,21600,21600,21600,21600,2000
+"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","score_nrmse_correct_dimension","Score NRMSE (correct-dimensional usable fits)",0.642371717747381,0.00310190121521671,0.635942403141006,0.648340994042339,21600,21600,21600,21600,2000
