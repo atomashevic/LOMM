@@ -1,28 +1,29 @@
-Method,Error,Loadings,loading_label,rows,successes,hit_rate,ci_low,ci_high
-DynEGA,0.125,0.4,Loading = 0.4,7200,7169,0.9956944444444444,0.9938951724805989,0.9969650374385088
-DynEGA,0.125,0.6,Loading = 0.6,7200,7198,0.9997222222222222,0.9989876480769673,0.999923821603321
-DynEGA,0.125,0.8,Loading = 0.8,7200,7200,1,0.9994667289741631,1
-DynEGA,0.25,0.4,Loading = 0.4,7200,6599,0.9165277777777778,0.9099144874335978,0.9226968237312676
-DynEGA,0.25,0.6,Loading = 0.6,7200,7008,0.9733333333333334,0.9693519695955355,0.9768098671666723
-DynEGA,0.25,0.8,Loading = 0.8,7200,7157,0.9940277777777777,0.9919656612026699,0.9955629929531904
-DynEGA,0.5,0.4,Loading = 0.4,7200,6260,0.8694444444444445,0.8614647036165365,0.8770301572365952
-DynEGA,0.5,0.6,Loading = 0.6,7200,6517,0.9051388888888889,0.8981527107928872,0.9116929693231223
-DynEGA,0.5,0.8,Loading = 0.8,7200,6624,0.92,0.9135071417565503,0.9260449105817468
-GraphicalVAR,0.125,0.4,Loading = 0.4,7200,6699,0.9304166666666667,0.9243068789335339,0.936067396925058
-GraphicalVAR,0.125,0.6,Loading = 0.6,7200,7089,0.9845833333333334,0.9814681210277426,0.9871817171363838
-GraphicalVAR,0.125,0.8,Loading = 0.8,7200,6270,0.8708333333333333,0.8628881378489921,0.878383019473512
-GraphicalVAR,0.25,0.4,Loading = 0.4,7200,5931,0.82375,0.8147766000921911,0.8323781069185795
-GraphicalVAR,0.25,0.6,Loading = 0.6,7200,6093,0.84625,0.837733579170793,0.8543971306438146
-GraphicalVAR,0.25,0.8,Loading = 0.8,7200,5952,0.8266666666666667,0.8177493441276762,0.835235585468777
-GraphicalVAR,0.5,0.4,Loading = 0.4,7200,3219,0.44708333333333333,0.43563003226705177,0.45859307224984946
-GraphicalVAR,0.5,0.6,Loading = 0.6,7200,5256,0.73,0.7196244084372794,0.7401302868908355
-GraphicalVAR,0.5,0.8,Loading = 0.8,7200,5532,0.7683333333333333,0.7584464595260194,0.7779340183567813
-GIMME,0.125,0.4,Loading = 0.4,7200,2959,0.41097222222222224,0.3996577734302432,0.42238162288296843
-GIMME,0.125,0.6,Loading = 0.6,7200,2620,0.3638888888888889,0.35285095902524505,0.37507198697623284
-GIMME,0.125,0.8,Loading = 0.8,7200,2470,0.34305555555555556,0.3321761539054083,0.3541023450554796
-GIMME,0.25,0.4,Loading = 0.4,7200,1221,0.16958333333333334,0.1610918451578055,0.17842722477843526
-GIMME,0.25,0.6,Loading = 0.6,7200,2930,0.40694444444444444,0.3956493582414528,0.41833877831057803
-GIMME,0.25,0.8,Loading = 0.8,7200,2671,0.3709722222222222,0.35988555924045273,0.38219649875482586
-GIMME,0.5,0.4,Loading = 0.4,7200,435,0.06041666666666667,0.05514409930735682,0.06615806813619164
-GIMME,0.5,0.6,Loading = 0.6,7200,255,0.035416666666666666,0.03138900226341289,0.039939828731427415
-GIMME,0.5,0.8,Loading = 0.8,7200,1243,0.1726388888888889,0.16408419513538317,0.18154272703347749
+"method_id","method_label","community_algorithm","challenge_id","challenge_label","representation","estimand_id","estimate","conf_low","conf_high","n_pairs","bootstrap_reps"
+"dynEGA","DynEGA","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0,-0.005,0.005,600,2000
+"dynEGA","DynEGA","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",-0.155,-0.185,-0.125,600,2000
+"dynEGA","DynEGA","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",-0.00666666666666667,-0.015,0,600,2000
+"dynEGA","DynEGA","louvain","residual_equicorrelation","Within-block residual dependence","linear_z","p_usable_and_correct_difference",0,-0.00833333333333333,0.00833333333333333,600,2000
+"dynEGA","DynEGA","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"dynEGA","DynEGA","louvain","softmax_bounded","Softmax bounded (CLR)","softmax_clr","p_usable_and_correct_difference",-0.66,-0.699430555555556,-0.623333333333333,600,2000
+"dynEGA","DynEGA","louvain","softmax_bounded","Softmax bounded (raw)","softmax_raw","p_usable_and_correct_difference",-0.76,-0.795,-0.725,600,2000
+"graphicalVAR","GraphicalVAR","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0.00166666666666667,-0.00666666666666667,0.01,600,2000
+"graphicalVAR","GraphicalVAR","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",-0.43,-0.476666666666667,-0.385,600,2000
+"graphicalVAR","GraphicalVAR","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",0,-0.005,0.005,600,2000
+"graphicalVAR","GraphicalVAR","louvain","residual_equicorrelation","Within-block residual dependence","linear_z","p_usable_and_correct_difference",0.148333333333333,0.12,0.178333333333333,600,2000
+"graphicalVAR","GraphicalVAR","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0.00166666666666667,0,0.005,600,2000
+"graphicalVAR","GraphicalVAR","louvain","softmax_bounded","Softmax bounded (CLR)","softmax_clr","p_usable_and_correct_difference",-0.596666666666667,-0.638333333333333,-0.555,600,2000
+"graphicalVAR","GraphicalVAR","louvain","softmax_bounded","Softmax bounded (raw)","softmax_raw","p_usable_and_correct_difference",-0.681666666666667,-0.718333333333333,-0.645,600,2000
+"oracle_blocks","Block oracle","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","residual_equicorrelation","Within-block residual dependence","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","softmax_bounded","Softmax bounded (CLR; oracle implementation check only)","softmax_clr","p_usable_and_correct_difference",0,0,0,600,2000
+"oracle_blocks","Block oracle","louvain","softmax_bounded","Softmax bounded (raw; oracle implementation check only)","softmax_raw","p_usable_and_correct_difference",0,0,0,600,2000
+"static_EGA","Static EGA","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"static_EGA","Static EGA","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",-0.386666666666667,-0.425,-0.345,600,2000
+"static_EGA","Static EGA","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"static_EGA","Static EGA","louvain","residual_equicorrelation","Within-block residual dependence","linear_z","p_usable_and_correct_difference",0.075,0.055,0.0966666666666667,600,2000
+"static_EGA","Static EGA","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
+"static_EGA","Static EGA","louvain","softmax_bounded","Softmax bounded (CLR)","softmax_clr","p_usable_and_correct_difference",-0.578333333333333,-0.618333333333333,-0.54,600,2000
+"static_EGA","Static EGA","louvain","softmax_bounded","Softmax bounded (raw)","softmax_raw","p_usable_and_correct_difference",-0.745,-0.78,-0.711666666666667,600,2000

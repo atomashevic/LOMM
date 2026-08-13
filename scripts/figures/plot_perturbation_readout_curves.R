@@ -24,15 +24,15 @@ curves <- bind_rows(
   tibble(
     theta = theta_grid,
     edge = theta_grid / (1 + theta_grid),
-    Readout = "Marginal readout"
+    Readout = "Marginal correlation"
   ),
   tibble(
     theta = theta_grid,
     edge = theta_grid / (1 + (k_indicators - 1) * theta_grid),
-    Readout = "Partial readout"
+    Readout = "Partial correlation"
   )
 ) |>
-  mutate(Readout = factor(Readout, levels = c("Marginal readout", "Partial readout")))
+  mutate(Readout = factor(Readout, levels = c("Marginal correlation", "Partial correlation")))
 
 # Matched-grid measurement settings: loadings and error standard deviations.
 # theta_{L,f} = lambda^2 * V_{L,f} / psi_L with psi = s_eps^2; the shaded band
@@ -44,8 +44,8 @@ band_min <- min(ratio_grid)
 band_max <- max(ratio_grid)
 
 readout_colors <- c(
-  "Marginal readout" = "#0072B2",
-  "Partial readout" = "#E69F00"
+  "Marginal correlation" = "#0072B2",
+  "Partial correlation" = "#E69F00"
 )
 
 ceiling_value <- 1 / (k_indicators - 1)
@@ -61,13 +61,13 @@ figure <- ggplot(curves, aes(x = theta, y = edge, color = Readout, linetype = Re
   annotate(
     "text",
     x = 10^2.7, y = ceiling_value + 0.045,
-    label = "Partial-readout ceiling 1/(k - 1) = 1/3",
+    label = "Ceiling on the partial correlation: 1/(k - 1) = 1/3",
     size = 3.0, hjust = 1, color = "grey25"
   ) +
   annotate(
     "text",
     x = sqrt(band_min * band_max), y = 0.97,
-    label = "'Matched-grid '*lambda^2/s[epsilon]^2*' span'",
+    label = "'Range of '*lambda^2/s[epsilon]^2*' in the benchmark'",
     parse = TRUE,
     size = 3.0, color = "grey25"
   ) +
@@ -77,10 +77,10 @@ figure <- ggplot(curves, aes(x = theta, y = edge, color = Readout, linetype = Re
   ) +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
   scale_color_manual(values = readout_colors) +
-  scale_linetype_manual(values = c("Marginal readout" = "solid", "Partial readout" = "longdash")) +
+  scale_linetype_manual(values = c("Marginal correlation" = "solid", "Partial correlation" = "longdash")) +
   labs(
     x = expression("Filtered signal-to-noise ratio " * theta[L]),
-    y = "Population within-block edge weight",
+    y = "Population edge weight within a dimension",
     color = NULL,
     linetype = NULL
   ) +

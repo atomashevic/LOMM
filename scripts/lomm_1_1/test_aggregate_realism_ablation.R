@@ -85,6 +85,38 @@ test_quantile_contract <- function() {
   }
 }
 
+test_interval_summary <- function() {
+  draws <- setNames(c(7, 8, 9, 10, 12, 14), paste0("draw", seq_len(6L)))
+  estimate <- c(contrast = 9.5)
+  observed <- pa_interval_summary(estimate, draws)
+  expected_mean <- mean(unname(draws))
+  stopifnot(
+    identical(names(observed), c(
+      "bootstrap_se", "bootstrap_mean", "bootstrap_bias", "basic_conf_low",
+      "basic_conf_high", "percentile_conf_low", "percentile_conf_high"
+    )),
+    isTRUE(all.equal(observed[["bootstrap_mean"]], expected_mean)),
+    isTRUE(all.equal(
+      observed[["bootstrap_bias"]], expected_mean - unname(estimate)
+    )),
+    isTRUE(all.equal(
+      observed[["basic_conf_low"]],
+      2 * unname(estimate) - observed[["percentile_conf_high"]]
+    )),
+    isTRUE(all.equal(
+      observed[["basic_conf_high"]],
+      2 * unname(estimate) - observed[["percentile_conf_low"]]
+    ))
+  )
+}
+
+test_profile_labels <- function() {
+  stopifnot(
+    identical(names(LOMM11_PROFILE_LABELS), LOMM11_PAIRED_VARIANTS),
+    !any(unname(LOMM11_PROFILE_LABELS) %in% LOMM11_PAIRED_VARIANTS)
+  )
+}
+
 test_cpp_fixture <- function() {
   pa_compile_engine(2L)
   empirical <- c(-1, -0.5, 0, 0.5, 1, 1.5, NA_real_, 2.5)
@@ -138,10 +170,51 @@ test_cli_contract <- function() {
   stopifnot(inherits(bad, "try-error"))
 }
 
+test_published_output <- function(output_dir) {
+  validated <- pa_validate_published(output_dir)
+  primary <- validated$profiles[
+    validated$profiles$analysis_view == "complete_case", , drop = FALSE
+  ]
+  stopifnot(
+    nrow(primary) == 16L,
+    length(unique(primary$profile_id)) == 8L,
+    length(unique(primary$family)) == 2L,
+    all(primary$basic_conf_low <= primary$basic_conf_high),
+    all(primary$percentile_conf_low <= primary$percentile_conf_high)
+  )
+  baseline_scale <- primary[primary$profile_id == "110", , drop = FALSE]
+  expected <- c(probability = 0.2217709, logratio = 0.2915386)
+  observed <- setNames(baseline_scale$estimate, baseline_scale$family)
+  stopifnot(isTRUE(all.equal(
+    unname(observed[names(expected)]), unname(expected), tolerance = 5e-7
+  )))
+  selected_metrics <- validated$profile_metrics[
+    validated$profile_metrics$profile_id == "110", , drop = FALSE
+  ]
+  stopifnot(
+    nrow(selected_metrics) == 32L,
+    length(unique(selected_metrics$analysis_view)) == 2L,
+    length(unique(selected_metrics$family)) == 2L,
+    length(unique(selected_metrics$metric)) == 8L,
+    all(selected_metrics$empirical_units_min > 0L),
+    all(selected_metrics$empirical_units_min <= selected_metrics$empirical_units_max),
+    all(selected_metrics$synthetic_units_min <= selected_metrics$synthetic_units_max)
+  )
+}
+
+test_args <- commandArgs(trailingOnly = TRUE)
+if (length(test_args) > 0L &&
+    (length(test_args) != 2L || test_args[[1L]] != "--output-dir")) {
+  stop("Usage: test_aggregate_realism_ablation.R [--output-dir DIR]", call. = FALSE)
+}
+
 pa_require_packages()
 test_contrasts()
 test_bootstrap_design()
 test_quantile_contract()
+test_interval_summary()
+test_profile_labels()
 test_cpp_fixture()
 test_cli_contract()
+if (length(test_args) == 2L) test_published_output(test_args[[2L]])
 cat("LOMM 1.1 paired-ablation aggregation tests: PASS\n")

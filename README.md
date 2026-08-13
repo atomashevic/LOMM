@@ -28,8 +28,9 @@ The baseline geometry is always explicit:
 
 - `empirical`: the default, using a supplied training-derived between-clip
   covariance in the active contrast coordinates;
-- `loading_aligned`: a known-truth option with
-  `b_i = Lambda %*% beta_i`;
+- `loading_aligned`: draws clip baselines inside the space spanned by the
+  loadings, `b_i = Lambda %*% beta_i`, so between-clip differences stay
+  consistent with the factor structure;
 - `none`: a zero baseline. Clip scale remains independently configurable, and
   the `homogeneous` profile sets `baseline_mode = "none"` and disables clip
   scale exactly.

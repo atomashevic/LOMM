@@ -1,7 +1,7 @@
-condition_code,description
-A,low-expression single-dominance
-B,high-expression single-dominance
-C,high-expression switching
-D,high-expression rapid switching
-E,ranked-persistence
-F,broad switching-geometry
+"condition_code","scenario_family","scenario_label","stability_class"
+"A","low_amplitude_single_dominance","Low-amplitude single-dominance","asymptotically_stable"
+"B","high_amplitude_single_dominance","High-amplitude single-dominance","asymptotically_stable"
+"C","high_amplitude_switching","High-amplitude switching","asymptotically_stable"
+"D","high_amplitude_rapid_switching","High-amplitude rapid switching","asymptotically_stable"
+"E","ranked_finite_horizon_amplification","Ranked finite-horizon amplification","anti_damped"
+"F","switching_finite_horizon_amplification","Switching finite-horizon amplification","anti_damped"

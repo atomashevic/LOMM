@@ -4,6 +4,17 @@ rr_stop <- function(...) {
   stop(..., call. = FALSE)
 }
 
+rr_progress <- function(label, previous_elapsed = NULL) {
+  now <- unname(proc.time()[["elapsed"]])
+  suffix <- if (is.null(previous_elapsed)) {
+    ""
+  } else {
+    sprintf(" (%.1f s)", now - previous_elapsed)
+  }
+  message("[aggregate] ", label, suffix)
+  now
+}
+
 rr_script_path <- function() {
   arguments <- commandArgs(trailingOnly = FALSE)
   file_argument <- arguments[grepl("^--file=", arguments)]
@@ -1316,26 +1327,59 @@ rr_membership_vector <- function(value) {
   tokens
 }
 
+rr_canonical_membership_names <- function(membership, label) {
+  if (length(membership) == 0L || is.null(names(membership))) {
+    return(membership)
+  }
+  original <- names(membership)
+  canonical <- sub("\\.Ord[01]$", "", original)
+  if (any(!nzchar(canonical))) {
+    rr_stop(label, " membership contains an empty canonical item name.")
+  }
+  duplicated <- unique(canonical[duplicated(canonical)])
+  if (length(duplicated) > 0L) {
+    rr_stop(
+      label,
+      " membership has colliding canonical item names after removing ordinal suffixes: ",
+      paste(duplicated, collapse = ", ")
+    )
+  }
+  names(membership) <- canonical
+  membership
+}
+
 rr_align_memberships <- function(truth, estimate) {
-  truth <- rr_membership_vector(truth)
-  estimate <- rr_membership_vector(estimate)
-  if (!is.null(names(truth)) || !is.null(names(estimate))) {
-    if (!is.null(names(truth)) && !is.null(names(estimate)) &&
-        !setequal(names(truth), names(estimate))) {
-      stripped_estimate <- sub("\\.Ord[[:digit:]]+$", "", names(estimate))
-      if (!anyDuplicated(stripped_estimate) &&
-          setequal(names(truth), stripped_estimate)) {
-        names(estimate) <- stripped_estimate
-      }
-    }
-    if (is.null(names(truth)) || is.null(names(estimate)) ||
-        !setequal(names(truth), names(estimate))) {
-      return(NULL)
+  truth <- rr_canonical_membership_names(
+    rr_membership_vector(truth),
+    "Truth"
+  )
+  estimate <- rr_canonical_membership_names(
+    rr_membership_vector(estimate),
+    "Estimated"
+  )
+  if (length(truth) == 0L || length(estimate) == 0L) {
+    return(NULL)
+  }
+  truth_named <- !is.null(names(truth))
+  estimate_named <- !is.null(names(estimate))
+  if (xor(truth_named, estimate_named)) {
+    rr_stop("Truth and estimated memberships must both use item names.")
+  }
+  if (truth_named) {
+    missing <- setdiff(names(truth), names(estimate))
+    extra <- setdiff(names(estimate), names(truth))
+    if (length(missing) > 0L || length(extra) > 0L) {
+      rr_stop(
+        "Membership item sets differ; missing=",
+        paste(missing, collapse = ","),
+        "; extra=",
+        paste(extra, collapse = ",")
+      )
     }
     estimate <- estimate[names(truth)]
   }
-  if (length(truth) != length(estimate) || length(truth) == 0L) {
-    return(NULL)
+  if (length(truth) != length(estimate)) {
+    rr_stop("Truth and estimated memberships differ in length.")
   }
   list(truth = unname(truth), estimate = unname(estimate))
 }
@@ -1416,20 +1460,64 @@ rr_variation_information <- function(truth, estimate) {
 }
 
 rr_partition_metric <- function(data, aliases, truth_column, estimate_column,
-                                metric) {
+                                metric, force_recompute = rep(FALSE, nrow(data)),
+                                eligible = rep(TRUE, nrow(data))) {
   present <- aliases[aliases %in% names(data)]
   result <- rep(NA_real_, nrow(data))
   if (length(present) > 0L) {
     result <- suppressWarnings(as.numeric(data[[present[[1]]]]))
   }
-  if (!(truth_column %in% names(data) && estimate_column %in% names(data))) {
-    return(result)
+  if (length(force_recompute) != nrow(data) || length(eligible) != nrow(data)) {
+    rr_stop("Partition-metric recomputation flags differ from the result rows.")
   }
-  missing <- which(!is.finite(result))
-  result[missing] <- vapply(missing, function(index) {
+  if (!(truth_column %in% names(data) && estimate_column %in% names(data))) {
+    return(list(value = result, recomputed = rep(FALSE, nrow(data))))
+  }
+  targets <- which(eligible & (force_recompute | !is.finite(result)))
+  truth_values <- as.character(data[[truth_column]][targets])
+  estimate_values <- as.character(data[[estimate_column]][targets])
+  pair_keys <- paste(truth_values, estimate_values, sep = "\r")
+  unique_pair <- !duplicated(pair_keys)
+  unique_targets <- targets[unique_pair]
+  unique_values <- vapply(unique_targets, function(index) {
     metric(data[[truth_column]][[index]], data[[estimate_column]][[index]])
   }, numeric(1))
-  result
+  result[targets] <- unique_values[match(pair_keys, pair_keys[unique_pair])]
+  recomputed <- rep(FALSE, nrow(data))
+  recomputed[targets] <- TRUE
+  list(value = result, recomputed = recomputed)
+}
+
+rr_partition_recomputation_audit <- function(data, stored, recomputed) {
+  source_job <- rr_character_column(data, ".source_job", required = TRUE)
+  metrics <- names(stored)
+  groups <- split(seq_len(nrow(data)), paste(source_job, data$method_id, sep = "\r"))
+  rows <- lapply(groups, function(indices) {
+    lapply(metrics, function(metric) {
+      before <- stored[[metric]][indices]
+      after <- data[[metric]][indices]
+      recalculated <- recomputed[[metric]][indices]
+      usable <- data$usable[indices]
+      changed <- recalculated & is.finite(before) & is.finite(after) &
+        abs(before - after) > 1e-12
+      data.frame(
+        source_job = source_job[indices[[1]]],
+        method_id = data$method_id[indices[[1]]],
+        metric = metric,
+        rows = length(indices),
+        usable_rows = sum(usable),
+        stored_finite_usable = sum(usable & is.finite(before)),
+        recomputed_usable = sum(usable & recalculated),
+        repaired_missing_usable = sum(
+          usable & recalculated & !is.finite(before) & is.finite(after)
+        ),
+        overwritten_finite_usable = sum(usable & recalculated & is.finite(before)),
+        changed_finite_usable = sum(usable & changed),
+        stringsAsFactors = FALSE
+      )
+    })
+  })
+  rr_bind_rows_fill(unlist(rows, recursive = FALSE))
 }
 
 rr_total_runtime <- function(data) {
@@ -1485,26 +1573,49 @@ rr_canonical_method_results <- function(long_results) {
     NA_real_
   )
   data$absolute_dimension_error <- abs(data$signed_dimension_error)
-  data$assignment_accuracy <- rr_partition_metric(
-    data,
-    "assignment_accuracy",
-    "true_membership",
-    "estimated_membership",
-    rr_assignment_accuracy
+  partition_aliases <- list(
+    assignment_accuracy = "assignment_accuracy",
+    adjusted_rand_index = c("adjusted_rand_index", "ari", "ARI"),
+    variation_information = c("variation_information", "vi", "VI")
   )
-  data$adjusted_rand_index <- rr_partition_metric(
+  stored_partition <- lapply(partition_aliases, function(aliases) {
+    rr_numeric_column(data, aliases)
+  })
+  force_partition_recompute <- tolower(data$method_id) == "dynega" & data$usable
+  assignment_result <- rr_partition_metric(
     data,
-    c("adjusted_rand_index", "ari", "ARI"),
+    partition_aliases$assignment_accuracy,
     "true_membership",
     "estimated_membership",
-    rr_adjusted_rand_index
+    rr_assignment_accuracy,
+    force_recompute = force_partition_recompute,
+    eligible = data$usable
   )
-  data$variation_information <- rr_partition_metric(
+  adjusted_rand_result <- rr_partition_metric(
     data,
-    c("variation_information", "vi", "VI"),
+    partition_aliases$adjusted_rand_index,
     "true_membership",
     "estimated_membership",
-    rr_variation_information
+    rr_adjusted_rand_index,
+    force_recompute = force_partition_recompute,
+    eligible = data$usable
+  )
+  variation_result <- rr_partition_metric(
+    data,
+    partition_aliases$variation_information,
+    "true_membership",
+    "estimated_membership",
+    rr_variation_information,
+    force_recompute = force_partition_recompute,
+    eligible = data$usable
+  )
+  data$assignment_accuracy <- assignment_result$value
+  data$adjusted_rand_index <- adjusted_rand_result$value
+  data$variation_information <- variation_result$value
+  recomputed_partition <- list(
+    assignment_accuracy = assignment_result$recomputed,
+    adjusted_rand_index = adjusted_rand_result$recomputed,
+    variation_information = variation_result$recomputed
   )
   required_partition <- c(
     "assignment_accuracy",
@@ -1521,6 +1632,12 @@ rr_canonical_method_results <- function(long_results) {
       ". Supply metric columns or true_membership and estimated_membership."
     )
   }
+  attr(data, "partition_metric_recomputation_audit") <-
+    rr_partition_recomputation_audit(
+      data,
+      stored_partition,
+      recomputed_partition
+    )
   data$score_cor_common <- rr_numeric_column(data, "score_cor_common")
   data$score_nrmse_common <- rr_numeric_column(data, "score_nrmse_common")
   data$score_correlation_marginal <- ifelse(
@@ -2939,6 +3056,7 @@ rr_run_fixture_tests <- function(reps = 50L) {
   truth <- c(1, 1, 2, 2)
   named_truth <- "Y1=1;Y2=1;Y3=2;Y4=2"
   ordered_estimate <- "Y4.Ord1=8;Y3.Ord1=8;Y2.Ord1=7;Y1.Ord1=7"
+  ord0_estimate <- "Y4.Ord0=8;Y3.Ord0=8;Y2.Ord0=7;Y1.Ord0=7"
   missing_metric_fixture <- data.frame(
     assignment_accuracy = NA_real_,
     adjusted_rand_index = NA_real_,
@@ -2951,6 +3069,7 @@ rr_run_fixture_tests <- function(reps = 50L) {
     identical(rr_adjusted_rand_index(truth, truth), 1),
     abs(rr_variation_information(truth, truth)) < 1e-12,
     identical(rr_adjusted_rand_index(named_truth, ordered_estimate), 1),
+    identical(rr_adjusted_rand_index(named_truth, ord0_estimate), 1),
     abs(rr_variation_information(named_truth, ordered_estimate)) < 1e-12,
     identical(rr_assignment_accuracy(named_truth, ordered_estimate), 1),
     identical(
@@ -2960,13 +3079,55 @@ rr_run_fixture_tests <- function(reps = 50L) {
         "true_membership",
         "estimated_membership",
         rr_assignment_accuracy
-      ),
+      )$value,
       1
     ),
     identical(
       rr_adjusted_rand_index("Y1=1;Y2=1;Y3=2;Y4=2", "Y4=8;Y3=8;Y2=7;Y1=7"),
       1
     )
+  )
+  collision <- try(
+    rr_align_memberships(
+      named_truth,
+      "Y1=1;Y1.Ord1=1;Y3=2;Y4=2"
+    ),
+    silent = TRUE
+  )
+  incomplete <- try(
+    rr_align_memberships(named_truth, "Y1=1;Y2=1;Y3=2"),
+    silent = TRUE
+  )
+  stale_fixture <- missing_metric_fixture
+  stale_fixture$assignment_accuracy <- 0
+  forced <- rr_partition_metric(
+    stale_fixture,
+    "assignment_accuracy",
+    "true_membership",
+    "estimated_membership",
+    rr_assignment_accuracy,
+    force_recompute = TRUE
+  )
+  duplicate_fixture <- missing_metric_fixture[rep(1L, 5L), , drop = FALSE]
+  metric_calls <- 0L
+  cached <- rr_partition_metric(
+    duplicate_fixture,
+    "assignment_accuracy",
+    "true_membership",
+    "estimated_membership",
+    function(truth_value, estimate_value) {
+      metric_calls <<- metric_calls + 1L
+      rr_assignment_accuracy(truth_value, estimate_value)
+    }
+  )
+  stopifnot(
+    inherits(collision, "try-error"),
+    inherits(incomplete, "try-error"),
+    identical(forced$value, 1),
+    identical(forced$recomputed, TRUE),
+    identical(metric_calls, 1L),
+    identical(cached$value, rep(1, 5L)),
+    all(cached$recomputed)
   )
   panels <- paste0("p", seq_len(4L))
   fixture <- expand.grid(
@@ -3587,6 +3748,7 @@ rr_dry_run_plan <- function(config_path, specification, jobs) {
       "upstream_artifact_manifest.csv",
       "revision_results_long.csv",
       "identity_validation.csv",
+      "partition_metric_recomputation_audit.csv",
       "revision_estimand_results.csv",
       "revision_paired_differences.csv"
     ),
@@ -3603,6 +3765,8 @@ rr_dry_run_plan <- function(config_path, specification, jobs) {
 }
 
 rr_main <- function() {
+  started_elapsed <- rr_progress("starting")
+  stage_elapsed <- started_elapsed
   arguments <- rr_parse_arguments(commandArgs(trailingOnly = TRUE))
   repo_root <- rr_find_repo_root()
   specification_path <- file.path(
@@ -3617,6 +3781,7 @@ rr_main <- function() {
   jobs <- rr_validate_configuration(configuration)
   specification <- revision_estimand_specification()
   rr_validate_estimands(specification)
+  stage_elapsed <- rr_progress("configuration and estimands validated", stage_elapsed)
 
   if (isTRUE(arguments$dry_run)) {
     cat(rr_to_json(rr_dry_run_plan(config_path, specification, jobs)), "\n", sep = "")
@@ -3634,18 +3799,31 @@ rr_main <- function() {
     configuration,
     repo_root
   )
+  stage_elapsed <- rr_progress("retained inputs validated", stage_elapsed)
   output_directory <- rr_resolve_output_directory(configuration, repo_root)
   long_results <- rr_load_long_results(validated$csv_files)
+  stage_elapsed <- rr_progress("retained result rows loaded", stage_elapsed)
   method_results <- rr_canonical_method_results(long_results)
+  stage_elapsed <- rr_progress("partition metrics canonicalized", stage_elapsed)
+  partition_metric_audit <- attr(
+    method_results,
+    "partition_metric_recomputation_audit"
+  )
+  if (!is.data.frame(partition_metric_audit) || nrow(partition_metric_audit) == 0L) {
+    rr_stop("Partition-metric recomputation audit is missing.")
+  }
   identity_validation <- rr_validate_panel_identity(method_results)
+  stage_elapsed <- rr_progress("panel and structure identities validated", stage_elapsed)
   estimand_results <- rr_bind_rows_fill(list(
     rr_build_empirical_estimands(long_results, reps = 2000L),
     rr_build_method_estimands(method_results, reps = 2000L)
   ))
+  stage_elapsed <- rr_progress("estimands aggregated", stage_elapsed)
   paired_differences <- rr_build_paired_differences(
     method_results,
     reps = 2000L
   )
+  stage_elapsed <- rr_progress("paired differences aggregated", stage_elapsed)
 
   staging_directory <- tempfile("revision-aggregate-")
   if (!dir.create(staging_directory, recursive = TRUE, showWarnings = FALSE)) {
@@ -3657,6 +3835,7 @@ rr_main <- function() {
     "upstream_artifact_manifest.csv",
     "revision_results_long.csv",
     "identity_validation.csv",
+    "partition_metric_recomputation_audit.csv",
     "revision_estimand_results.csv",
     "revision_paired_differences.csv"
   )
@@ -3664,10 +3843,12 @@ rr_main <- function() {
   rr_write_csv(validated$artifacts, file.path(staging_directory, output_names[[2]]))
   rr_write_csv(long_results, file.path(staging_directory, output_names[[3]]))
   rr_write_csv(identity_validation, file.path(staging_directory, output_names[[4]]))
-  rr_write_csv(estimand_results, file.path(staging_directory, output_names[[5]]))
-  rr_write_csv(paired_differences, file.path(staging_directory, output_names[[6]]))
+  rr_write_csv(partition_metric_audit, file.path(staging_directory, output_names[[5]]))
+  rr_write_csv(estimand_results, file.path(staging_directory, output_names[[6]]))
+  rr_write_csv(paired_differences, file.path(staging_directory, output_names[[7]]))
   result_rows <- nrow(long_results)
   published <- rr_publish_staged(staging_directory, output_directory, output_names)
+  stage_elapsed <- rr_progress("aggregate artifacts published", stage_elapsed)
   summary <- list(
     dry_run = FALSE,
     config_hash = basename(output_directory),
@@ -3675,10 +3856,12 @@ rr_main <- function() {
     validated_result_csvs = length(validated$csv_files),
     aggregated_rows = result_rows,
     identity_validated_panels = nrow(identity_validation),
+    partition_metric_audit_rows = nrow(partition_metric_audit),
     estimands = nrow(specification),
     estimand_result_rows = nrow(estimand_results),
     paired_difference_rows = nrow(paired_differences),
     panel_cluster_bootstrap_reps = 2000L,
+    elapsed_seconds = round(stage_elapsed - started_elapsed, 3),
     output_artifacts = basename(published)
   )
   cat(rr_to_json(summary), "\n", sep = "")

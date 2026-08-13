@@ -60,6 +60,7 @@ draw_row_header <- function(x0, x1, y, label, col) {
 }
 
 draw_node <- function(x, y, w, h, title, accent, fill, label = NULL) {
+  title_fontsize <- if (nchar(title) > 20L) 6.4 else 6.8
   grid.roundrect(
     x = npc(x),
     y = npc(y),
@@ -92,10 +93,10 @@ draw_node <- function(x, y, w, h, title, accent, fill, label = NULL) {
   }
   grid.text(
     title,
-    x = npc(x),
+    x = npc(x + 0.010),
     y = npc(y + h / 2 - 0.028),
     just = "center",
-    gp = gpar(col = "white", fontsize = 7.3, fontface = "bold")
+    gp = gpar(col = "white", fontsize = title_fontsize, fontface = "bold")
   )
 }
 
@@ -167,7 +168,7 @@ draw_realism_icon <- function(x, y) {
       labels[[idx]],
       x = npc(x - 0.050 + idx * 0.035),
       y = npc(y - 0.073),
-      gp = gpar(col = "grey18", fontsize = 5.9)
+      gp = gpar(col = "grey18", fontsize = 6.2)
     )
   }
 }
@@ -228,22 +229,22 @@ draw_measurement_icon <- function(x, y) {
     }
   }
   grid.text(
-    "B+S default",
+    "baseline + clip scale",
     x = npc(x),
     y = npc(y - 0.036),
     gp = gpar(col = "grey18", fontsize = 6.2, fontface = "bold")
   )
   grid.text(
-    "empirical | loading-aligned | none",
+    "estimated | within loadings | none",
     x = npc(x),
     y = npc(y - 0.059),
-    gp = gpar(col = "grey18", fontsize = 4.8)
+    gp = gpar(col = "grey18", fontsize = 6.0)
   )
   grid.text(
-    "surface declared per profile",
+    "bounded or continuous scores",
     x = npc(x),
     y = npc(y - 0.081),
-    gp = gpar(col = "grey18", fontsize = 5.5)
+    gp = gpar(col = "grey18", fontsize = 6.0)
   )
 }
 
@@ -295,50 +296,50 @@ draw_figure <- function() {
   xs <- c(0.13, 0.37, 0.61, 0.85)
   top_y <- 0.665
   bottom_y <- 0.270
-  box_w <- 0.18
+  box_w <- 0.20
   box_h <- 0.235
 
   draw_node(xs[[1]], top_y, box_w, box_h, "Video data", okabe[["blue"]], "#F7FBFF", "A")
   draw_video_icon(xs[[1]], top_y - 0.012)
 
-  draw_node(xs[[2]], top_y, box_w, box_h, "Classifier-output scores", okabe[["blue"]], "#F7FBFF", "B")
+  draw_node(xs[[2]], top_y, box_w, box_h, "Emotion scores", okabe[["blue"]], "#F7FBFF", "B")
   draw_line_icon(xs[[2]], top_y + 0.005, w = 0.120, h = 0.095, noisy = TRUE)
-  grid.text("score channels", x = npc(xs[[2]]), y = npc(top_y - 0.073), gp = gpar(col = "grey18", fontsize = 6.7))
+  grid.text("one score per emotion label", x = npc(xs[[2]]), y = npc(top_y - 0.073), gp = gpar(col = "grey18", fontsize = 6.7))
 
-  draw_node(xs[[3]], top_y, box_w, box_h, "Realism targets", okabe[["blue"]], "#F7FBFF", "C")
+  draw_node(xs[[3]], top_y, box_w, box_h, "Summary statistics", okabe[["blue"]], "#F7FBFF", "C")
   draw_realism_icon(xs[[3]], top_y)
 
-  draw_node(xs[[4]], top_y, box_w, box_h, "Scenario selection", okabe[["orange"]], "#FFFDF5", "D")
+  draw_node(xs[[4]], top_y, box_w, box_h, "Scenario settings", okabe[["orange"]], "#FFFDF5", "D")
   draw_scenario_icon(xs[[4]], top_y - 0.003)
 
   draw_node(xs[[1]], bottom_y, box_w, box_h, "Latent trajectories", okabe[["green"]], "#F7FFF9", "E")
   draw_latent_icon(xs[[1]], bottom_y)
 
-  draw_node(xs[[2]], bottom_y, box_w, box_h, "Observation profiles", okabe[["green"]], "#F7FFF9", "F")
+  draw_node(xs[[2]], bottom_y, box_w, box_h, "Measurement model", okabe[["green"]], "#F7FFF9", "F")
   draw_measurement_icon(xs[[2]], bottom_y)
 
-  draw_node(xs[[3]], bottom_y, box_w, box_h, "Versioned outputs", okabe[["green"]], "#F7FFF9", "G")
+  draw_node(xs[[3]], bottom_y, box_w, box_h, "Simulated scores", okabe[["green"]], "#F7FFF9", "G")
   draw_line_icon(xs[[3]], bottom_y + 0.014, w = 0.120, h = 0.070, noisy = TRUE)
   grid.text(
-    "bounded composition -> realism",
+    "bounded: compare with real data",
     x = npc(xs[[3]]),
     y = npc(bottom_y - 0.053),
-    gp = gpar(col = "grey18", fontsize = 5.2)
+    gp = gpar(col = "grey18", fontsize = 6.0)
   )
   grid.text(
-    "linear_z -> recovery",
+    "continuous: recover structure",
     x = npc(xs[[3]]),
     y = npc(bottom_y - 0.077),
-    gp = gpar(col = "grey18", fontsize = 5.2)
+    gp = gpar(col = "grey18", fontsize = 6.0)
   )
 
-  draw_node(xs[[4]], bottom_y, box_w, box_h, "Recovery test", okabe[["green"]], "#F7FFF9", "H")
+  draw_node(xs[[4]], bottom_y, box_w, box_h, "Recovering the structure", okabe[["green"]], "#F7FFF9", "H")
   draw_recovery_icon(xs[[4]], bottom_y)
   grid.text(
-    "declared linear surface",
+    "dimensions known in advance",
     x = npc(xs[[4]]),
     y = npc(bottom_y - 0.078),
-    gp = gpar(col = "grey18", fontsize = 5.3)
+    gp = gpar(col = "grey18", fontsize = 6.0)
   )
 
   for (idx in seq_len(length(xs) - 1L)) {
@@ -362,23 +363,26 @@ draw_figure <- function() {
     col = okabe[["blue"]], lty = 2
   )
   grid.text(
-    "realism check",
+    "resemblance check",
     x = npc(xs[[3]] + 0.040),
     y = npc(0.498),
     gp = gpar(col = okabe[["blue"]], fontsize = 6.5, fontface = "italic")
   )
 
   draw_poly_arrow(
-    c(xs[[4]], xs[[4]]),
-    c(top_y - box_h / 2 - 0.014, bottom_y + box_h / 2 + 0.014),
+    c(xs[[4]], xs[[4]], xs[[1]], xs[[1]]),
+    c(
+      top_y - box_h / 2 - 0.014, 0.423,
+      0.423, bottom_y + box_h / 2 + 0.014
+    ),
     col = okabe[["orange"]],
     lty = 1,
     lwd = 1.15
   )
   grid.text(
-    "calibrates",
-    x = npc(xs[[4]] + 0.037),
-    y = npc(0.498),
+    "defines simulation conditions",
+    x = npc(0.72),
+    y = npc(0.438),
     gp = gpar(col = okabe[["orange"]], fontsize = 6.8, fontface = "italic")
   )
 
@@ -397,7 +401,7 @@ draw_figure <- function() {
   )
 }
 
-png(png_path, width = 3240, height = 1575, res = 300, type = "cairo-png")
+png(png_path, width = 1950, height = 948, res = 300, type = "cairo-png")
 draw_figure()
 dev.off()
 

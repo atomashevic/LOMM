@@ -12,7 +12,7 @@ tables.
 
 - `paper/`: manuscript source, response letter, bibliography, figures, tables,
   and rendered PDFs.
-- `scripts/lomm/`: the public LOMM observation profile, default configuration,
+- `scripts/lomm/`: the public LOMM observation model, default configuration,
   and focused contract tests.
 - `scripts/extract.r`: historical core functions and estimator wrappers used by
   completed simulation packages.
@@ -23,6 +23,16 @@ tables.
 The checked-in manuscript can be rendered from the current files under
 `paper/figures/` and `paper/tables/`. A full rerun writes intermediate and final
 outputs under the ignored `simulation_outputs/` directory.
+
+Run the small public observation example without launching any simulation grid:
+
+```bash
+Rscript scripts/lomm/example_observation_profile.R
+```
+
+The script constructs an ILR basis, latent trajectories, a loading matrix, and
+an empirical between-clip covariance, then calls `lomm_observe()` and verifies
+that the returned score rows lie on the simplex.
 
 ## MAFW-Derived Inputs
 
@@ -135,9 +145,10 @@ export NUMEXPR_NUM_THREADS=1
 
 ## Quick Integrity Check
 
-Validate the public compositional B+S default, the empirical,
-loading-aligned, and none baseline modes, exact homogeneous nesting, and the
-retained internal hashes:
+Validate the public bounded-score B+S default, the empirical, loading-aligned,
+and none baseline modes (the `loading_aligned` mode draws clip baselines inside
+the space spanned by the loadings), exact homogeneous nesting, and the retained
+internal hashes:
 
 ```bash
 Rscript scripts/lomm/test_observation_profile.R

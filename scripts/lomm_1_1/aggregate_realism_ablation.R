@@ -48,8 +48,34 @@ LOMM11_PAIRED_METRICS <- c(
 LOMM11_PAIRED_COLUMNS <- c(
   "contrast_id", "contrast_definition", "analysis_view", "family", "metric",
   "estimand", "direction", "estimate", "monte_carlo_se", "bootstrap_se",
-  "conf_low", "conf_high", "n_folds", "n_reps", "n_clips",
+  "bootstrap_mean", "bootstrap_bias", "basic_conf_low", "basic_conf_high",
+  "percentile_conf_low", "percentile_conf_high", "n_folds", "n_reps", "n_clips",
   "bootstrap_reps", "bootstrap_seed", "source_config_hash"
+)
+LOMM11_PROFILE_COLUMNS <- c(
+  "profile_id", "profile", "analysis_view", "family", "metric_count",
+  "estimand", "estimate", "monte_carlo_se", "bootstrap_se", "bootstrap_mean",
+  "bootstrap_bias", "basic_conf_low", "basic_conf_high", "percentile_conf_low",
+  "percentile_conf_high", "n_folds", "n_reps", "n_clips", "bootstrap_reps",
+  "bootstrap_seed", "source_config_hash"
+)
+LOMM11_PROFILE_METRIC_COLUMNS <- c(
+  "profile_id", "profile", "analysis_view", "family", "metric", "estimand",
+  "estimate", "monte_carlo_se", "bootstrap_se", "bootstrap_mean",
+  "bootstrap_bias", "basic_conf_low", "basic_conf_high", "percentile_conf_low",
+  "percentile_conf_high", "empirical_units_min", "empirical_units_max",
+  "synthetic_units_min", "synthetic_units_max", "n_folds", "n_reps", "n_clips",
+  "bootstrap_reps", "bootstrap_seed", "source_config_hash"
+)
+LOMM11_PROFILE_LABELS <- c(
+  `000` = "Homogeneous",
+  `100` = "Clip baseline",
+  `010` = "Clip scale",
+  `001` = "Activity gate",
+  `110` = "Clip baseline + clip scale",
+  `101` = "Clip baseline + activity gate",
+  `011` = "Clip scale + activity gate",
+  `111` = "Clip baseline + clip scale + activity gate"
 )
 
 pa_stop <- function(...) {
@@ -308,7 +334,7 @@ pa_bootstrap_design <- function(reps = LOMM11_PAIRED_BOOTSTRAP_REPS,
 pa_analysis_spec <- function(source, bootstrap_design) {
   contrasts <- pa_contrast_spec()
   list(
-    schema_version = 1L,
+    schema_version = 3L,
     pipeline_id = "lomm_1_1_paired_ablation_aggregation",
     source_config_hash = source$manifest$config_hash,
     source_run_manifest_sha256 = source$run_manifest_sha256,
@@ -338,6 +364,11 @@ pa_analysis_spec <- function(source, bootstrap_design) {
       "replacement within each fold; variants, replicates, views, families,",
       "metrics, and units remain paired; discrepancy is recomputed per panel"
     ),
+    intervals = list(
+      primary = "basic bootstrap interval",
+      sensitivity = "percentile bootstrap interval",
+      bias = "bootstrap mean minus observed estimate"
+    ),
     bootstrap_reps = LOMM11_PAIRED_BOOTSTRAP_REPS,
     bootstrap_seed = LOMM11_PAIRED_BOOTSTRAP_SEED,
     bootstrap_rng = "L'Ecuyer-CMRG/Inversion/Rejection",
@@ -357,13 +388,15 @@ pa_read_heldout <- function(source) {
   path <- file.path(source$directory, "heldout_metric_discrepancies.csv")
   columns <- c(
     "fold", "variant_id", "heldout_rep", "analysis_view", "family", "metric",
-    "max_discrepancy", "status", "seed_group", "config_hash"
+    "max_discrepancy", "empirical_n", "synthetic_n", "status", "seed_group",
+    "config_hash"
   )
   frame <- data.table::fread(
     path, select = columns, colClasses = c(
       fold = "integer", variant_id = "character", heldout_rep = "integer",
       analysis_view = "character", family = "character", metric = "character",
-      max_discrepancy = "numeric", status = "character", seed_group = "character",
+      max_discrepancy = "numeric", empirical_n = "integer", synthetic_n = "integer",
+      status = "character", seed_group = "character",
       config_hash = "character"
     ), showProgress = FALSE
   )
@@ -376,6 +409,7 @@ pa_read_heldout <- function(source) {
     setequal(frame$family, LOMM11_PAIRED_FAMILIES) &&
     setequal(frame$metric, LOMM11_PAIRED_METRICS) &&
     all(frame$status == "ok") && all(is.finite(frame$max_discrepancy)) &&
+    all(frame$empirical_n > 0L) && all(frame$synthetic_n > 0L) &&
     all(frame$config_hash == source$manifest$config_hash) &&
     identical(frame$seed_group, expected_seed)
   if (!valid) pa_stop("Held-out discrepancies violate the complete paired contract.")
@@ -581,7 +615,27 @@ pa_quantile <- function(values, probability) {
   stats::quantile(values, probability, names = FALSE, type = 8)
 }
 
-pa_build_results <- function(variant_draws, heldout, source) {
+pa_interval_summary <- function(estimate, bootstrap) {
+  estimate <- unname(as.numeric(estimate))
+  bootstrap <- unname(as.numeric(bootstrap))
+  if (!is.finite(estimate) || length(bootstrap) < 2L || any(!is.finite(bootstrap))) {
+    pa_stop("Bootstrap interval inputs must be finite and contain at least two draws.")
+  }
+  percentile_low <- pa_quantile(bootstrap, 0.025)
+  percentile_high <- pa_quantile(bootstrap, 0.975)
+  bootstrap_mean <- mean(bootstrap)
+  c(
+    bootstrap_se = stats::sd(bootstrap),
+    bootstrap_mean = bootstrap_mean,
+    bootstrap_bias = bootstrap_mean - estimate,
+    basic_conf_low = 2 * estimate - percentile_high,
+    basic_conf_high = 2 * estimate - percentile_low,
+    percentile_conf_low = percentile_low,
+    percentile_conf_high = percentile_high
+  )
+}
+
+pa_build_effect_results <- function(variant_draws, heldout, source) {
   spec <- pa_contrast_spec()
   mcse <- pa_mcse_catalog(heldout, spec$coefficients)
   rows <- list()
@@ -593,6 +647,7 @@ pa_build_results <- function(variant_draws, heldout, source) {
       contrast_draws <- catalog[[outcome]] %*% t(spec$coefficients)
       for (index in seq_along(spec$ids)) {
         bootstrap <- contrast_draws[-1L, index]
+        interval <- pa_interval_summary(contrast_draws[1L, index], bootstrap)
         rows[[length(rows) + 1L]] <- data.frame(
           contrast_id = spec$ids[[index]],
           contrast_definition = spec$definitions[[index]],
@@ -603,9 +658,13 @@ pa_build_results <- function(variant_draws, heldout, source) {
           direction = spec$directions[[index]],
           estimate = contrast_draws[1L, index],
           monte_carlo_se = mcse[[view]][[outcome]][[index]],
-          bootstrap_se = stats::sd(bootstrap),
-          conf_low = pa_quantile(bootstrap, 0.025),
-          conf_high = pa_quantile(bootstrap, 0.975),
+          bootstrap_se = interval[["bootstrap_se"]],
+          bootstrap_mean = interval[["bootstrap_mean"]],
+          bootstrap_bias = interval[["bootstrap_bias"]],
+          basic_conf_low = interval[["basic_conf_low"]],
+          basic_conf_high = interval[["basic_conf_high"]],
+          percentile_conf_low = interval[["percentile_conf_low"]],
+          percentile_conf_high = interval[["percentile_conf_high"]],
           n_folds = 5L,
           n_reps = 100L,
           n_clips = 100L,
@@ -630,6 +689,148 @@ pa_build_results <- function(variant_draws, heldout, source) {
   as.data.frame(output)
 }
 
+pa_profile_mcse <- function(heldout, view, family_name, metric_name = NULL) {
+  selected <- heldout[
+    heldout$analysis_view == view & heldout$family == family_name
+  ]
+  if (!is.null(metric_name)) {
+    selected <- selected[selected$metric == metric_name]
+  }
+  profile_panels <- selected[, .(
+    discrepancy = mean(max_discrepancy),
+    variant_order = variant_order[[1L]]
+  ), by = .(fold, heldout_rep, variant_id)]
+  fold_variances <- matrix(NA_real_, nrow = 5L, ncol = 8L)
+  for (fold_id in seq_len(5L)) {
+    fold <- profile_panels[profile_panels$fold == fold_id]
+    data.table::setorder(fold, heldout_rep, variant_order)
+    if (nrow(fold) != 800L) pa_stop("Profile MCSE group lacks 100 paired replicates.")
+    values <- matrix(fold$discrepancy, nrow = 100L, ncol = 8L, byrow = TRUE)
+    fold_variances[fold_id, ] <- apply(values, 2L, stats::var) / 100
+  }
+  sqrt(colSums(fold_variances) / 25)
+}
+
+pa_build_profile_results <- function(variant_draws, heldout, source) {
+  rows <- list()
+  for (view in LOMM11_PAIRED_VIEWS) {
+    for (family_name in LOMM11_PAIRED_FAMILIES) {
+      outcomes <- paste(family_name, LOMM11_PAIRED_METRICS, sep = "|")
+      family_draws <- Reduce(`+`, variant_draws[[view]][outcomes]) / length(outcomes)
+      mcse <- pa_profile_mcse(heldout, view, family_name)
+      for (index in seq_along(LOMM11_PAIRED_VARIANTS)) {
+        estimate <- family_draws[1L, index]
+        interval <- pa_interval_summary(estimate, family_draws[-1L, index])
+        profile_id <- LOMM11_PAIRED_VARIANTS[[index]]
+        rows[[length(rows) + 1L]] <- data.frame(
+          profile_id = profile_id,
+          profile = unname(LOMM11_PROFILE_LABELS[[profile_id]]),
+          analysis_view = view,
+          family = family_name,
+          metric_count = length(LOMM11_PAIRED_METRICS),
+          estimand = "mean_heldout_max_discrepancy",
+          estimate = estimate,
+          monte_carlo_se = mcse[[index]],
+          bootstrap_se = interval[["bootstrap_se"]],
+          bootstrap_mean = interval[["bootstrap_mean"]],
+          bootstrap_bias = interval[["bootstrap_bias"]],
+          basic_conf_low = interval[["basic_conf_low"]],
+          basic_conf_high = interval[["basic_conf_high"]],
+          percentile_conf_low = interval[["percentile_conf_low"]],
+          percentile_conf_high = interval[["percentile_conf_high"]],
+          n_folds = 5L,
+          n_reps = 100L,
+          n_clips = 100L,
+          bootstrap_reps = LOMM11_PAIRED_BOOTSTRAP_REPS,
+          bootstrap_seed = LOMM11_PAIRED_BOOTSTRAP_SEED,
+          source_config_hash = source$manifest$config_hash,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+  output <- data.table::rbindlist(rows, use.names = TRUE)
+  data.table::setcolorder(output, LOMM11_PROFILE_COLUMNS)
+  output[, view_order := match(analysis_view, LOMM11_PAIRED_VIEWS)]
+  output[, family_order := match(family, LOMM11_PAIRED_FAMILIES)]
+  output[, profile_order := match(profile_id, LOMM11_PAIRED_VARIANTS)]
+  data.table::setorderv(output, c("view_order", "family_order", "profile_order"))
+  output[, c("view_order", "family_order", "profile_order") := NULL]
+  as.data.frame(output)
+}
+
+pa_build_profile_metric_results <- function(variant_draws, heldout, source) {
+  rows <- list()
+  for (view in LOMM11_PAIRED_VIEWS) {
+    for (family_name in LOMM11_PAIRED_FAMILIES) {
+      for (metric_name in LOMM11_PAIRED_METRICS) {
+        outcome <- paste(family_name, metric_name, sep = "|")
+        draws <- variant_draws[[view]][[outcome]]
+        mcse <- pa_profile_mcse(heldout, view, family_name, metric_name)
+        for (index in seq_along(LOMM11_PAIRED_VARIANTS)) {
+          estimate <- draws[1L, index]
+          interval <- pa_interval_summary(estimate, draws[-1L, index])
+          profile_id <- LOMM11_PAIRED_VARIANTS[[index]]
+          selected <- heldout[
+            heldout$analysis_view == view & heldout$family == family_name &
+              heldout$metric == metric_name & heldout$variant_id == profile_id
+          ]
+          if (nrow(selected) != 500L) {
+            pa_stop("Profile-metric denominator group lacks 500 paired panels.")
+          }
+          rows[[length(rows) + 1L]] <- data.frame(
+            profile_id = profile_id,
+            profile = unname(LOMM11_PROFILE_LABELS[[profile_id]]),
+            analysis_view = view,
+            family = family_name,
+            metric = metric_name,
+            estimand = "mean_heldout_max_discrepancy",
+            estimate = estimate,
+            monte_carlo_se = mcse[[index]],
+            bootstrap_se = interval[["bootstrap_se"]],
+            bootstrap_mean = interval[["bootstrap_mean"]],
+            bootstrap_bias = interval[["bootstrap_bias"]],
+            basic_conf_low = interval[["basic_conf_low"]],
+            basic_conf_high = interval[["basic_conf_high"]],
+            percentile_conf_low = interval[["percentile_conf_low"]],
+            percentile_conf_high = interval[["percentile_conf_high"]],
+            empirical_units_min = min(selected$empirical_n),
+            empirical_units_max = max(selected$empirical_n),
+            synthetic_units_min = min(selected$synthetic_n),
+            synthetic_units_max = max(selected$synthetic_n),
+            n_folds = 5L,
+            n_reps = 100L,
+            n_clips = 100L,
+            bootstrap_reps = LOMM11_PAIRED_BOOTSTRAP_REPS,
+            bootstrap_seed = LOMM11_PAIRED_BOOTSTRAP_SEED,
+            source_config_hash = source$manifest$config_hash,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+    }
+  }
+  output <- data.table::rbindlist(rows, use.names = TRUE)
+  data.table::setcolorder(output, LOMM11_PROFILE_METRIC_COLUMNS)
+  output[, view_order := match(analysis_view, LOMM11_PAIRED_VIEWS)]
+  output[, family_order := match(family, LOMM11_PAIRED_FAMILIES)]
+  output[, metric_order := match(metric, LOMM11_PAIRED_METRICS)]
+  output[, profile_order := match(profile_id, LOMM11_PAIRED_VARIANTS)]
+  data.table::setorderv(
+    output, c("view_order", "family_order", "metric_order", "profile_order")
+  )
+  output[, c("view_order", "family_order", "metric_order", "profile_order") := NULL]
+  as.data.frame(output)
+}
+
+pa_build_results <- function(variant_draws, heldout, source) {
+  list(
+    effects = pa_build_effect_results(variant_draws, heldout, source),
+    profiles = pa_build_profile_results(variant_draws, heldout, source),
+    profile_metrics = pa_build_profile_metric_results(variant_draws, heldout, source)
+  )
+}
+
 pa_validate_results <- function(frame, source_hash) {
   key <- c("contrast_id", "analysis_view", "family", "metric")
   expected_outcomes <- c(
@@ -638,7 +839,9 @@ pa_validate_results <- function(frame, source_hash) {
   )
   observed_outcomes <- unique(paste(frame$family, frame$metric, sep = "|"))
   numeric_columns <- c(
-    "estimate", "monte_carlo_se", "bootstrap_se", "conf_low", "conf_high"
+    "estimate", "monte_carlo_se", "bootstrap_se", "bootstrap_mean",
+    "bootstrap_bias", "basic_conf_low", "basic_conf_high",
+    "percentile_conf_low", "percentile_conf_high"
   )
   valid <- identical(names(frame), LOMM11_PAIRED_COLUMNS) && nrow(frame) == 272L &&
     data.table::uniqueN(data.table::as.data.table(frame), by = key) == 272L &&
@@ -647,12 +850,79 @@ pa_validate_results <- function(frame, source_hash) {
     setequal(observed_outcomes, expected_outcomes) &&
     all(vapply(frame[numeric_columns], function(value) all(is.finite(value)), logical(1))) &&
     all(frame$monte_carlo_se >= 0) && all(frame$bootstrap_se >= 0) &&
-    all(frame$conf_low <= frame$conf_high) && all(frame$n_folds == 5L) &&
+    all(frame$basic_conf_low <= frame$basic_conf_high) &&
+    all(frame$percentile_conf_low <= frame$percentile_conf_high) &&
+    isTRUE(all.equal(frame$bootstrap_bias, frame$bootstrap_mean - frame$estimate,
+                     tolerance = 1e-12)) && all(frame$n_folds == 5L) &&
     all(frame$n_reps == 100L) && all(frame$n_clips == 100L) &&
     all(frame$bootstrap_reps == LOMM11_PAIRED_BOOTSTRAP_REPS) &&
     all(frame$bootstrap_seed == LOMM11_PAIRED_BOOTSTRAP_SEED) &&
     all(frame$source_config_hash == source_hash)
   if (!valid) pa_stop("Paired ablation results violate the locked 272-row schema.")
+  invisible(frame)
+}
+
+pa_validate_profiles <- function(frame, source_hash) {
+  key <- c("profile_id", "analysis_view", "family")
+  numeric_columns <- c(
+    "estimate", "monte_carlo_se", "bootstrap_se", "bootstrap_mean",
+    "bootstrap_bias", "basic_conf_low", "basic_conf_high",
+    "percentile_conf_low", "percentile_conf_high"
+  )
+  valid <- identical(names(frame), LOMM11_PROFILE_COLUMNS) && nrow(frame) == 32L &&
+    data.table::uniqueN(data.table::as.data.table(frame), by = key) == 32L &&
+    setequal(frame$profile_id, LOMM11_PAIRED_VARIANTS) &&
+    identical(setNames(frame$profile[match(LOMM11_PAIRED_VARIANTS, frame$profile_id)],
+                       LOMM11_PAIRED_VARIANTS), LOMM11_PROFILE_LABELS) &&
+    setequal(frame$analysis_view, LOMM11_PAIRED_VIEWS) &&
+    setequal(frame$family, LOMM11_PAIRED_FAMILIES) &&
+    all(frame$metric_count == length(LOMM11_PAIRED_METRICS)) &&
+    all(vapply(frame[numeric_columns], function(value) all(is.finite(value)), logical(1))) &&
+    all(frame$monte_carlo_se >= 0) && all(frame$bootstrap_se >= 0) &&
+    all(frame$basic_conf_low <= frame$basic_conf_high) &&
+    all(frame$percentile_conf_low <= frame$percentile_conf_high) &&
+    isTRUE(all.equal(frame$bootstrap_bias, frame$bootstrap_mean - frame$estimate,
+                     tolerance = 1e-12)) && all(frame$n_folds == 5L) &&
+    all(frame$n_reps == 100L) && all(frame$n_clips == 100L) &&
+    all(frame$bootstrap_reps == LOMM11_PAIRED_BOOTSTRAP_REPS) &&
+    all(frame$bootstrap_seed == LOMM11_PAIRED_BOOTSTRAP_SEED) &&
+    all(frame$source_config_hash == source_hash)
+  if (!valid) pa_stop("Profile discrepancies violate the locked 32-row schema.")
+  invisible(frame)
+}
+
+pa_validate_profile_metrics <- function(frame, source_hash) {
+  key <- c("profile_id", "analysis_view", "family", "metric")
+  numeric_columns <- c(
+    "estimate", "monte_carlo_se", "bootstrap_se", "bootstrap_mean",
+    "bootstrap_bias", "basic_conf_low", "basic_conf_high",
+    "percentile_conf_low", "percentile_conf_high"
+  )
+  integer_columns <- c(
+    "empirical_units_min", "empirical_units_max", "synthetic_units_min",
+    "synthetic_units_max"
+  )
+  valid <- identical(names(frame), LOMM11_PROFILE_METRIC_COLUMNS) &&
+    nrow(frame) == 256L &&
+    data.table::uniqueN(data.table::as.data.table(frame), by = key) == 256L &&
+    setequal(frame$profile_id, LOMM11_PAIRED_VARIANTS) &&
+    setequal(frame$analysis_view, LOMM11_PAIRED_VIEWS) &&
+    setequal(frame$family, LOMM11_PAIRED_FAMILIES) &&
+    setequal(frame$metric, LOMM11_PAIRED_METRICS) &&
+    all(vapply(frame[numeric_columns], function(value) all(is.finite(value)), logical(1))) &&
+    all(vapply(frame[integer_columns], function(value) all(value > 0L), logical(1))) &&
+    all(frame$empirical_units_min <= frame$empirical_units_max) &&
+    all(frame$synthetic_units_min <= frame$synthetic_units_max) &&
+    all(frame$monte_carlo_se >= 0) && all(frame$bootstrap_se >= 0) &&
+    all(frame$basic_conf_low <= frame$basic_conf_high) &&
+    all(frame$percentile_conf_low <= frame$percentile_conf_high) &&
+    isTRUE(all.equal(frame$bootstrap_bias, frame$bootstrap_mean - frame$estimate,
+                     tolerance = 1e-12)) && all(frame$n_folds == 5L) &&
+    all(frame$n_reps == 100L) && all(frame$n_clips == 100L) &&
+    all(frame$bootstrap_reps == LOMM11_PAIRED_BOOTSTRAP_REPS) &&
+    all(frame$bootstrap_seed == LOMM11_PAIRED_BOOTSTRAP_SEED) &&
+    all(frame$source_config_hash == source_hash)
+  if (!valid) pa_stop("Profile-metric discrepancies violate the locked 256-row schema.")
   invisible(frame)
 }
 
@@ -672,14 +942,26 @@ pa_software_versions <- function() {
   c(list(R = R.version.string), versions)
 }
 
-pa_manifest <- function(source, analysis_spec, analysis_hash, output, started_at) {
-  output_record <- list(
-    path = "paired_ablation_effects.csv",
-    sha256 = pa_file_sha256(output),
-    rows = 272L
+pa_manifest <- function(source, analysis_spec, analysis_hash, outputs, started_at) {
+  output_records <- list(
+    list(
+      path = "paired_ablation_effects.csv",
+      sha256 = pa_file_sha256(outputs$effects),
+      rows = 272L
+    ),
+    list(
+      path = "profile_discrepancies.csv",
+      sha256 = pa_file_sha256(outputs$profiles),
+      rows = 32L
+    ),
+    list(
+      path = "profile_metric_discrepancies.csv",
+      sha256 = pa_file_sha256(outputs$profile_metrics),
+      rows = 256L
+    )
   )
   list(
-    schema_version = 1L,
+    schema_version = 3L,
     status = "complete",
     pipeline_id = "lomm_1_1_paired_ablation_aggregation",
     analysis_hash = analysis_hash,
@@ -695,12 +977,26 @@ pa_manifest <- function(source, analysis_spec, analysis_hash, output, started_at
       heldout_discrepancies_sha256 = source$success$outputs[[6L]]$sha256
     ),
     result_contract = list(
-      rows = 272L, views = 2L, outcomes_per_view = 17L, contrasts = 8L,
-      primary_key = as.list(c("contrast_id", "analysis_view", "family", "metric")),
-      columns = as.list(LOMM11_PAIRED_COLUMNS)
+      effects = list(
+        rows = 272L, views = 2L, outcomes_per_view = 17L, contrasts = 8L,
+        primary_key = as.list(c("contrast_id", "analysis_view", "family", "metric")),
+        columns = as.list(LOMM11_PAIRED_COLUMNS)
+      ),
+      profiles = list(
+        rows = 32L, views = 2L, families = 2L, profiles = 8L,
+        primary_key = as.list(c("profile_id", "analysis_view", "family")),
+        columns = as.list(LOMM11_PROFILE_COLUMNS)
+      ),
+      profile_metrics = list(
+        rows = 256L, views = 2L, families = 2L, metrics = 8L, profiles = 8L,
+        primary_key = as.list(c(
+          "profile_id", "analysis_view", "family", "metric"
+        )),
+        columns = as.list(LOMM11_PROFILE_METRIC_COLUMNS)
+      )
     ),
     claim_scope = source$plan$config$claim_scope,
-    outputs = list(output_record),
+    outputs = output_records,
     started_at = started_at,
     completed_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     command = paste(commandArgs(), collapse = " "),
@@ -711,7 +1007,7 @@ pa_manifest <- function(source, analysis_spec, analysis_hash, output, started_at
 
 pa_success <- function(manifest_path, manifest) {
   list(
-    schema_version = 1L,
+    schema_version = 3L,
     status = "complete",
     pipeline_id = manifest$pipeline_id,
     analysis_hash = manifest$analysis_hash,
@@ -730,22 +1026,61 @@ pa_success <- function(manifest_path, manifest) {
 pa_validate_published <- function(directory, source = NULL) {
   directory <- normalizePath(directory, mustWork = TRUE)
   entries <- sort(list.files(directory, all.files = TRUE, no.. = TRUE))
-  if (!identical(entries, sort(c("_SUCCESS.json", "paired_ablation_effects.csv", "run_manifest.json")))) {
+  expected_entries <- sort(c(
+    "_SUCCESS.json", "paired_ablation_effects.csv", "profile_discrepancies.csv",
+    "profile_metric_discrepancies.csv", "run_manifest.json"
+  ))
+  if (!identical(entries, expected_entries)) {
     pa_stop("Published paired-ablation directory has unexpected files.")
   }
   manifest_path <- file.path(directory, "run_manifest.json")
   success <- pa_read_json(file.path(directory, "_SUCCESS.json"))
   manifest <- pa_read_json(manifest_path)
-  output_path <- file.path(directory, "paired_ablation_effects.csv")
-  output <- utils::read.csv(
-    output_path, stringsAsFactors = FALSE, check.names = FALSE,
+  effects_path <- file.path(directory, "paired_ablation_effects.csv")
+  profiles_path <- file.path(directory, "profile_discrepancies.csv")
+  profile_metrics_path <- file.path(directory, "profile_metric_discrepancies.csv")
+  effects <- utils::read.csv(
+    effects_path, stringsAsFactors = FALSE, check.names = FALSE,
     colClasses = c(
       contrast_id = "character", contrast_definition = "character",
       analysis_view = "character", family = "character", metric = "character",
       estimand = "character", direction = "character", estimate = "numeric",
-      monte_carlo_se = "numeric", bootstrap_se = "numeric", conf_low = "numeric",
-      conf_high = "numeric", n_folds = "integer", n_reps = "integer",
+      monte_carlo_se = "numeric", bootstrap_se = "numeric",
+      bootstrap_mean = "numeric", bootstrap_bias = "numeric",
+      basic_conf_low = "numeric", basic_conf_high = "numeric",
+      percentile_conf_low = "numeric", percentile_conf_high = "numeric",
+      n_folds = "integer", n_reps = "integer",
       n_clips = "integer", bootstrap_reps = "integer", bootstrap_seed = "integer",
+      source_config_hash = "character"
+    )
+  )
+  profiles <- utils::read.csv(
+    profiles_path, stringsAsFactors = FALSE, check.names = FALSE,
+    colClasses = c(
+      profile_id = "character", profile = "character", analysis_view = "character",
+      family = "character", metric_count = "integer", estimand = "character",
+      estimate = "numeric", monte_carlo_se = "numeric", bootstrap_se = "numeric",
+      bootstrap_mean = "numeric", bootstrap_bias = "numeric",
+      basic_conf_low = "numeric", basic_conf_high = "numeric",
+      percentile_conf_low = "numeric", percentile_conf_high = "numeric",
+      n_folds = "integer", n_reps = "integer", n_clips = "integer",
+      bootstrap_reps = "integer", bootstrap_seed = "integer",
+      source_config_hash = "character"
+    )
+  )
+  profile_metrics <- utils::read.csv(
+    profile_metrics_path, stringsAsFactors = FALSE, check.names = FALSE,
+    colClasses = c(
+      profile_id = "character", profile = "character", analysis_view = "character",
+      family = "character", metric = "character", estimand = "character",
+      estimate = "numeric", monte_carlo_se = "numeric", bootstrap_se = "numeric",
+      bootstrap_mean = "numeric", bootstrap_bias = "numeric",
+      basic_conf_low = "numeric", basic_conf_high = "numeric",
+      percentile_conf_low = "numeric", percentile_conf_high = "numeric",
+      empirical_units_min = "integer", empirical_units_max = "integer",
+      synthetic_units_min = "integer", synthetic_units_max = "integer",
+      n_folds = "integer", n_reps = "integer", n_clips = "integer",
+      bootstrap_reps = "integer", bootstrap_seed = "integer",
       source_config_hash = "character"
     )
   )
@@ -754,9 +1089,15 @@ pa_validate_published <- function(directory, source = NULL) {
     identical(manifest$analysis_hash, pa_object_sha256(manifest$analysis_spec)) &&
     identical(success$analysis_hash, manifest$analysis_hash) &&
     identical(success$run_manifest_sha256, pa_file_sha256(manifest_path)) &&
-    identical(success$outputs[[1L]]$sha256, pa_file_sha256(output_path)) &&
-    identical(manifest$outputs[[1L]]$sha256, pa_file_sha256(output_path)) &&
-    identical(success$outputs[[1L]]$rows, 272L)
+    identical(success$outputs[[1L]]$sha256, pa_file_sha256(effects_path)) &&
+    identical(manifest$outputs[[1L]]$sha256, pa_file_sha256(effects_path)) &&
+    identical(success$outputs[[2L]]$sha256, pa_file_sha256(profiles_path)) &&
+    identical(manifest$outputs[[2L]]$sha256, pa_file_sha256(profiles_path)) &&
+    identical(success$outputs[[3L]]$sha256, pa_file_sha256(profile_metrics_path)) &&
+    identical(manifest$outputs[[3L]]$sha256, pa_file_sha256(profile_metrics_path)) &&
+    identical(success$outputs[[1L]]$rows, 272L) &&
+    identical(success$outputs[[2L]]$rows, 32L) &&
+    identical(success$outputs[[3L]]$rows, 256L)
   if (!header_valid) pa_stop("Published paired-ablation provenance is invalid.")
   if (!is.null(source)) {
     source_valid <- identical(manifest$source$config_hash, source$manifest$config_hash) &&
@@ -764,8 +1105,13 @@ pa_validate_published <- function(directory, source = NULL) {
       identical(manifest$source$success_sha256, source$success_sha256)
     if (!source_valid) pa_stop("Published output is not bound to the requested source run.")
   }
-  pa_validate_results(output, manifest$source$config_hash)
-  invisible(list(manifest = manifest, success = success, results = output))
+  pa_validate_results(effects, manifest$source$config_hash)
+  pa_validate_profiles(profiles, manifest$source$config_hash)
+  pa_validate_profile_metrics(profile_metrics, manifest$source$config_hash)
+  invisible(list(
+    manifest = manifest, success = success, results = effects, profiles = profiles,
+    profile_metrics = profile_metrics
+  ))
 }
 
 pa_publish <- function(results, output_dir, source, analysis_spec, analysis_hash, started_at) {
@@ -781,9 +1127,15 @@ pa_publish <- function(results, output_dir, source, analysis_spec, analysis_hash
   }
   dir.create(staging, recursive = FALSE, showWarnings = FALSE)
   on.exit(if (dir.exists(staging)) unlink(staging, recursive = TRUE), add = TRUE)
-  output_path <- file.path(staging, "paired_ablation_effects.csv")
-  pa_atomic_csv(results, output_path)
-  manifest <- pa_manifest(source, analysis_spec, analysis_hash, output_path, started_at)
+  output_paths <- list(
+    effects = file.path(staging, "paired_ablation_effects.csv"),
+    profiles = file.path(staging, "profile_discrepancies.csv"),
+    profile_metrics = file.path(staging, "profile_metric_discrepancies.csv")
+  )
+  pa_atomic_csv(results$effects, output_paths$effects)
+  pa_atomic_csv(results$profiles, output_paths$profiles)
+  pa_atomic_csv(results$profile_metrics, output_paths$profile_metrics)
+  manifest <- pa_manifest(source, analysis_spec, analysis_hash, output_paths, started_at)
   manifest_path <- file.path(staging, "run_manifest.json")
   pa_atomic_json(manifest, manifest_path)
   pa_atomic_json(pa_success(manifest_path, manifest), file.path(staging, "_SUCCESS.json"))
@@ -872,7 +1224,9 @@ pa_run <- function(args = commandArgs(trailingOnly = TRUE)) {
       "Source: ", source$directory, "\n",
       "Output: ", output_dir, "\n",
       "Analysis SHA-256: ", analysis_hash, "\n",
-      "Rows: 272; bootstrap draws: 2,000; clips: 100 in five strata\n",
+      "Rows: 272 contrasts, 32 profiles, and 256 profile-metric results; ",
+      "bootstrap draws: 2,000; ",
+      "clips: 100 in five strata\n",
       sep = ""
     )
     return(invisible(list(
@@ -890,14 +1244,18 @@ pa_run <- function(args = commandArgs(trailingOnly = TRUE)) {
   heldout <- pa_read_heldout(source)
   variant_draws <- pa_compute_variant_draws(source, heldout, bootstrap_design, workers)
   results <- pa_build_results(variant_draws, heldout, source)
-  pa_validate_results(results, source$manifest$config_hash)
+  pa_validate_results(results$effects, source$manifest$config_hash)
+  pa_validate_profiles(results$profiles, source$manifest$config_hash)
+  pa_validate_profile_metrics(results$profile_metrics, source$manifest$config_hash)
   published <- pa_publish(
     results, output_dir, source, analysis_spec, analysis_hash, started_at
   )
   validated <- pa_validate_published(published, source)
   cat(
     "Published LOMM 1.1 paired-ablation aggregation:\n", published, "\n",
-    "Rows: ", nrow(validated$results), "; bootstrap draws: 2,000\n", sep = ""
+    "Rows: ", nrow(validated$results), " contrasts and ",
+    nrow(validated$profiles), " profiles and ", nrow(validated$profile_metrics),
+    " profile-metric results; bootstrap draws: 2,000\n", sep = ""
   )
   invisible(validated)
 }

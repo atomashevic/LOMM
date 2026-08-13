@@ -28,8 +28,8 @@ profile <- lomm_default_observation_profile()
 The public baseline modes are:
 
 - `empirical`, using a named positive-semidefinite between-clip covariance;
-- `loading_aligned`, using `b_i = Lambda %*% beta_i` for a declared
-  known-truth loading geometry;
+- `loading_aligned`, using `b_i = Lambda %*% beta_i` so that between-clip
+  differences stay inside the space spanned by the loadings;
 - `none`, using an exactly zero baseline.
 
 Clip scale is controlled separately. The `homogeneous` profile combines
@@ -172,7 +172,7 @@ the simulator, a recovery estimator, a parallel backend, or a session manager.
 
 ## Internal Evidence Namespace: Canonical Profile And Recovery Bridge
 
-The canonical bounded-score observation profile is defined in:
+The canonical bounded-score observation model is defined in:
 
 - `scripts/lomm_1_1/canonical_observation_profile.R`;
 - `scripts/lomm_1_1/canonical_observation_profile_config.json`;
@@ -197,7 +197,8 @@ and eight paired factorial contrasts with 2,000 fold-stratified clip-cluster
 bootstrap draws. Its analysis hash is
 `9769e6dd7fd116389f73e17839a748abedb5cdc26e13444bb9e2dc5ce4f8e855`.
 
-The pre-link linear known-truth recovery bridge is implemented by:
+The pre-link continuous-indicator recovery bridge, which starts from a known
+factor structure, is implemented by:
 
 - `scripts/lomm_1_1/bridge_recovery_config.json`;
 - `scripts/lomm_1_1/bridge_recovery_spec.R`;
@@ -226,7 +227,7 @@ The plan fixes 80 paired panel sets, 160 generated panels, 800 method fits,
 and 2,400 readout rows. The completed run is retained under
 `simulation_outputs/lomm_1_1/recovery_bridge_runs/991d45f9c90f/`. It screens
 loading-aligned B+S on the `linear_z` representation; it does not validate
-recovery from bounded probabilities or CLR panels. Execution is guarded by the
+recovery from bounded scores or their log-ratio coordinates. Execution is guarded by the
 exact manifest SHA and literal acknowledgement token, uses at most eight
 workers with one numerical-library thread each, preserves append-only attempts,
 and validates terminal artifacts before completion.
