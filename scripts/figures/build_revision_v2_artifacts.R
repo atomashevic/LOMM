@@ -21,6 +21,47 @@ REVISION_V2_COLORS <- c(
 REVISION_V2_ALGORITHM_PCH <- c(louvain = 21L, leiden = 22L, walktrap = 24L)
 REVISION_V2_ALGORITHM_LTY <- c(louvain = 1L, leiden = 2L, walktrap = 3L)
 REVISION_V2_BOOTSTRAP_REPS <- 2000L
+REVISION_V2_ESTIMAND_ORDER <- c(
+  "p_usable",
+  "p_correct_given_usable",
+  "p_usable_and_correct",
+  "signed_dimension_error",
+  "absolute_dimension_error",
+  "adjusted_rand_index",
+  "variation_information",
+  "assignment_accuracy_conditional",
+  "score_correlation_correct_dimension",
+  "score_nrmse_correct_dimension",
+  "score_correlation_marginal",
+  "score_nrmse_marginal"
+)
+REVISION_V2_SCENARIO_SOURCE_ORDER <- c(
+  "old_low_single_stable",
+  "old_high_single_stable",
+  "old_high_switch_stable",
+  "old_high_switch_volatile",
+  "oai_ranked_persistence",
+  "oai_broad_geometry"
+)
+REVISION_V2_SCENARIO_IDS <- c(
+  old_low_single_stable = "low_amplitude_single_dominance",
+  old_high_single_stable = "high_amplitude_single_dominance",
+  old_high_switch_stable = "high_amplitude_switching",
+  old_high_switch_volatile = "high_amplitude_rapid_switching",
+  oai_ranked_persistence = "ranked_finite_horizon_amplification",
+  oai_broad_geometry = "switching_finite_horizon_amplification"
+)
+REVISION_V2_SCENARIO_ORDER <- unname(
+  REVISION_V2_SCENARIO_IDS[REVISION_V2_SCENARIO_SOURCE_ORDER]
+)
+REVISION_V2_SCENARIO_LABELS <- c(
+  low_amplitude_single_dominance = "Low-amplitude single-dominance",
+  high_amplitude_single_dominance = "High-amplitude single-dominance",
+  high_amplitude_switching = "High-amplitude switching",
+  high_amplitude_rapid_switching = "High-amplitude rapid switching",
+  ranked_finite_horizon_amplification = "Ranked finite-horizon amplification",
+  switching_finite_horizon_amplification = "Switching finite-horizon amplification"
+)
 
 revision_v2_table_schemas <- function() {
   list(
@@ -32,7 +73,8 @@ revision_v2_table_schemas <- function() {
     table1_method_overall.csv = c(
       "horizon_design", "time_points", "method_id", "method_label",
       "community_algorithm", "estimand_id", "estimand_label", "estimate",
-      "conf_low", "conf_high", "n_panels", "bootstrap_reps"
+      "monte_carlo_se", "conf_low", "conf_high", "n_panels", "n_structure_fits",
+      "n_usable_fits", "n_usable_correct_dimension", "bootstrap_reps"
     ),
     figure5_condition_key.csv = c(
       "condition_code", "scenario_family", "scenario_label", "stability_class"
@@ -50,7 +92,8 @@ revision_v2_table_schemas <- function() {
     table2_score_quality_marginal_means.csv = c(
       "horizon_design", "time_points", "method_id", "method_label",
       "community_algorithm", "estimand_id", "estimand_label", "estimate",
-      "conf_low", "conf_high", "n_panels", "bootstrap_reps"
+      "monte_carlo_se", "conf_low", "conf_high", "n_panels", "n_structure_fits",
+      "n_usable_fits", "n_usable_correct_dimension", "bootstrap_reps"
     ),
     table3_runtime_feasibility.csv = c(
       "horizon_design", "time_points", "method_id", "method_label",
@@ -62,6 +105,21 @@ revision_v2_table_schemas <- function() {
       "source_job", "analysis_scope", "horizon_design", "time_points",
       "method_id", "readout_rows", "structure_fits", "ok_readouts",
       "error_readouts", "timeout_readouts", "community_algorithms"
+    ),
+    supplementary_method_readout_sensitivity.csv = c(
+      "horizon_design", "time_points", "method_id", "method_label",
+      "community_algorithm", "estimand_id", "estimand_label", "estimate",
+      "monte_carlo_se", "conf_low", "conf_high", "n_panels", "bootstrap_reps"
+    ),
+    supplementary_score_quality_readout_sensitivity.csv = c(
+      "horizon_design", "time_points", "method_id", "method_label",
+      "community_algorithm", "estimand_id", "estimand_label", "estimate",
+      "monte_carlo_se", "conf_low", "conf_high", "n_panels", "bootstrap_reps"
+    ),
+    supplementary_factor_effects_readout_sensitivity.csv = c(
+      "method_id", "method_label", "community_algorithm", "challenge_id",
+      "challenge_label", "representation", "estimand_id", "estimate",
+      "conf_low", "conf_high", "n_pairs", "bootstrap_reps"
     )
   )
 }
@@ -71,7 +129,9 @@ revision_v2_figure_stems <- function() {
     "figure4_empirical_realism",
     "figure5_dimension_recovery",
     "figure6_factor_effects",
-    "figure7_runtime_feasibility"
+    "figure7_runtime_feasibility",
+    "figureS1_dimension_recovery_readout_sensitivity",
+    "figureS2_factor_effects_readout_sensitivity"
   )
 }
 
@@ -156,7 +216,8 @@ revision_v2_method_columns <- function() {
     "community_algorithm", "scenario", "scenario_family", "challenge_id",
     "representation", "TimeP", "stability_class", "N", "NVAR", "Error_sd",
     "Loadings", "Q", "rep", "n_dim_true", "n_dim_hat", "status",
-    "structure_fit_status", "structure_fit_runtime_sec", "runtime_sec"
+    "structure_fit_status", "structure_fit_runtime_sec", "runtime_sec",
+    "score_cor_common", "score_nrmse_common"
   )
 }
 
@@ -166,6 +227,7 @@ revision_v2_require_aggregate_contract <- function(directory) {
     "upstream_artifact_manifest.csv",
     "revision_results_long.csv",
     "identity_validation.csv",
+    "partition_metric_recomputation_audit.csv",
     "revision_estimand_results.csv",
     "revision_paired_differences.csv",
     "_SUCCESS.json"
@@ -253,13 +315,33 @@ revision_v2_method_label <- function(method) {
 
 revision_v2_horizon_design <- function(time_points) {
   time_points <- as.integer(time_points)
-  ifelse(time_points == 100L, "Primary T=100", "Stress T=25")
+  ifelse(
+    time_points == 100L,
+    "Primary record design (T = 100)",
+    "Short-record design (T = 25)"
+  )
 }
 
 revision_v2_normalize_method <- function(method) {
   method <- as.character(method)
   method[method %in% c("static_correlation", "static_EGA_glasso")] <- "static_EGA"
   method
+}
+
+revision_v2_normalize_scenario_family <- function(scenario_family) {
+  scenario_family <- as.character(scenario_family)
+  source <- scenario_family %in% names(REVISION_V2_SCENARIO_IDS)
+  scenario_family[source] <- unname(REVISION_V2_SCENARIO_IDS[scenario_family[source]])
+  known <- is.na(scenario_family) | !nzchar(scenario_family) |
+    scenario_family %in% REVISION_V2_SCENARIO_ORDER
+  if (any(!known)) {
+    stop(
+      "Unknown benchmark scenario family: ",
+      paste(sort(unique(scenario_family[!known])), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  scenario_family
 }
 
 revision_v2_analysis_scope <- function(source_job) {
@@ -290,6 +372,14 @@ revision_v2_mean_interval <- function(values, clusters, key,
   if (count < 2L) {
     stop("Clustered interval requires at least two independent panels.", call. = FALSE)
   }
+  leave_one_out <- vapply(seq_len(count), function(index) {
+    mean(cluster_values[-index])
+  }, numeric(1))
+  leave_one_out_center <- mean(leave_one_out)
+  monte_carlo_se <- sqrt(
+    (count - 1) / count *
+      sum((leave_one_out - leave_one_out_center)^2)
+  )
   set.seed(revision_v2_seed(key))
   distinct <- sort(unique(cluster_values))
   if (length(distinct) <= 20L) {
@@ -297,12 +387,23 @@ revision_v2_mean_interval <- function(values, clusters, key,
     draws <- stats::rmultinom(reps, size = count, prob = frequency / count)
     bootstrap <- as.numeric(crossprod(distinct, draws)) / count
   } else {
-    bootstrap <- vapply(seq_len(reps), function(index) {
-      mean(sample(cluster_values, count, replace = TRUE))
-    }, numeric(1))
+    probability <- rep(1 / count, count)
+    batch_size <- max(1L, min(reps, floor(2e6 / count)))
+    bootstrap <- numeric(reps)
+    starts <- seq.int(1L, reps, by = batch_size)
+    for (start in starts) {
+      end <- min(reps, start + batch_size - 1L)
+      draws <- stats::rmultinom(
+        end - start + 1L,
+        size = count,
+        prob = probability
+      )
+      bootstrap[start:end] <- as.numeric(crossprod(cluster_values, draws)) / count
+    }
   }
   c(
     estimate = mean(cluster_values),
+    monte_carlo_se = monte_carlo_se,
     conf_low = stats::quantile(bootstrap, 0.025, names = FALSE, type = 8),
     conf_high = stats::quantile(bootstrap, 0.975, names = FALSE, type = 8),
     n_panels = count,
@@ -332,6 +433,7 @@ revision_v2_canonical_method_rows <- function(long) {
   keep <- !is.na(long$method_id) & nzchar(as.character(long$method_id))
   data <- long[keep, required, drop = FALSE]
   data$method_id <- revision_v2_normalize_method(data$method_id)
+  data$scenario_family <- revision_v2_normalize_scenario_family(data$scenario_family)
   data$community_algorithm <- tolower(as.character(data$community_algorithm))
   data$status <- tolower(as.character(data$status))
   data$status[data$status %in% c("success", "complete", "completed")] <- "ok"
@@ -377,18 +479,18 @@ revision_v2_prepare_condition_key <- function(method_rows) {
   )) {
     stop("Matched results require stable and anti-damped scenario classes.", call. = FALSE)
   }
-  stability_order <- match(
-    mapping$stability_class,
-    c("asymptotically_stable", "anti_damped")
-  )
-  mapping <- mapping[order(stability_order, mapping$scenario_family), , drop = FALSE]
-  if (nrow(mapping) != 6L) {
-    stop("Matched results require exactly six scenario families.", call. = FALSE)
+  if (!setequal(mapping$scenario_family, REVISION_V2_SCENARIO_ORDER)) {
+    stop("Matched results do not contain the six named scientific scenarios.", call. = FALSE)
   }
+  mapping <- mapping[
+    match(REVISION_V2_SCENARIO_ORDER, mapping$scenario_family),
+    ,
+    drop = FALSE
+  ]
   data.frame(
-    condition_code = sprintf("C%02d", seq_len(nrow(mapping))),
+    condition_code = LETTERS[seq_len(nrow(mapping))],
     scenario_family = mapping$scenario_family,
-    scenario_label = revision_v2_humanize(mapping$scenario_family),
+    scenario_label = unname(REVISION_V2_SCENARIO_LABELS[mapping$scenario_family]),
     stability_class = mapping$stability_class,
     stringsAsFactors = FALSE
   )
@@ -467,8 +569,12 @@ revision_v2_estimand_label <- function(id) {
     adjusted_rand_index = "Adjusted Rand index",
     variation_information = "Variation of information",
     assignment_accuracy_conditional = "Assignment accuracy given usable",
-    score_correlation_marginal = "Marginal score correlation",
-    score_nrmse_marginal = "Marginal score NRMSE"
+    score_correlation_correct_dimension = paste(
+      "Score correlation (correct-dimensional usable fits)"
+    ),
+    score_nrmse_correct_dimension = "Score NRMSE (correct-dimensional usable fits)",
+    score_correlation_marginal = "Score correlation (status-aware marginal)",
+    score_nrmse_marginal = "Score NRMSE (status-aware marginal)"
   )
   result <- unname(labels[id])
   result[is.na(result)] <- revision_v2_humanize(id[is.na(result)])
@@ -509,6 +615,7 @@ revision_v2_prepare_horizon_estimands <- function(estimands, ids, label,
     estimand_id = data$estimand_id,
     estimand_label = revision_v2_estimand_label(data$estimand_id),
     estimate = as.numeric(data$estimate),
+    monte_carlo_se = as.numeric(data$monte_carlo_se),
     conf_low = as.numeric(data$conf_low),
     conf_high = as.numeric(data$conf_high),
     n_panels = as.integer(data$n_panels),
@@ -534,6 +641,8 @@ revision_v2_prepare_horizon_estimands <- function(estimands, ids, label,
     undefined <- complete_grid$time_points == 25L &
       complete_grid$method_id == "gimme" &
       complete_grid$estimand_id %in% c(
+        "p_correct_given_usable",
+        "signed_dimension_error", "absolute_dimension_error",
         "adjusted_rand_index", "variation_information",
         "assignment_accuracy_conditional"
       )
@@ -552,7 +661,7 @@ revision_v2_prepare_horizon_estimands <- function(estimands, ids, label,
     -output$time_points,
     match(output$method_id, REVISION_V2_METHOD_ORDER),
     match(output$community_algorithm, REVISION_V2_ALGORITHMS),
-    output$estimand_id
+    match(output$estimand_id, REVISION_V2_ESTIMAND_ORDER)
   ), , drop = FALSE]
 }
 
@@ -588,6 +697,90 @@ revision_v2_prepare_factor_screen <- function(estimands) {
     length(REVISION_V2_ALGORITHMS) * 2L
   if (nrow(output) != expected_rows) {
     stop("Factor-screen estimates do not form the complete design grid.", call. = FALSE)
+  }
+  output
+}
+
+revision_v2_prepare_correct_dimension_trajectories <- function(method_rows) {
+  matched <- revision_v2_nonempty(
+    method_rows[method_rows$analysis_scope == "matched", , drop = FALSE],
+    "correct-dimensional trajectory estimates"
+  )
+  metrics <- c(
+    score_correlation_correct_dimension = "score_cor_common",
+    score_nrmse_correct_dimension = "score_nrmse_common"
+  )
+  metric_values <- lapply(metrics, function(column) {
+    suppressWarnings(as.numeric(matched[[column]]))
+  })
+  designs <- expand.grid(
+    TimeP = c(25L, 100L),
+    method_id = REVISION_V2_METHOD_ORDER,
+    community_algorithm = REVISION_V2_ALGORITHMS,
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  rows <- lapply(seq_len(nrow(designs)), function(index) {
+    design <- designs[index, , drop = FALSE]
+    keep_design <- matched$TimeP == design$TimeP &
+      matched$method_id == design$method_id &
+      matched$community_algorithm == design$community_algorithm
+    eligible <- keep_design & matched$usable_and_correct == 1
+    metric_rows <- lapply(names(metrics), function(estimand_id) {
+      value <- metric_values[[estimand_id]]
+      keep <- eligible & is.finite(value)
+      if (sum(keep) < 2L) {
+        return(data.frame())
+      }
+      interval <- revision_v2_mean_interval(
+        value[keep],
+        matched$panel_key[keep],
+        paste(
+          "correct-dimension-trajectory",
+          design$TimeP,
+          design$method_id,
+          design$community_algorithm,
+          estimand_id,
+          sep = "|"
+        )
+      )
+      data.frame(
+        horizon_design = revision_v2_horizon_design(design$TimeP),
+        time_points = as.integer(design$TimeP),
+        method_id = design$method_id,
+        method_label = revision_v2_method_label(design$method_id),
+        community_algorithm = design$community_algorithm,
+        estimand_id = estimand_id,
+        estimand_label = revision_v2_estimand_label(estimand_id),
+        estimate = interval[["estimate"]],
+        monte_carlo_se = interval[["monte_carlo_se"]],
+        conf_low = interval[["conf_low"]],
+        conf_high = interval[["conf_high"]],
+        n_panels = as.integer(interval[["n_panels"]]),
+        bootstrap_reps = as.integer(interval[["bootstrap_reps"]]),
+        stringsAsFactors = FALSE
+      )
+    })
+    do.call(rbind, metric_rows)
+  })
+  output <- revision_v2_nonempty(
+    do.call(rbind, rows),
+    "estimable correct-dimensional trajectory estimates"
+  )
+  revision_v2_validate_intervals(output, "Correct-dimensional trajectory estimates")
+  revision_v2_assert_unique(
+    output,
+    c("time_points", "method_id", "community_algorithm", "estimand_id"),
+    "Correct-dimensional trajectory estimates"
+  )
+  expected <- 2L * length(REVISION_V2_METHOD_ORDER) *
+    length(REVISION_V2_ALGORITHMS) * length(metrics) -
+    length(REVISION_V2_ALGORITHMS) * length(metrics)
+  if (nrow(output) != expected || any(output$n_panels < 2L)) {
+    stop(
+      "Correct-dimensional trajectory estimates omit an estimable method-design-readout group.",
+      call. = FALSE
+    )
   }
   output
 }
@@ -650,6 +843,27 @@ revision_v2_pair_key <- function(data) {
   do.call(paste, c(data[columns], sep = "\r"))
 }
 
+revision_v2_label_challenge_effects <- function(data) {
+  data$challenge_label[
+    data$challenge_id == "softmax_bounded" & data$representation == "softmax_raw"
+  ] <- "Softmax bounded (raw)"
+  data$challenge_label[
+    data$challenge_id == "softmax_bounded" & data$representation == "softmax_clr"
+  ] <- "Softmax bounded (CLR)"
+  data$challenge_label[
+    data$challenge_id == "residual_equicorrelation"
+  ] <- "Within-block residual dependence"
+  oracle_bounded <- data$method_id == "oracle_blocks" &
+    data$challenge_id == "softmax_bounded"
+  data$challenge_label[
+    oracle_bounded & data$representation == "softmax_raw"
+  ] <- "Softmax bounded (raw; oracle implementation check only)"
+  data$challenge_label[
+    oracle_bounded & data$representation == "softmax_clr"
+  ] <- "Softmax bounded (CLR; oracle implementation check only)"
+  data
+}
+
 revision_v2_prepare_challenge_effects <- function(method_rows) {
   challenge <- revision_v2_nonempty(
     method_rows[method_rows$analysis_scope == "challenge", , drop = FALSE],
@@ -710,12 +924,7 @@ revision_v2_prepare_challenge_effects <- function(method_rows) {
     )
   })
   output <- do.call(rbind, rows)
-  output$challenge_label[
-    output$challenge_id == "softmax_bounded" & output$representation == "softmax_raw"
-  ] <- "Softmax bounded (raw)"
-  output$challenge_label[
-    output$challenge_id == "softmax_bounded" & output$representation == "softmax_clr"
-  ] <- "Softmax bounded (CLR)"
+  output <- revision_v2_label_challenge_effects(output)
   revision_v2_validate_intervals(output, "Paired challenge effects")
   effect_values <- unlist(output[c("estimate", "conf_low", "conf_high")], use.names = FALSE)
   if (any(effect_values < -1 - 1e-12 | effect_values > 1 + 1e-12)) {
@@ -772,15 +981,23 @@ revision_v2_unique_fits <- function(method_rows) {
   if (any(!fit_status %in% c("ok", "error", "timeout"))) {
     stop("Shared structure fits contain an invalid status.", call. = FALSE)
   }
-  runtime <- suppressWarnings(as.numeric(matched$structure_fit_runtime_sec))
-  if (any(!is.finite(runtime)) || any(runtime < 0)) {
+  structure_runtime <- suppressWarnings(as.numeric(matched$structure_fit_runtime_sec))
+  if (any(!is.finite(structure_runtime)) || any(structure_runtime < 0)) {
     stop("Shared structure fits require finite nonnegative runtimes.", call. = FALSE)
   }
-  expected_runtime <- runtime[first][first_index]
-  if (any(abs(runtime - expected_runtime) > 1e-8)) {
+  expected_runtime <- structure_runtime[first][first_index]
+  if (any(abs(structure_runtime - expected_runtime) > 1e-8)) {
     stop("Structure-fit runtime differs across shared readouts.", call. = FALSE)
   }
-  fit_runtime <- runtime[first]
+  primary <- matched[matched$community_algorithm == "louvain", , drop = FALSE]
+  if (nrow(primary) != length(fit_keys) || anyDuplicated(primary$structure_fit_key)) {
+    stop("Each shared structure fit requires one primary Louvain runtime.", call. = FALSE)
+  }
+  primary <- primary[match(fit_keys, primary$structure_fit_key), , drop = FALSE]
+  fit_runtime <- suppressWarnings(as.numeric(primary$runtime_sec))
+  if (any(!is.finite(fit_runtime)) || any(fit_runtime < 0)) {
+    stop("Primary Louvain pipelines require finite nonnegative total runtimes.", call. = FALSE)
+  }
   data.frame(
     structure_fit_key = fit_keys,
     panel_key = matched$panel_key[first],
@@ -792,6 +1009,77 @@ revision_v2_unique_fits <- function(method_rows) {
     completion_within_900 = as.numeric(fit_status == "ok" & fit_runtime <= 900),
     stringsAsFactors = FALSE
   )
+}
+
+revision_v2_prepare_primary_counts <- function(method_rows) {
+  primary <- revision_v2_nonempty(
+    method_rows[
+      method_rows$analysis_scope == "matched" &
+        method_rows$community_algorithm == "louvain",
+      ,
+      drop = FALSE
+    ],
+    "primary Louvain fit counts"
+  )
+  revision_v2_assert_unique(
+    primary,
+    "structure_fit_key",
+    "Primary Louvain fit counts"
+  )
+  output <- revision_v2_split_apply(
+    primary,
+    c("TimeP", "method_id"),
+    function(group, key) {
+      data.frame(
+        time_points = group$TimeP[[1]],
+        method_id = group$method_id[[1]],
+        n_structure_fits = nrow(group),
+        n_usable_fits = sum(group$status == "ok"),
+        n_usable_correct_dimension = sum(group$usable_and_correct == 1),
+        stringsAsFactors = FALSE
+      )
+    }
+  )
+  revision_v2_assert_unique(
+    output,
+    c("time_points", "method_id"),
+    "Primary Louvain fit counts"
+  )
+  if (nrow(output) != 2L * length(REVISION_V2_METHOD_ORDER) ||
+      any(output$n_usable_correct_dimension > output$n_usable_fits) ||
+      any(output$n_usable_fits > output$n_structure_fits)) {
+    stop("Primary Louvain counts violate the fit-level accounting contract.", call. = FALSE)
+  }
+  output
+}
+
+revision_v2_attach_primary_counts <- function(data, counts, label) {
+  primary <- revision_v2_nonempty(
+    data[data$community_algorithm == "louvain", , drop = FALSE],
+    label
+  )
+  primary$.row_order <- seq_len(nrow(primary))
+  primary <- merge(
+    primary,
+    counts,
+    by = c("time_points", "method_id"),
+    all.x = TRUE,
+    sort = FALSE
+  )
+  primary <- primary[order(primary$.row_order), , drop = FALSE]
+  primary$.row_order <- NULL
+  count_columns <- c(
+    "n_structure_fits", "n_usable_fits", "n_usable_correct_dimension"
+  )
+  if (any(!is.finite(unlist(primary[count_columns], use.names = FALSE)))) {
+    stop(label, " omits fit-level counts.", call. = FALSE)
+  }
+  primary[c(
+    "horizon_design", "time_points", "method_id", "method_label",
+    "community_algorithm", "estimand_id", "estimand_label", "estimate",
+    "monte_carlo_se", "conf_low", "conf_high", "n_panels", count_columns,
+    "bootstrap_reps"
+  )]
 }
 
 revision_v2_prepare_runtime <- function(method_rows) {
@@ -963,6 +1251,34 @@ revision_v2_validate_table <- function(data, filename) {
       any(data$bootstrap_reps != REVISION_V2_BOOTSTRAP_REPS)) {
     stop("Table does not use the prespecified 2,000 resamples: ", filename, call. = FALSE)
   }
+  primary_louvain <- c(
+    "table1_method_overall.csv",
+    "figure6_factor_effects_table.csv",
+    "figure6_factor_effects_eta_screen.csv",
+    "table2_score_quality_marginal_means.csv"
+  )
+  if (filename %in% primary_louvain &&
+      (!"community_algorithm" %in% names(data) ||
+        !identical(unique(data$community_algorithm), "louvain"))) {
+    stop("Primary manuscript tables must contain Louvain results only: ", filename, call. = FALSE)
+  }
+  sensitivity_tables <- c(
+    "supplementary_method_readout_sensitivity.csv",
+    "supplementary_score_quality_readout_sensitivity.csv",
+    "supplementary_factor_effects_readout_sensitivity.csv"
+  )
+  if (filename %in% sensitivity_tables &&
+      !setequal(unique(data$community_algorithm), REVISION_V2_ALGORITHMS)) {
+    stop("Readout-sensitivity table omits a community algorithm: ", filename, call. = FALSE)
+  }
+  count_columns <- c(
+    "n_structure_fits", "n_usable_fits", "n_usable_correct_dimension"
+  )
+  if (all(count_columns %in% names(data)) &&
+      (any(data$n_usable_correct_dimension > data$n_usable_fits) ||
+        any(data$n_usable_fits > data$n_structure_fits))) {
+    stop("Primary manuscript table violates fit-level count ordering: ", filename, call. = FALSE)
+  }
   invisible(TRUE)
 }
 
@@ -970,7 +1286,7 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
   required_estimand <- c(
     "summary_level", "analysis_scope", "method_id", "community_algorithm",
     "stability_class", "TimeP", "estimand_id", "estimate", "conf_low",
-    "conf_high", "n_panels", "bootstrap_reps", "empirical_family",
+    "conf_high", "monte_carlo_se", "n_panels", "bootstrap_reps", "empirical_family",
     "empirical_metric", "empirical_scale", "contribution"
   )
   required_pair <- c(
@@ -984,14 +1300,16 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
   method_rows <- revision_v2_canonical_method_rows(long)
   condition_key <- revision_v2_prepare_condition_key(method_rows)
   empirical <- revision_v2_prepare_empirical(estimands)
-  overall <- revision_v2_prepare_horizon_estimands(
+  overall_sensitivity <- revision_v2_prepare_horizon_estimands(
     estimands,
-    c("p_usable", "p_usable_and_correct"),
-    "Method-level horizon estimates"
+    c("p_usable", "p_correct_given_usable", "p_usable_and_correct"),
+    "Method-level horizon estimates",
+    allow_undefined = TRUE
   )
-  score <- revision_v2_prepare_horizon_estimands(
+  score_sensitivity <- revision_v2_prepare_horizon_estimands(
     estimands,
     c(
+      "signed_dimension_error", "absolute_dimension_error",
       "adjusted_rand_index", "variation_information",
       "assignment_accuracy_conditional", "score_correlation_marginal",
       "score_nrmse_marginal"
@@ -999,20 +1317,55 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     "Score-quality horizon estimates",
     allow_undefined = TRUE
   )
+  trajectory_correct_dimension <-
+    revision_v2_prepare_correct_dimension_trajectories(method_rows)
+  score_sensitivity <- rbind(
+    score_sensitivity,
+    trajectory_correct_dimension
+  )
   factor_screen <- revision_v2_prepare_factor_screen(estimands)
   recovery <- revision_v2_prepare_recovery(method_rows, condition_key)
   challenge <- revision_v2_prepare_challenge_effects(method_rows)
   runtime <- revision_v2_prepare_runtime(method_rows)
   accounting <- revision_v2_prepare_accounting(method_rows)
+  primary_counts <- revision_v2_prepare_primary_counts(method_rows)
+  overall <- revision_v2_attach_primary_counts(
+    overall_sensitivity,
+    primary_counts,
+    "Primary Louvain method estimates"
+  )
+  score <- revision_v2_attach_primary_counts(
+    score_sensitivity,
+    primary_counts,
+    "Primary Louvain score-quality estimates"
+  )
+  factor_screen_primary <- factor_screen[
+    factor_screen$community_algorithm == "louvain",
+    ,
+    drop = FALSE
+  ]
+  challenge_primary <- challenge[
+    challenge$community_algorithm == "louvain",
+    ,
+    drop = FALSE
+  ]
+  recovery_primary <- recovery[
+    recovery$community_algorithm == "louvain",
+    ,
+    drop = FALSE
+  ]
   tables <- list(
     empirical_realism_table.csv = empirical,
     table1_method_overall.csv = overall,
     figure5_condition_key.csv = condition_key,
-    figure6_factor_effects_table.csv = challenge,
-    figure6_factor_effects_eta_screen.csv = factor_screen,
+    figure6_factor_effects_table.csv = challenge_primary,
+    figure6_factor_effects_eta_screen.csv = factor_screen_primary,
     table2_score_quality_marginal_means.csv = score,
     table3_runtime_feasibility.csv = runtime,
-    table3_runtime_feasibility_accounting.csv = accounting
+    table3_runtime_feasibility_accounting.csv = accounting,
+    supplementary_method_readout_sensitivity.csv = overall_sensitivity,
+    supplementary_score_quality_readout_sensitivity.csv = score_sensitivity,
+    supplementary_factor_effects_readout_sensitivity.csv = challenge
   )
   for (filename in names(tables)) {
     revision_v2_validate_table(tables[[filename]], filename)
@@ -1021,8 +1374,10 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     tables = tables,
     figure_data = list(
       empirical = empirical,
-      recovery = recovery,
-      challenge = challenge,
+      recovery = recovery_primary,
+      challenge = challenge_primary,
+      recovery_sensitivity = recovery,
+      challenge_sensitivity = challenge,
       runtime = runtime,
       condition_key = condition_key
     )
@@ -1130,7 +1485,7 @@ revision_v2_plot_empirical <- function(data) {
     )
   }
   graphics::mtext(
-    "Held-out empirical realism: 95% clip-cluster intervals",
+    "Simulated vs. real score series on held-out clips: 95% intervals",
     outer = TRUE,
     side = 3,
     line = 0.2,
@@ -1146,11 +1501,20 @@ revision_v2_plot_empirical <- function(data) {
   )
 }
 
-revision_v2_plot_recovery <- function(data, condition_key) {
+revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) {
+  algorithms <- REVISION_V2_ALGORITHMS[
+    REVISION_V2_ALGORITHMS %in% unique(data$community_algorithm)
+  ]
+  expected <- if (isTRUE(sensitivity)) REVISION_V2_ALGORITHMS else "louvain"
+  if (!identical(algorithms, expected)) {
+    stop("Recovery figure data violate the requested community-readout scope.", call. = FALSE)
+  }
   methods <- REVISION_V2_METHOD_ORDER
   horizons <- c(100L, 25L)
+  offsets <- if (length(algorithms) == 1L) 0 else
+    seq(-0.16, 0.16, length.out = length(algorithms))
   layout(matrix(seq_len(length(methods) * length(horizons)), nrow = 2L, byrow = TRUE))
-  graphics::par(oma = c(3.0, 3.5, 2.2, 0.4), family = "sans")
+  graphics::par(oma = c(3.0, 3.5, 2.4, 0.4), family = "sans")
   for (time_points in horizons) {
     for (method in methods) {
       panel <- data[data$time_points == time_points & data$method_id == method, , drop = FALSE]
@@ -1166,12 +1530,11 @@ revision_v2_plot_recovery <- function(data, condition_key) {
         bty = "n"
       )
       graphics::abline(h = c(0, 0.5, 1), col = "grey90", lty = 1)
-      for (algorithm_index in seq_along(REVISION_V2_ALGORITHMS)) {
-        algorithm <- REVISION_V2_ALGORITHMS[[algorithm_index]]
+      for (algorithm_index in seq_along(algorithms)) {
+        algorithm <- algorithms[[algorithm_index]]
         values <- panel[panel$community_algorithm == algorithm, , drop = FALSE]
         values <- values[match(condition_key$condition_code, values$condition_code), , drop = FALSE]
-        offset <- c(-0.16, 0, 0.16)[[algorithm_index]]
-        x <- seq_len(nrow(condition_key)) + offset
+        x <- seq_len(nrow(condition_key)) + offsets[[algorithm_index]]
         graphics::lines(
           x,
           values$estimate,
@@ -1194,7 +1557,8 @@ revision_v2_plot_recovery <- function(data, condition_key) {
       }
       if (identical(method, methods[[1]])) {
         graphics::mtext(
-          if (time_points == 100L) "Primary T=100" else "Stress T=25",
+          if (time_points == 100L) "Main benchmark\n(T = 100)" else
+            "Shorter series\n(T = 25)",
           side = 2,
           line = 2.0,
           font = 2
@@ -1203,24 +1567,40 @@ revision_v2_plot_recovery <- function(data, condition_key) {
     }
   }
   graphics::mtext(
-    "Status-inclusive probability of a usable and correct dimension",
+    "Worst-case accuracy: usable fit and correct number of dimensions",
     outer = TRUE,
     side = 2,
     line = 1.5
   )
-  graphics::mtext("Matched recovery by scenario and readout", outer = TRUE, side = 3, line = 0.5, font = 2)
-  graphics::legend(
-    "bottom",
-    inset = -0.01,
-    xpd = NA,
-    horiz = TRUE,
-    legend = revision_v2_humanize(REVISION_V2_ALGORITHMS),
-    pch = REVISION_V2_ALGORITHM_PCH,
-    lty = REVISION_V2_ALGORITHM_LTY,
-    pt.bg = "grey65",
-    bty = "n",
-    cex = 0.8
+  graphics::mtext(
+    if (isTRUE(sensitivity)) {
+      "Sensitivity to the community-detection algorithm"
+    } else {
+      "Accuracy by scenario (Louvain)"
+    },
+    outer = TRUE,
+    side = 3,
+    line = 0.5,
+    font = 2
   )
+  if (isTRUE(sensitivity)) {
+    graphics::legend(
+      "bottom",
+      inset = -0.01,
+      xpd = NA,
+      horiz = TRUE,
+      legend = revision_v2_humanize(algorithms),
+      pch = REVISION_V2_ALGORITHM_PCH[algorithms],
+      lty = REVISION_V2_ALGORITHM_LTY[algorithms],
+      pt.bg = "grey65",
+      bty = "n",
+      cex = 0.8
+    )
+  }
+}
+
+revision_v2_plot_recovery_sensitivity <- function(data, condition_key) {
+  revision_v2_plot_recovery(data, condition_key, sensitivity = TRUE)
 }
 
 revision_v2_challenge_order <- function(data) {
@@ -1232,7 +1612,7 @@ revision_v2_challenge_order <- function(data) {
     independent_initialization = "Independent init.",
     smooth_activity_gate = "Smooth gate",
     cross_loadings = "Cross-loadings",
-    residual_equicorrelation = "Residual corr.",
+    residual_equicorrelation = "Residual dep.\n(within block)",
     latent_shock_equicorrelation = "Latent-shock corr."
   )
   key <- paste(data$challenge_id, data$representation, sep = "|")
@@ -1245,9 +1625,32 @@ revision_v2_challenge_order <- function(data) {
   list(key = order_key, display = display, observed = key)
 }
 
-revision_v2_plot_challenge <- function(data) {
+revision_v2_challenge_plot_data <- function(data) {
+  oracle_bounded <- data$method_id == "oracle_blocks" &
+    data$challenge_id == "softmax_bounded"
+  output <- data[!oracle_bounded, , drop = FALSE]
+  if (any(
+    output$method_id == "oracle_blocks" &
+      output$challenge_id == "softmax_bounded"
+  )) {
+    stop("Bounded-output oracle rows were not removed from the figure data.", call. = FALSE)
+  }
+  output
+}
+
+revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
+  algorithms <- REVISION_V2_ALGORITHMS[
+    REVISION_V2_ALGORITHMS %in% unique(data$community_algorithm)
+  ]
+  expected <- if (isTRUE(sensitivity)) REVISION_V2_ALGORITHMS else "louvain"
+  if (!identical(algorithms, expected)) {
+    stop("Challenge figure data violate the requested community-readout scope.", call. = FALSE)
+  }
+  data <- revision_v2_challenge_plot_data(data)
   methods <- c("dynEGA", "graphicalVAR", "static_EGA", "oracle_blocks")
   challenge_order <- revision_v2_challenge_order(data)
+  offsets <- if (length(algorithms) == 1L) 0 else
+    seq(-0.16, 0.16, length.out = length(algorithms))
   limits <- range(c(data$conf_low, data$conf_high, 0), finite = TRUE)
   padding <- max(0.03, diff(limits) * 0.05)
   limits <- limits + c(-padding, padding)
@@ -1264,16 +1667,19 @@ revision_v2_plot_challenge <- function(data) {
       xaxt = "n",
       ylab = "",
       xlab = "",
-      main = revision_v2_method_label(method),
+      main = if (method == "oracle_blocks") {
+        "Block oracle (implementation check)"
+      } else {
+        revision_v2_method_label(method)
+      },
       bty = "n"
     )
     graphics::abline(h = 0, lty = 2, col = "grey35")
-    for (algorithm_index in seq_along(REVISION_V2_ALGORITHMS)) {
-      algorithm <- REVISION_V2_ALGORITHMS[[algorithm_index]]
+    for (algorithm_index in seq_along(algorithms)) {
+      algorithm <- algorithms[[algorithm_index]]
       values <- panel[panel$community_algorithm == algorithm, , drop = FALSE]
       values <- values[match(challenge_order$key, values$key), , drop = FALSE]
-      offset <- c(-0.16, 0, 0.16)[[algorithm_index]]
-      x <- seq_along(challenge_order$key) + offset
+      x <- seq_along(challenge_order$key) + offsets[[algorithm_index]]
       graphics::lines(
         x,
         values$estimate,
@@ -1295,28 +1701,53 @@ revision_v2_plot_challenge <- function(data) {
       at = seq_along(challenge_order$key),
       labels = challenge_order$display,
       las = 2,
-      cex.axis = 0.7
+      cex.axis = 0.64
     )
+    if (method == "oracle_blocks") {
+      graphics::text(
+        x = 6.5,
+        y = limits[[1]] + 0.12 * diff(limits),
+        labels = "Not shown for bounded scores:\nthe oracle never sees them",
+        col = "grey30",
+        cex = 0.66
+      )
+    }
   }
   graphics::mtext(
-    "Challenge minus ideal: probability of a usable and correct dimension",
+    "Change in worst-case accuracy relative to the ideal condition",
     outer = TRUE,
     side = 2,
     line = 1.8
   )
-  graphics::mtext("Paired measurement-challenge effects", outer = TRUE, side = 3, line = 0.4, font = 2)
-  graphics::legend(
-    "bottom",
-    inset = -0.02,
-    xpd = NA,
-    horiz = TRUE,
-    legend = revision_v2_humanize(REVISION_V2_ALGORITHMS),
-    pch = REVISION_V2_ALGORITHM_PCH,
-    lty = REVISION_V2_ALGORITHM_LTY,
-    pt.bg = "grey65",
-    bty = "n",
-    cex = 0.8
+  graphics::mtext(
+    if (isTRUE(sensitivity)) {
+      "Sensitivity to the community-detection algorithm"
+    } else {
+      "Paired departures from the ideal condition (Louvain)"
+    },
+    outer = TRUE,
+    side = 3,
+    line = 0.4,
+    font = 2
   )
+  if (isTRUE(sensitivity)) {
+    graphics::legend(
+      "bottom",
+      inset = -0.02,
+      xpd = NA,
+      horiz = TRUE,
+      legend = revision_v2_humanize(algorithms),
+      pch = REVISION_V2_ALGORITHM_PCH[algorithms],
+      lty = REVISION_V2_ALGORITHM_LTY[algorithms],
+      pt.bg = "grey65",
+      bty = "n",
+      cex = 0.8
+    )
+  }
+}
+
+revision_v2_plot_challenge_sensitivity <- function(data) {
+  revision_v2_plot_challenge(data, sensitivity = TRUE)
 }
 
 revision_v2_plot_runtime <- function(data) {
@@ -1383,7 +1814,10 @@ revision_v2_plot_runtime <- function(data) {
   }
   graphics::legend(
     "bottomright",
-    legend = c("Primary T=100", "Stress T=25"),
+    legend = c(
+      "Main benchmark (T = 100)",
+      "Shorter series (T = 25)"
+    ),
     pch = c(21L, 24L),
     pt.bg = "grey65",
     bty = "n",
@@ -1516,26 +1950,83 @@ revision_v2_validate_generated_tree <- function(root) {
   invisible(paths)
 }
 
+revision_v2_owned_paths <- function() {
+  figure_names <- as.vector(
+    outer(revision_v2_figure_stems(), c("pdf", "png"), paste, sep = ".")
+  )
+  c(
+    file.path("tables", names(revision_v2_table_schemas())),
+    file.path("figures", figure_names)
+  )
+}
+
+# Installs only the artifacts this builder declares. The output root normally
+# holds manuscript sources and artifacts written by other scripts, so replacing
+# the directory wholesale would destroy them.
 revision_v2_publish_tree <- function(staging_root, output_root) {
-  parent <- dirname(output_root)
-  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
-  backup <- paste0(output_root, ".previous-", Sys.getpid())
-  if (file.exists(backup)) {
-    unlink(backup, recursive = TRUE, force = TRUE)
+  owned <- revision_v2_owned_paths()
+  absent <- owned[!file.exists(file.path(staging_root, owned))]
+  if (length(absent) > 0L) {
+    stop(
+      "Staged artifact tree is incomplete: ",
+      paste(absent, collapse = ", "),
+      call. = FALSE
+    )
   }
-  had_previous <- dir.exists(output_root)
-  if (had_previous && !file.rename(output_root, backup)) {
-    stop("Could not preserve the prior publication artifact tree.", call. = FALSE)
+  staged <- list.files(staging_root, recursive = TRUE, all.files = TRUE, no.. = TRUE)
+  staged <- staged[!dir.exists(file.path(staging_root, staged))]
+  undeclared <- setdiff(staged, owned)
+  if (length(undeclared) > 0L) {
+    stop(
+      "Staged artifact tree contains undeclared files: ",
+      paste(undeclared, collapse = ", "),
+      call. = FALSE
+    )
   }
-  installed <- file.rename(staging_root, output_root)
-  if (!installed) {
-    if (had_previous) {
-      file.rename(backup, output_root)
+  dir.create(output_root, recursive = TRUE, showWarnings = FALSE)
+  for (subdirectory in unique(dirname(owned))) {
+    dir.create(
+      file.path(output_root, subdirectory),
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
+  }
+  displaced <- list()
+  restore_displaced <- function() {
+    for (entry in displaced) {
+      unlink(entry$destination, force = TRUE)
+      file.rename(entry$backup, entry$destination)
     }
-    stop("Could not atomically install the rebuilt artifact tree.", call. = FALSE)
   }
-  if (had_previous) {
-    unlink(backup, recursive = TRUE, force = TRUE)
+  for (relative in owned) {
+    destination <- file.path(output_root, relative)
+    backup <- NA_character_
+    if (file.exists(destination)) {
+      backup <- file.path(
+        dirname(destination),
+        paste0(".", basename(destination), ".previous-", Sys.getpid())
+      )
+      unlink(backup, force = TRUE)
+      if (!file.rename(destination, backup)) {
+        restore_displaced()
+        stop("Could not preserve the prior ", relative, ".", call. = FALSE)
+      }
+    }
+    if (!file.rename(file.path(staging_root, relative), destination)) {
+      if (!is.na(backup)) {
+        file.rename(backup, destination)
+      }
+      restore_displaced()
+      stop("Could not install ", relative, ".", call. = FALSE)
+    }
+    if (!is.na(backup)) {
+      displaced[[length(displaced) + 1L]] <- list(
+        destination = destination, backup = backup
+      )
+    }
+  }
+  for (entry in displaced) {
+    unlink(entry$backup, force = TRUE)
   }
   invisible(output_root)
 }
@@ -1564,6 +2055,19 @@ revision_v2_render_prepared <- function(prepared, output_root) {
     "figure7_runtime_feasibility", output_root, 10, 5.8,
     function() revision_v2_plot_runtime(figures$runtime)
   )
+  revision_v2_write_figure(
+    "figureS1_dimension_recovery_readout_sensitivity", output_root, 13, 7.5,
+    function() revision_v2_plot_recovery_sensitivity(
+      figures$recovery_sensitivity,
+      figures$condition_key
+    )
+  )
+  revision_v2_write_figure(
+    "figureS2_factor_effects_readout_sensitivity", output_root, 11, 8,
+    function() revision_v2_plot_challenge_sensitivity(
+      figures$challenge_sensitivity
+    )
+  )
   revision_v2_validate_generated_tree(output_root)
 }
 
@@ -1575,7 +2079,7 @@ revision_v2_build <- function(aggregate_dir, output_root) {
     c(
       "summary_level", "analysis_scope", "method_id", "community_algorithm",
       "stability_class", "TimeP", "estimand_id", "estimate", "conf_low",
-      "conf_high", "n_panels", "bootstrap_reps", "empirical_family",
+      "conf_high", "monte_carlo_se", "n_panels", "bootstrap_reps", "empirical_family",
       "empirical_metric", "empirical_scale", "contribution"
     )
   )
@@ -1633,6 +2137,7 @@ revision_v2_fixture_estimands <- function() {
   empirical$TimeP <- NA_integer_
   empirical$estimand_id <- "empirical_discrepancy"
   empirical$estimate <- seq(0.1, 0.8, length.out = nrow(empirical))
+  empirical$monte_carlo_se <- 0.01
   empirical$conf_low <- pmax(0, empirical$estimate - 0.05)
   empirical$conf_high <- empirical$estimate + 0.05
   empirical$n_panels <- 20L
@@ -1661,6 +2166,7 @@ revision_v2_fixture_estimands <- function() {
     "adjusted_rand_index", "assignment_accuracy_conditional", "score_correlation_marginal"
   )
   horizon$estimate <- ifelse(probability, 0.7, 0.2)
+  horizon$monte_carlo_se <- 0.01
   horizon$conf_low <- horizon$estimate - 0.05
   horizon$conf_high <- horizon$estimate + 0.05
   horizon$n_panels <- 20L
@@ -1682,6 +2188,7 @@ revision_v2_fixture_estimands <- function() {
   screen$analysis_scope <- "matched"
   screen$estimand_id <- "p_usable_and_correct"
   screen$estimate <- 0.65
+  screen$monte_carlo_se <- 0.01
   screen$conf_low <- 0.55
   screen$conf_high <- 0.75
   screen$n_panels <- 20L
@@ -1696,8 +2203,8 @@ revision_v2_fixture_estimands <- function() {
 revision_v2_fixture_long <- function() {
   scenarios <- data.frame(
     scenario = paste0("scenario_", seq_len(6L)),
-    scenario_family = paste0("family_", seq_len(6L)),
-    stability_class = rep(c("asymptotically_stable", "anti_damped"), each = 3L),
+    scenario_family = REVISION_V2_SCENARIO_ORDER,
+    stability_class = c(rep("asymptotically_stable", 4L), rep("anti_damped", 2L)),
     stringsAsFactors = FALSE
   )
   matched <- expand.grid(
@@ -1764,6 +2271,8 @@ revision_v2_fixture_long <- function() {
   data$structure_fit_status <- "ok"
   data$structure_fit_runtime_sec <- ifelse(data$method_id == "gimme", 30, 5)
   data$runtime_sec <- data$structure_fit_runtime_sec + 0.1
+  data$score_cor_common <- 0.6
+  data$score_nrmse_common <- 0.5
   representation_key <- paste(data$panel_key, data$representation, sep = "|")
   data$structure_fit_key <- paste(representation_key, data$method_id, sep = "|")
   data$unit_key <- paste(data$structure_fit_key, data$community_algorithm, sep = "|")
@@ -1786,6 +2295,8 @@ revision_v2_run_fixture_tests <- function() {
   undefined_score <- estimands$summary_level == "horizon" &
     estimands$TimeP == 25L & estimands$method_id == "gimme" &
     estimands$estimand_id %in% c(
+      "p_correct_given_usable",
+      "signed_dimension_error", "absolute_dimension_error",
       "adjusted_rand_index", "variation_information",
       "assignment_accuracy_conditional"
     )
@@ -1799,14 +2310,85 @@ revision_v2_run_fixture_tests <- function() {
   method_rows$structure_fit_runtime_sec[failed_gimme] <- 900
   method_rows$runtime_sec[failed_gimme] <- 900
   prepared <- revision_v2_prepare_artifacts(estimands, paired, method_rows)
+  challenge_plot_sensitivity <- revision_v2_challenge_plot_data(
+    prepared$figure_data$challenge_sensitivity
+  )
   stopifnot(
     identical(names(prepared$tables), names(revision_v2_table_schemas())),
-    setequal(unique(prepared$figure_data$recovery$community_algorithm), REVISION_V2_ALGORITHMS),
+    identical(unique(prepared$figure_data$recovery$community_algorithm), "louvain"),
+    setequal(
+      unique(prepared$figure_data$recovery_sensitivity$community_algorithm),
+      REVISION_V2_ALGORITHMS
+    ),
+    identical(
+      unique(prepared$tables$table1_method_overall.csv$community_algorithm),
+      "louvain"
+    ),
+    setequal(
+      unique(prepared$tables$table1_method_overall.csv$method_id),
+      REVISION_V2_METHOD_ORDER
+    ),
+    all(
+      prepared$tables$table1_method_overall.csv$n_usable_correct_dimension <=
+        prepared$tables$table1_method_overall.csv$n_usable_fits
+    ),
+    all(
+      prepared$tables$table1_method_overall.csv$n_usable_fits <=
+        prepared$tables$table1_method_overall.csv$n_structure_fits
+    ),
+    all(c(
+      "signed_dimension_error", "absolute_dimension_error",
+      "adjusted_rand_index", "assignment_accuracy_conditional"
+    ) %in% prepared$tables$table2_score_quality_marginal_means.csv$estimand_id),
+    all(c(
+      "score_correlation_correct_dimension",
+      "score_nrmse_correct_dimension"
+    ) %in% prepared$tables$table2_score_quality_marginal_means.csv$estimand_id),
+    !any(
+      prepared$tables$table2_score_quality_marginal_means.csv$time_points == 25L &
+        prepared$tables$table2_score_quality_marginal_means.csv$method_id == "gimme" &
+        prepared$tables$table2_score_quality_marginal_means.csv$estimand_id %in% c(
+          "score_correlation_correct_dimension",
+          "score_nrmse_correct_dimension"
+        )
+    ),
+    all(is.finite(
+      prepared$tables$table1_method_overall.csv$monte_carlo_se
+    )),
+    all(is.finite(
+      prepared$tables$table2_score_quality_marginal_means.csv$monte_carlo_se
+    )),
+    setequal(
+      unique(
+        prepared$tables$supplementary_method_readout_sensitivity.csv$community_algorithm
+      ),
+      REVISION_V2_ALGORITHMS
+    ),
     setequal(
       unique(prepared$figure_data$challenge$representation[
         prepared$figure_data$challenge$challenge_id == "softmax_bounded"
       ]),
       c("softmax_raw", "softmax_clr")
+    ),
+    identical(
+      unique(prepared$figure_data$challenge$challenge_label[
+        prepared$figure_data$challenge$challenge_id == "residual_equicorrelation"
+      ]),
+      "Within-block residual dependence"
+    ),
+    all(grepl(
+      "oracle implementation check only",
+      prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$challenge_label[
+        prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$method_id ==
+          "oracle_blocks" &
+          prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$challenge_id ==
+            "softmax_bounded"
+      ],
+      fixed = TRUE
+    )),
+    !any(
+      challenge_plot_sensitivity$method_id == "oracle_blocks" &
+        challenge_plot_sensitivity$challenge_id == "softmax_bounded"
     ),
     all(
       prepared$tables$table3_runtime_feasibility_accounting.csv$readout_rows ==
@@ -1816,6 +2398,13 @@ revision_v2_run_fixture_tests <- function() {
       prepared$tables$table3_runtime_feasibility.csv$runtime_summary_status ==
         "not_estimable_no_successful_fits"
     ) == 1L,
+    identical(
+      prepared$tables$table3_runtime_feasibility.csv$runtime_median_sec[
+        prepared$tables$table3_runtime_feasibility.csv$time_points == 100L &
+          prepared$tables$table3_runtime_feasibility.csv$method_id == "dynEGA"
+      ],
+      5.1
+    ),
     !any(
       prepared$tables$table2_score_quality_marginal_means.csv$time_points == 25L &
         prepared$tables$table2_score_quality_marginal_means.csv$method_id == "gimme" &
@@ -1850,6 +2439,43 @@ revision_v2_run_fixture_tests <- function() {
   artifact_root <- tempfile("revision-artifact-fixture-")
   on.exit(unlink(artifact_root, recursive = TRUE, force = TRUE), add = TRUE)
   revision_v2_render_prepared(prepared, artifact_root)
+
+  # Publishing must replace only the declared artifacts. Everything else in the
+  # output root, including files written by other scripts, has to survive.
+  publish_root <- tempfile("revision-publish-fixture-")
+  on.exit(unlink(publish_root, recursive = TRUE, force = TRUE), add = TRUE)
+  dir.create(file.path(publish_root, "tables"), recursive = TRUE)
+  dir.create(file.path(publish_root, "figures"), recursive = TRUE)
+  bystanders <- file.path(
+    publish_root,
+    c(
+      "manuscript.qmd",
+      file.path("tables", "written_by_another_script.csv"),
+      file.path("figures", "written_by_another_script.pdf")
+    )
+  )
+  for (path in bystanders) {
+    writeLines("sentinel", path)
+  }
+  replaced <- file.path(
+    publish_root, "tables", names(revision_v2_table_schemas())[[1L]]
+  )
+  writeLines("stale", replaced)
+  revision_v2_publish_tree(artifact_root, publish_root)
+  survived <- vapply(bystanders, function(path) {
+    file.exists(path) && identical(readLines(path, warn = FALSE), "sentinel")
+  }, logical(1))
+  if (!all(survived)) {
+    stop(
+      "Publishing removed files the builder does not own: ",
+      paste(basename(bystanders[!survived]), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (identical(readLines(replaced, warn = FALSE), "stale")) {
+    stop("Publishing did not replace an owned artifact.", call. = FALSE)
+  }
+  revision_v2_validate_generated_tree(publish_root)
   invisible(TRUE)
 }
 
