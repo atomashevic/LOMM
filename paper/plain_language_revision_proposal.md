@@ -119,8 +119,9 @@ QMD table-rendering code was updated to match the new CSV headers, and
 `scripts/figures/test_compositional_profile_artifacts.R` was updated to assert the new
 column names and caption wording.
 
-`paper/response_letter.tex` was translated to the new vocabulary, with every
-`\location{}` updated to the new section names, page numbers, and appendix letters.
+`paper/response_letter.tex` follows the same vocabulary, and every `\location{}` gives the current
+section names, appendix letters, figure numbers, and page numbers, each checked against the
+rendered PDF rather than carried over.
 `README.md`, `scripts/README.md`, and `REPRODUCIBILITY.md` prose were updated, leaving
 machine identifiers such as the `loading_aligned` config key untouched.
 
