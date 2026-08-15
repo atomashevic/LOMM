@@ -314,7 +314,62 @@ by a graduate student who has read Golino & Epskamp (2017).
    with "perturbation" to match qmd line 236.
 6. `qmd` line 1452 "worst-case envelope" is standard math usage — leave as is.
 
-## 7. Suggested execution order for the coding agent
+## 7. Response-letter assessment and acceptance outlook
+
+**The letter does the right scientific work** — it answers all 24 points (2 editor,
+8 action-editor, 14 reviewer), and each response maps to a change that the current
+manuscript actually implements (rename, restructure, comparator methods, realism
+check, NRMSE, notation, political example removed, tutorial removed). The
+manuscript's numbers and math are real and correct, so the claims in the letter are
+defensible.
+
+**But the letter is the single largest remaining risk, for four reasons:**
+
+1. It is written in the *old internal vocabulary* the revision just removed —
+   "classifier-output panels", "pre-link linear block-measurement panels",
+   "historical homogeneous revision-v2 linear benchmark", "method-network result
+   rows with recovered score summaries", "CLR panels", "declared indicator blocks".
+   The reviewer's round-1 complaint was exactly that the prose was opaque; a
+   response letter that re-introduces the jargon undercuts the "we made it clearer"
+   message and makes verification hard.
+2. It contains a factual mismatch with the manuscript: line 109 describes Study 1
+   as "six targets … at observed-channel and recovered community-score-summary
+   network results"; the manuscript compares **eight** statistics on the scores and
+   their log-ratio coordinates, with no community-summary representation (see
+   P1-8). It also calls the pull figure "Figure 2" in four places when it is
+   Figure 1 (P1-7).
+3. It does not surface the headline results where the reviewers need them. The
+   "alternative benchmarks" response (line 116) never reports 0.939 / 0.884 / 0.777
+   / 0.176 / 1.000 — the exact evidence that rebuts "the DynEGA authors are just
+   validating DynEGA" (static EGA at 0.884 is the key counter-evidence; the oracle
+   at 1.000 is the sanity check). The realism response (line 109) never states the
+   21.0% improvement or the −0.0418 / −0.0188 component effects.
+4. It still carries the PENDING marker (line 22) and the "historical revision-v2"
+   framing throughout, which reads as unfinished development archaeology rather
+   than a final revision.
+
+**Outlook (calibrated judgment, not a computed probability):**
+
+- Submitted **as-is**: I would put the first-round outcome at roughly 35–45%
+  accept/minor-revision and 55–65% another major revision. The manuscript itself is
+  strong, but the opaque, internally inconsistent letter will (a) fail to
+  demonstrate the improvement the action editor asked for and (b) invite a "please
+  restate the revision and the results clearly" request.
+- After executing the audit fixes — above all a plain-language letter that states
+  the headline numbers (0.939/0.884/0.777/0.176/1.000; 21.0%; the bounded-score
+  collapse to 0.23–0.33), fixes Figure 1/2 and the six-vs-eight mismatch, removes
+  "historical revision-v2" and the PENDING marker — I would put it at roughly
+  65–75% accept or minor revision and 25–35% another round.
+
+The most likely trigger for a further round, even after a clean letter, is the
+bounded-score boundary: Study 2 recovers dimensions from *continuous* indicators,
+and the paper explicitly does not claim recovery from classifier-style bounded
+scores. The bounded-score departure (accuracy falls to 0.23–0.33) is a substantive,
+honest answer, but a reviewer could still ask for a truth definition in log-ratio
+coordinates and a recovery analysis there. That is the one extension request the
+current package does not yet satisfy; expect it as a "minor revision" ask at worst.
+
+## 8. Suggested execution order for the coding agent
 
 1. P0-1, P0-2 (remove stray `---` and MathJax block) — one edit, re-render, inspect.
 2. P0-3 (rebuild the BRM title page) and P2-3 (front-matter cleanup) — then re-render
