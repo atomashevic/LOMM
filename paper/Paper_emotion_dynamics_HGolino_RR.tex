@@ -1,25 +1,29 @@
 % Options for packages loaded elsewhere
+% Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 \PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
 %
 \documentclass[
-]{article}
-
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+\usepackage{xcolor}
 \usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
 \else % if luatex or xetex
-  \usepackage{unicode-math}
+  \usepackage{unicode-math} % this also loads fontspec
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
 \fi
 \usepackage{lmodern}
-\ifPDFTeX\else  
-    % xetex/luatex font selection
+\ifPDFTeX\else
+  % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -37,9 +41,6 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
-\usepackage{xcolor}
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 % Make \paragraph and \subparagraph free-standing
 \makeatletter
 \ifx\paragraph\undefined\else
@@ -65,8 +66,8 @@
 \makeatother
 
 
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
 \usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
 \usepackage{etoolbox}
@@ -91,6 +92,8 @@
 % Set default figure placement to htbp
 \def\fps@figure{htbp}
 \makeatother
+
+
 % definitions for citeproc citations
 \NewDocumentCommand\citeproctext{}{}
 \NewDocumentCommand\citeproc{mm}{%
@@ -125,21 +128,19 @@
 \newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
 \newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
 
-% brm-title-page.tex — LaTeX preamble additions for the BRM submission.
-%
-% NOTE: This file is a PLACEHOLDER. The original was never committed to git and
-% was lost when scripts/figures/build_revision_v2_artifacts.R replaced the whole
-% paper/ directory during a figure rebuild. Restore your original content here.
-%
-% It is referenced from the manuscript front matter as:
-%     format: pdf: include-in-header: includes/brm-title-page.tex
-% so anything placed here goes into the LaTeX preamble, before \begin{document}.
-%
-% Author and affiliation details for the submission title page are recorded in
-% paper/brm_submission_title_page.md.
-%
-% Intentionally empty of formatting commands so that the manuscript renders
-% without silently applying a layout that differs from the original.
+
+
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+ 
+
+
+\KOMAoption{captions}{tableheading}
 \raggedbottom
 \usepackage{setspace}
 \usepackage{placeins}
@@ -194,16 +195,18 @@
 \@ifpackageloaded{caption}{}{\usepackage{caption}}
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
-
 \usepackage{bookmark}
-
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same} % disable monospaced font for URLs
+\urlstyle{same}
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
 \hypersetup{
   pdftitle={A Latent Oscillator Measurement Model to Simulate Emotional-Expression Score Dynamics in Video},
   pdfauthor={Aleksandar Tomašević; Hudson Golino; Alexander P. Christensen},
-  pdfkeywords={classifier-output scores, simulation, dimensional
-recovery, compositional data, dynamic networks},
+  pdfkeywords={\xmpquote{classifier-output scores, simulation,
+dimensional recovery, compositional data, dynamic networks}},
   colorlinks=true,
   linkcolor={blue},
   filecolor={Maroon},
@@ -217,7 +220,6 @@ Emotional-Expression Score Dynamics in Video}
 \author{Aleksandar Tomašević \and Hudson Golino \and Alexander P.
 Christensen}
 \date{}
-
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -378,9 +380,7 @@ number of dimensions, and the correct assignment of variables to
 dimensions, from simulated continuous data with a known factor
 structure. A follow-up sensitivity analysis tests whether recovery
 changes when video clips differ in their baseline score levels and
-overall variability. Throughout the paper we keep two things separate:
-whether simulated data look like real data, and whether a method
-recovers a structure we planted ourselves.
+overall variability.
 
 A population-level analysis compares the networks these methods estimate
 on a common scale. When all loadings are equal, the derivative-based
@@ -402,7 +402,7 @@ and turns it into a network in a different way. Static EGA, which
 ignores the time ordering entirely, shows how much can be recovered from
 score levels alone. Finally, an oracle receives the true structure and
 passes it through the same community-detection step as the other
-methods, which confirms that the shared machinery works as intended.
+methods, which checks that the shared machinery works as intended.
 
 The paper addresses three questions. First, how closely do simulated
 score series reproduce the statistical properties of real classifier
@@ -440,7 +440,7 @@ did.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_pipeline_visual_abstract.png}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Diagram showing two separate study paths: comparing simulated with real scores, and recovering a known structure from simulated continuous data.}]{figures/lomm_pipeline_visual_abstract.png}
 
 }
 
@@ -477,18 +477,16 @@ of change jointly determine what happens next
 (\citeproc{ref-boker2015Adaptive}{Boker, 2015};
 \citeproc{ref-boker2002Method}{Boker \& Nesselroade, 2002};
 \citeproc{ref-ollero2023Characterizing}{Ollero et al., 2025}). LOMM
-builds on that representation and adds two further layers, giving three
-in total: a latent layer that generates expressive trajectories, an
-activity layer that decides which dimension is expressed at each moment,
-and an observation layer that turns those trajectories into observed
-scores, either bounded scores that sum to one or continuous indicators
-with a known factor structure (\citeproc{ref-golino2020modeling}{H.
-Golino et al., 2022}; \citeproc{ref-nesselroade2002}{Nesselroade et al.,
-2002}). The three layers can be varied independently, which is what
-allows a simulated dataset to be attributed to a specific part of the
-generating process. This section describes each layer with the minimum
-notation needed to follow the studies; Appendix A gives the complete
-formal specification.
+builds on that representation and adds two further layers, giving the
+three introduced above: latent, activity, and observation. The
+observation layer produces either bounded scores that sum to one or
+continuous indicators with a known factor structure
+(\citeproc{ref-golino2020modeling}{H. Golino et al., 2022};
+\citeproc{ref-nesselroade2002}{Nesselroade et al., 2002}). The three
+layers can be varied independently, which is what allows a simulated
+dataset to be attributed to a specific part of the generating process.
+This section describes each layer with the minimum notation needed to
+follow the studies; Appendix A gives the complete formal specification.
 
 The latent layer treats each expressive dimension as a damped oscillator
 observed at equally spaced times. Let \(n=1,\ldots,T\) index
@@ -743,7 +741,7 @@ make the role of the random acceleration inputs visible.
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/lomm_three_factor_example.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio,alt={Two line plots comparing three decaying oscillators without random inputs with the same oscillators driven by random inputs.}]{figures/lomm_three_factor_example.pdf}
 
 }
 
@@ -876,7 +874,7 @@ structure is known.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/mafw_video_dynega_example.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Four-panel illustration with selected video frames, their emotion scores, score trajectories over time, and a DynEGA network.}]{figures/mafw_video_dynega_example.pdf}
 
 }
 
@@ -988,6 +986,8 @@ statistic.
 
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
+{
+
 \begin{longtable}[]{@{}
   >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0397}}
   >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2980}}
@@ -1034,6 +1034,8 @@ F & Growing trajectories, switching dimension & Yes & 1.10 / 0.10 & 0.12
 / 0.30 & Positive velocity feedback; higher input scale \\
 
 \end{longtable}
+
+}
 
 \endgroup
 
@@ -1326,7 +1328,7 @@ closer agreement.
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/compositional_profile_discrepancy.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio,alt={Dot plot comparing the discrepancy between simulated and real data for eight configurations, on scores and on log-ratio coordinates.}]{figures/compositional_profile_discrepancy.pdf}
 
 }
 
@@ -1407,7 +1409,7 @@ emotions. Its score RMSE was 0.105 and its first-difference RMSE was
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_mafw_closest_timeseries.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Two aligned line plots comparing 49 frames of real MAFW scores with the closest of 100 simulated realizations, both highlighting helplessness, fear, disgust, and sadness.}]{figures/lomm_mafw_closest_timeseries.pdf}
 
 }
 
@@ -1446,6 +1448,8 @@ for every failure and timeout. Static EGA and the oracle appear
 alongside the three methods that use the time ordering.
 
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
+
+{
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0915}}
@@ -1497,6 +1501,8 @@ Block oracle & 21600 & 21600 & 21600 & 1.000 (0.0000) & 1.000 (0.0000) &
 
 \end{longtable}
 
+}
+
 \endgroup
 
 All 21,600 DynEGA fits were usable, and 93.9\% returned the correct
@@ -1514,7 +1520,7 @@ shared machinery was not itself a source of error.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure5_dimension_recovery.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Interval plot of the probability of recovering the correct number of dimensions, by method and simulation scenario.}]{figures/figure5_dimension_recovery.pdf}
 
 }
 
@@ -1581,7 +1587,7 @@ series.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure6_factor_effects.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Interval plot of paired changes in accuracy under departures in starting states, activity transitions, loadings, residuals, inputs, and bounded scores.}]{figures/figure6_factor_effects.pdf}
 
 }
 
@@ -1656,7 +1662,7 @@ reused for a second community-detection algorithm.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure7_runtime_feasibility.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Log-scale interval plot of runtimes for successful fits, by method and time-series length.}]{figures/figure7_runtime_feasibility.pdf}
 
 }
 
@@ -1864,7 +1870,7 @@ will not be included.
 \setlength{\parindent}{-0.5in}
 \setlength{\leftskip}{0.5in}
 
-\phantomsection\label{refs}
+\protect\phantomsection\label{refs}
 \begin{CSLReferences}{1}{0}
 \bibitem[\citeproctext]{ref-mckeownAreFacialExpression2024}
 Allison, B., \& McKeown, G. (2023). Are facial expression technologies
@@ -1885,11 +1891,6 @@ Fast unfolding of communities in large networks. \emph{Journal of
 Statistical Mechanics: Theory and Experiment}, \emph{2008}(10), P10008.
 \url{https://doi.org/10.1088/1742-5468/2008/10/P10008}
 
-\bibitem[\citeproctext]{ref-boker2015Adaptive}
-Boker, S. M. (2015). Adaptive equilibrium regulation: {A} balancing act
-in two timescales. \emph{Journal for Person-Oriented Research},
-\emph{1}(1-2), 99--109. \url{https://doi.org/10.17505/jpor.2015.10}
-
 \bibitem[\citeproctext]{ref-glla2010}
 Boker, S. M., Deboek, P. R., Edler, C., \& Keel, P. (2010). Generalized
 local linear approximation of derivatives from time series. In S. M.
@@ -1897,6 +1898,11 @@ Chow, E. Ferrer, \& F. Hsieh (Eds.), \emph{The notre dame series on
 quantitative methodology. Statistical methods for modeling human
 dynamics: An interdisciplinary dialogue} (pp. 161--178).
 Routledge/Taylor \& Francis Group.
+
+\bibitem[\citeproctext]{ref-boker2015Adaptive}
+Boker, S. M. (2015). Adaptive equilibrium regulation: {A} balancing act
+in two timescales. \emph{Journal for Person-Oriented Research},
+\emph{1}(1-2), 99--109. \url{https://doi.org/10.17505/jpor.2015.10}
 
 \bibitem[\citeproctext]{ref-boker2002Method}
 Boker, S. M., \& Nesselroade, J. R. (2002). A {Method} for {Modeling}
@@ -2588,7 +2594,7 @@ clips that fall outside the zero-mean target assumed here.
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 \begin{table}
 
-\caption{Assumptions behind the Appendix B population results and the corresponding sensitivity analyses.}
+\caption{\label{tab:unnamed-chunk-1}Assumptions behind the Appendix B population results and the corresponding sensitivity analyses.}
 \centering
 \begin{tabular}[t]{p{1.25in}p{2.25in}p{2.25in}}
 \toprule
@@ -3422,7 +3428,7 @@ Summary}\label{b.6-method-comparison-summary}
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
 \begin{longtable}[t]{lp{1.35in}p{1.65in}p{1.55in}}
-\caption{Population signal and perturbation sources for the compared recovery methods under the simplified LOMM block target.}\\
+\caption{\label{tab:unnamed-chunk-2}Population signal and perturbation sources for the compared recovery methods under the simplified LOMM block target.}\\
 \toprule
 Method & Population signal & Main perturbation & Expected implication\\
 \midrule
@@ -3456,7 +3462,7 @@ first-difference variability.
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Discrepancy between simulated and real score series for the eight configurations, complete frames analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
+\caption{\label{tab:unnamed-chunk-3}Discrepancy between simulated and real score series for the eight configurations, complete frames analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
 \centering
 \begin{tabular}[t]{llrrrrll}
 \toprule
@@ -3521,7 +3527,7 @@ Log ratio & Clip baseline + scale + activity transition & 0.3360 & 0.0020 & 0.38
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Discrepancy for each summary statistic under the baseline-and-scale configuration, complete frames analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
+\caption{\label{tab:unnamed-chunk-4}Discrepancy for each summary statistic under the baseline-and-scale configuration, complete frames analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
 \centering
 \begin{tabular}[t]{llrrrllrr}
 \toprule
@@ -3594,7 +3600,7 @@ Fits}\label{appendix-d-grouping-and-trajectory-diagnostics-among-usable-fits}
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Louvain grouping diagnostics for the main benchmark with $T=100$. Each estimate uses the datasets available for it. Monte Carlo standard errors are calculated per simulated dataset, and intervals resample whole datasets, stratified by condition.}
+\caption{\label{tab:unnamed-chunk-5}Louvain grouping diagnostics for the main benchmark with $T=100$. Each estimate uses the datasets available for it. Monte Carlo standard errors are calculated per simulated dataset, and intervals resample whole datasets, stratified by condition.}
 \centering
 \begin{tabular}[t]{llrrcrrr}
 \toprule
@@ -3751,7 +3757,7 @@ Accounting}\label{appendix-e-runtime-and-feasibility-accounting}
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{lclrrrrcc}
-\caption{Runtime and feasibility per fit in the main benchmark. Completion intervals resample whole simulated datasets. Runtime summaries use successful fits and include estimating the structure plus extracting the network and partitioning. Each successful structure is reused for the three community-algorithm analyses.}\\
+\caption{\label{tab:unnamed-chunk-6}Runtime and feasibility per fit in the main benchmark. Completion intervals resample whole simulated datasets. Runtime summaries use successful fits and include estimating the structure plus extracting the network and partitioning. Each successful structure is reused for the three community-algorithm analyses.}\\
 \toprule
 Analysis & Time-series length & Method & Structure fits & Successful fits & Timeout fits & Error fits & Completion & Runtime median [IQR], s\\
 \midrule
@@ -3797,7 +3803,7 @@ oscillatory factors satisfy the cadence restriction
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{p{1.55in}rrrrrrr}
-\caption{Generator-only amplitude diagnostics for the finite-horizon amplification families with $N=50$, four indicators per dimension, loading 0.60, residual standard deviation 0.25, and 25 replications. The final-tenth energy fraction is the proportion of squared activity-scaled latent signal occurring in the last 10\% of observations, averaged across clips within a panel and then summarized across replications.}\\
+\caption{\label{tab:unnamed-chunk-7}Generator-only amplitude diagnostics for the finite-horizon amplification families with $N=50$, four indicators per dimension, loading 0.60, residual standard deviation 0.25, and 25 replications. The final-tenth energy fraction is the proportion of squared activity-scaled latent signal occurring in the last 10\% of observations, averaged across clips within a panel and then summarized across replications.}\\
 \toprule
 Scenario & Dimensions & $T$ & $H$ & Median max $|\tilde{x}|$ & 95th percentile max $|\tilde{x}|$ & Median observed IQR & Final-tenth energy fraction\\
 \midrule
@@ -3822,7 +3828,7 @@ Switching finite-horizon amplification & 4 & 300 & 74.75 & 1201.6 & 1350.2 & 4.9
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
 \begin{longtable}[t]{cp{1.75in}p{0.85in}cccp{0.75in}}
-\caption{Activity schedules and dynamic-feedback settings for each scenario family.}\\
+\caption{\label{tab:unnamed-chunk-8}Activity schedules and dynamic-feedback settings for each scenario family.}\\
 \toprule
 Code & Family & Dynamic family & Switching & Gain & Dwell & Velocity feedback\\
 \midrule
@@ -3840,7 +3846,7 @@ F & Switching finite-horizon amplification & Amplification & Yes & 1.10 / 0.10 &
 \begingroup\scriptsize\setlength{\tabcolsep}{4pt}
 
 \begin{longtable}[t]{ccp{1.35in}p{1.35in}p{1.35in}}
-\caption{Dynamic parameters for each scenario family. Acceleration-input SD is the per-step standard deviation $\sigma_q$ used in each condition.}\\
+\caption{\label{tab:unnamed-chunk-9}Dynamic parameters for each scenario family. Acceleration-input SD is the per-step standard deviation $\sigma_q$ used in each condition.}\\
 \toprule
 Code & Dimensions & eta & zeta & Acceleration-input SD\\
 \midrule
@@ -3872,7 +3878,7 @@ F & 4D & -0.05; -0.10; -0.15; -0.20 & 0.08; 0.10; 0.12; 0.14 & 0.35; 0.35; 0.35;
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{ccrrrrrrrrrl}
-\caption{Deterministic stability diagnostics and modal exponential-rate factors $g(H)=\exp\{H\max\operatorname{Re}(r)\}$ for each scenario factor. The $g(H)$ columns describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.}\\
+\caption{\label{tab:unnamed-chunk-10}Deterministic stability diagnostics and modal exponential-rate factors $g(H)=\exp\{H\max\operatorname{Re}(r)\}$ for each scenario factor. The $g(H)$ columns describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.}\\
 \toprule
 Code & Dimensions & Factor & eta & zeta & Discriminant & Max Re(root) & rho(Phi[.4]) & rho(Phi[.25]) & g(H[100]) & g(H[300]) & Regime\\
 \midrule
@@ -3964,7 +3970,7 @@ step rather than estimator variability.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figureS1_dimension_recovery_readout_sensitivity.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Accuracy across six scenarios for three community-detection algorithms, five methods, and two time-series lengths.}]{figures/figureS1_dimension_recovery_readout_sensitivity.pdf}
 
 }
 
@@ -3978,7 +3984,7 @@ is reused across all three community-detection algorithms.}
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figureS2_factor_effects_readout_sensitivity.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Paired changes in accuracy for three community-detection algorithms across departures in starting states, activity, loadings, residuals, inputs, and bounded scores.}]{figures/figureS2_factor_effects_readout_sensitivity.pdf}
 
 }
 
