@@ -1,25 +1,29 @@
 % Options for packages loaded elsewhere
+% Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 \PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
 %
 \documentclass[
-]{article}
-
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+\usepackage{xcolor}
 \usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
 \else % if luatex or xetex
-  \usepackage{unicode-math}
+  \usepackage{unicode-math} % this also loads fontspec
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
 \fi
 \usepackage{lmodern}
-\ifPDFTeX\else  
-    % xetex/luatex font selection
+\ifPDFTeX\else
+  % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -37,9 +41,6 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
-\usepackage{xcolor}
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 % Make \paragraph and \subparagraph free-standing
 \makeatletter
 \ifx\paragraph\undefined\else
@@ -65,8 +66,8 @@
 \makeatother
 
 
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
 \usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
 \usepackage{etoolbox}
@@ -91,6 +92,8 @@
 % Set default figure placement to htbp
 \def\fps@figure{htbp}
 \makeatother
+
+
 % definitions for citeproc citations
 \NewDocumentCommand\citeproctext{}{}
 \NewDocumentCommand\citeproc{mm}{%
@@ -125,21 +128,19 @@
 \newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
 \newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
 
-% brm-title-page.tex — LaTeX preamble additions for the BRM submission.
-%
-% NOTE: This file is a PLACEHOLDER. The original was never committed to git and
-% was lost when scripts/figures/build_revision_v2_artifacts.R replaced the whole
-% paper/ directory during a figure rebuild. Restore your original content here.
-%
-% It is referenced from the manuscript front matter as:
-%     format: pdf: include-in-header: includes/brm-title-page.tex
-% so anything placed here goes into the LaTeX preamble, before \begin{document}.
-%
-% Author and affiliation details for the submission title page are recorded in
-% paper/brm_submission_title_page.md.
-%
-% Intentionally empty of formatting commands so that the manuscript renders
-% without silently applying a layout that differs from the original.
+
+
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+ 
+
+
+\KOMAoption{captions}{tableheading}
 \raggedbottom
 \usepackage{setspace}
 \usepackage{placeins}
@@ -194,16 +195,18 @@
 \@ifpackageloaded{caption}{}{\usepackage{caption}}
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
-
 \usepackage{bookmark}
-
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same} % disable monospaced font for URLs
+\urlstyle{same}
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
 \hypersetup{
   pdftitle={A Latent Oscillator Measurement Model to Simulate Emotional-Expression Score Dynamics in Video},
   pdfauthor={Aleksandar Tomašević; Hudson Golino; Alexander P. Christensen},
-  pdfkeywords={classifier-output scores, simulation, dimensional
-recovery, compositional data, dynamic networks},
+  pdfkeywords={\xmpquote{classifier-output scores, simulation,
+dimensional recovery, compositional data, dynamic networks}},
   colorlinks=true,
   linkcolor={blue},
   filecolor={Maroon},
@@ -217,7 +220,6 @@ Emotional-Expression Score Dynamics in Video}
 \author{Aleksandar Tomašević \and Hudson Golino \and Alexander P.
 Christensen}
 \date{}
-
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -238,17 +240,16 @@ methods recover the number of dimensions from continuous data with a
 known factor structure. With Louvain community detection, 100
 observations per clip, and failed or timed-out fits counted as
 incorrect, accuracy was 0.939 for DynEGA, 0.884 for static EGA, 0.777
-for GraphicalVAR, 0.176 for GIMME, and 1.000 for an oracle given the
-true structure. A population analysis shows that networks built from
-derivatives and networks built from lagged residuals share the same
-\(1/(k-1)\) upper bound on within-dimension partial correlations, so
-using derivatives carries no automatic advantage. Shorter time series
-and independent starting states reduced accuracy, whereas gradual rather
-than abrupt changes in expression mattered little. The two studies
-answer different questions, and Study 2 does not establish recovery from
-bounded scores. LOMM lets researchers test dynamic methods against a
-known structure before treating patterns in classifier scores as
-substantive findings.
+for GraphicalVAR, and 0.176 for GIMME. A population analysis shows that
+networks built from derivatives and networks built from lagged residuals
+share the same \(1/(k-1)\) upper bound on within-dimension partial
+correlations, so using derivatives carries no automatic advantage.
+Shorter time series and independent starting states reduced accuracy,
+whereas gradual rather than abrupt changes in expression mattered
+little. The two studies answer different questions, and Study 2 does not
+establish recovery from bounded scores. LOMM lets researchers test
+dynamic methods against a known structure before treating patterns in
+classifier scores as substantive findings.
 \end{abstract}
 
 
@@ -378,9 +379,7 @@ number of dimensions, and the correct assignment of variables to
 dimensions, from simulated continuous data with a known factor
 structure. A follow-up sensitivity analysis tests whether recovery
 changes when video clips differ in their baseline score levels and
-overall variability. Throughout the paper we keep two things separate:
-whether simulated data look like real data, and whether a method
-recovers a structure we planted ourselves.
+overall variability.
 
 A population-level analysis compares the networks these methods estimate
 on a common scale. When all loadings are equal, the derivative-based
@@ -400,31 +399,24 @@ coordinated over time. GraphicalVAR and GIMME are neighboring methods
 for intensive longitudinal data; each estimates a different structure
 and turns it into a network in a different way. Static EGA, which
 ignores the time ordering entirely, shows how much can be recovered from
-score levels alone. Finally, an oracle receives the true structure and
-passes it through the same community-detection step as the other
-methods, which confirms that the shared machinery works as intended.
-
-The paper addresses three questions. First, how closely do simulated
-score series reproduce the statistical properties of real classifier
-scores, judged on video clips held out from calibration? Second, how
-well do DynEGA, static EGA, GraphicalVAR, and GIMME recover a known
-factor structure from simulated continuous data? Third, how does that
-recovery change under shorter time series, independent starting states,
-gradual rather than abrupt changes in expression, cross-loadings,
-correlated residuals within a dimension, correlated inputs across
-dimensions, and bounded scores? The oracle answers none of these
-questions on its own; it is an implementation check rather than a target
-that a real estimator could be expected to reach.
-
-The two studies answer different questions and support different
-conclusions. Study 1 asks only whether simulated data resemble real data
-on a set of chosen summary statistics; it says nothing about whether any
-structure can be recovered. Study 2 asks only whether methods recover a
-structure we planted; it says nothing about whether the simulated data
-look like real classifier output. The sensitivity analysis sits inside
-Study 2: it adds between-clip differences in baseline and scale while
-keeping the data-generating factor structure fixed.
-Figure~\ref{fig-pipeline} shows how the two studies relate.
+score levels alone. The paper addresses three questions. First, how
+closely do simulated score series reproduce the statistical properties
+of real classifier scores, judged on video clips held out from
+calibration? Second, how well do DynEGA, static EGA, GraphicalVAR, and
+GIMME recover a known factor structure from simulated continuous data?
+Third, how does that recovery change under shorter time series,
+independent starting states, gradual rather than abrupt changes in
+expression, cross-loadings, correlated residuals within a dimension,
+correlated inputs across dimensions, and bounded scores? The two studies
+answer different questions and support different conclusions. Study 1
+asks only whether simulated data resemble real data on a set of chosen
+summary statistics; it says nothing about whether any structure can be
+recovered. Study 2 asks only whether methods recover a structure we
+planted; it says nothing about whether the simulated data look like real
+classifier output. The sensitivity analysis sits inside Study 2: it adds
+between-clip differences in baseline and scale while keeping the
+data-generating factor structure fixed. Figure~\ref{fig-pipeline} shows
+how the two studies relate.
 
 Appendix B gives the population-level argument behind Study 2. Under
 ideal measurement, indicators belonging to the same dimension share a
@@ -440,7 +432,7 @@ did.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_pipeline_visual_abstract.png}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Diagram showing two separate study paths: comparing simulated with real scores, and recovering a known structure from simulated continuous data.}]{figures/lomm_pipeline_visual_abstract.png}
 
 }
 
@@ -477,18 +469,16 @@ of change jointly determine what happens next
 (\citeproc{ref-boker2015Adaptive}{Boker, 2015};
 \citeproc{ref-boker2002Method}{Boker \& Nesselroade, 2002};
 \citeproc{ref-ollero2023Characterizing}{Ollero et al., 2025}). LOMM
-builds on that representation and adds two further layers, giving three
-in total: a latent layer that generates expressive trajectories, an
-activity layer that decides which dimension is expressed at each moment,
-and an observation layer that turns those trajectories into observed
-scores, either bounded scores that sum to one or continuous indicators
-with a known factor structure (\citeproc{ref-golino2020modeling}{H.
-Golino et al., 2022}; \citeproc{ref-nesselroade2002}{Nesselroade et al.,
-2002}). The three layers can be varied independently, which is what
-allows a simulated dataset to be attributed to a specific part of the
-generating process. This section describes each layer with the minimum
-notation needed to follow the studies; Appendix A gives the complete
-formal specification.
+builds on that representation and adds two further layers, giving the
+three introduced above: latent, activity, and observation. The
+observation layer produces either bounded scores that sum to one or
+continuous indicators with a known factor structure
+(\citeproc{ref-golino2020modeling}{H. Golino et al., 2022};
+\citeproc{ref-nesselroade2002}{Nesselroade et al., 2002}). The three
+layers can be varied independently, which is what allows a simulated
+dataset to be attributed to a specific part of the generating process.
+This section describes each layer with the minimum notation needed to
+follow the studies; Appendix A gives the complete formal specification.
 
 The latent layer treats each expressive dimension as a damped oscillator
 observed at equally spaced times. Let \(n=1,\ldots,T\) index
@@ -743,7 +733,7 @@ make the role of the random acceleration inputs visible.
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/lomm_three_factor_example.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio,alt={Two line plots comparing three decaying oscillators without random inputs with the same oscillators driven by random inputs.}]{figures/lomm_three_factor_example.pdf}
 
 }
 
@@ -792,12 +782,12 @@ Study 2 asks whether methods recover a structure specified in advance.}
 Analysis & Data type and configuration & Target & Methods & What it supports\\
 \midrule
 Study 1: five-fold comparison & Bounded scores summing to one; clips differ in baseline and scale & Chosen summary statistics of real score series & Comparison of eight configurations & Similarity to real data in this sample\\
-Study 2: main benchmark ($T=100$) & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME, oracle & Recovery under the data-generating factor structure\\
-Study 2: shorter series ($T=25$) & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME, oracle & Recovery when each clip has fewer observations\\
-Study 2: targeted departures & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, oracle & Sensitivity to starting states, activity transitions, loadings, residuals, and inputs\\
-Study 2: bounded-score departure & Bounded scores summing to one, or their log-ratio coordinates & Dimensions and variable assignment among the original channels & DynEGA, static EGA, GraphicalVAR & Recovery once scores are constrained to sum to one; the oracle is omitted because it never sees the transformed data\\
+Study 2: main benchmark ($T=100$) & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME & Recovery under the data-generating factor structure\\
+Study 2: shorter series ($T=25$) & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME & Recovery when each clip has fewer observations\\
+Study 2: targeted departures & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR & Sensitivity to starting states, activity transitions, loadings, residuals, and inputs\\
+Study 2: bounded-score departure & Bounded scores summing to one, or their log-ratio coordinates & Dimensions and variable assignment among the original channels & DynEGA, static EGA, GraphicalVAR & Recovery once scores are constrained to sum to one\\
 \addlinespace
-Study 2: between-clip variability & Continuous indicators; clips differ in baseline and scale within the loading space & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME, oracle & Whether recovery survives between-clip differences in selected conditions\\
+Study 2: between-clip variability & Continuous indicators; clips differ in baseline and scale within the loading space & Number of dimensions and assignment of variables to them & DynEGA, static EGA, GraphicalVAR, GIMME & Whether recovery survives between-clip differences in selected conditions\\
 Study 2: broad grid & Continuous indicators; all clips share one measurement model & Number of dimensions and assignment of variables to them & DynEGA & DynEGA recovery across a wider range of conditions\\
 \bottomrule
 \end{tabular}
@@ -876,7 +866,7 @@ structure is known.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/mafw_video_dynega_example.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Four-panel illustration with selected video frames, their emotion scores, score trajectories over time, and a DynEGA network.}]{figures/mafw_video_dynega_example.pdf}
 
 }
 
@@ -988,6 +978,8 @@ statistic.
 
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
+{
+
 \begin{longtable}[]{@{}
   >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0397}}
   >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2980}}
@@ -1034,6 +1026,8 @@ F & Growing trajectories, switching dimension & Yes & 1.10 / 0.10 & 0.12
 / 0.30 & Positive velocity feedback; higher input scale \\
 
 \end{longtable}
+
+}
 
 \endgroup
 
@@ -1166,8 +1160,8 @@ across clips. A matrix left with no positive edge yielded one community
 per variable rather than falling back to absolute weights. Louvain was
 primary; Leiden and Walktrap were applied to the same graph.
 
-DynEGA, static EGA, GraphicalVAR, GIMME, and the oracle all receive the
-same simulated data and are judged against the same true grouping.
+DynEGA, static EGA, GraphicalVAR, and GIMME all receive the same
+simulated data and are judged against the same true grouping.
 GraphicalVAR and GIMME were left out of the broad 518,400-dataset
 extension because evaluating them across a complete factorial design was
 not computationally practical; both were included in the main benchmark,
@@ -1186,11 +1180,14 @@ sensitivity analyses.
 
 Static EGA applies EBICglasso and the same grouping step to each
 dataset's contemporaneous correlation matrix, ignoring the time ordering
-entirely. The oracle skips estimation and simply passes a graph
-containing the true within-dimension edges, and no others, through that
-same grouping step. It therefore verifies that the conversion, variable
-ordering, and scoring work correctly, and provides a ceiling that no
-method estimating from data could be expected to exceed.
+entirely. As an implementation check, an oracle that skips estimation
+and passes a graph containing the true within-dimension edges, and no
+others, through the same conversion and grouping step recovered every
+grouping wherever it applies --- at both series lengths, under all three
+community algorithms, and in every departure that leaves the indicators
+continuous --- so the shared machinery contributes no error of its own.
+The oracle is not a method and is not reported alongside them;
+Appendices D and E retain its full accounting.
 
 Not every fit succeeds, and how failures are counted turns out to matter
 a great deal for the comparison. We therefore report three quantities.
@@ -1326,7 +1323,7 @@ closer agreement.
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/compositional_profile_discrepancy.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio,alt={Dot plot comparing the discrepancy between simulated and real data for eight configurations, on scores and on log-ratio coordinates.}]{figures/compositional_profile_discrepancy.pdf}
 
 }
 
@@ -1407,7 +1404,7 @@ emotions. Its score RMSE was 0.105 and its first-difference RMSE was
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_mafw_closest_timeseries.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Two aligned line plots comparing 49 frames of real MAFW scores with the closest of 100 simulated realizations, both highlighting helplessness, fear, disgust, and sadness.}]{figures/lomm_mafw_closest_timeseries.pdf}
 
 }
 
@@ -1442,10 +1439,12 @@ Dimensions}\label{study-2-results-recovery-of-the-number-of-dimensions}
 Table~\ref{tbl-method-overall} reports the Louvain results for the main
 \(T=100\) benchmark. Recall that worst-case accuracy requires both a
 usable fit and the correct number of dimensions, so it charges a method
-for every failure and timeout. Static EGA and the oracle appear
-alongside the three methods that use the time ordering.
+for every failure and timeout. Static EGA appears alongside the three
+methods that use the time ordering.
 
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
+
+{
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0915}}
@@ -1492,10 +1491,10 @@ GIMME & 21600 & 4846 & 3795 & 0.224 (0.0028) & 0.783 (0.0059) & 0.176
 (0.0026) \\
 Static EGA & 21600 & 21526 & 19093 & 0.997 (0.0004) & 0.887 (0.0022) &
 0.884 (0.0022) \\
-Block oracle & 21600 & 21600 & 21600 & 1.000 (0.0000) & 1.000 (0.0000) &
-1.000 (0.0000) \\
 
 \end{longtable}
+
+}
 
 \endgroup
 
@@ -1507,14 +1506,13 @@ produced usable fits for 94.1\% of datasets and 77.7\% worst-case
 accuracy. GIMME was accurate when it worked, getting the number of
 dimensions right in 78.3\% of its usable fits, but it produced a usable
 fit only 22.4\% of the time, which brings its worst-case accuracy down
-to 17.6\%. The oracle recovered every grouping, confirming that the
-shared machinery was not itself a source of error.
+to 17.6\%.
 
 \begin{figure}[H]
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure5_dimension_recovery.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Interval plot of the probability of recovering the correct number of dimensions, by method and simulation scenario.}]{figures/figure5_dimension_recovery.pdf}
 
 }
 
@@ -1561,9 +1559,14 @@ change in the overall pattern. Appendix G reports these comparisons.
 
 Appendix D reports how well each method recovered the grouping and the
 trajectories among its usable fits, using ARI, assignment accuracy,
-trajectory correlation, and NRMSE. Those numbers describe what a method
-achieves when it works and should be read alongside, not instead of, the
-worst-case accuracy in Table~\ref{tbl-method-overall}.
+trajectory correlation, and NRMSE. The oracle's true grouping,
+summarized in the same way, gives a marginal trajectory correlation of
+0.729 and NRMSE of 0.642 at \(T=100\); that is the reference for how
+much trajectory recovery the measurement grid and the summary step leave
+available, and static EGA's marginal values (0.727 and 0.641) sit
+essentially at it. Those numbers describe what a method achieves when it
+works and should be read alongside, not instead of, the worst-case
+accuracy in Table~\ref{tbl-method-overall}.
 
 \subsection{Robustness and Sensitivity
 Analyses}\label{robustness-and-sensitivity-analyses}
@@ -1571,59 +1574,52 @@ Analyses}\label{robustness-and-sensitivity-analyses}
 The remaining analyses answer the third question, which concerns how far
 these results survive departures from ideal conditions. Shortening the
 time series to \(T=25\) gave worst-case accuracy of 0.863 for DynEGA,
-0.913 for static EGA, 0.770 for GraphicalVAR, 0 for GIMME, and 1.000 for
-the oracle. Compared with \(T=100\), shorter series cost DynEGA a
-little, left GraphicalVAR roughly where it was, and made GIMME entirely
-infeasible. Static EGA actually did somewhat better on the shorter
-series.
+0.913 for static EGA, 0.770 for GraphicalVAR, and 0 for GIMME. Compared
+with \(T=100\), shorter series cost DynEGA a little, left GraphicalVAR
+roughly where it was, and made GIMME entirely infeasible. Static EGA
+actually did somewhat better on the shorter series.
 
 \begin{figure}[H]
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure6_factor_effects.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Interval plot of paired changes in accuracy under departures in starting states, activity transitions, loadings, residuals, inputs, and bounded scores.}]{figures/figure6_factor_effects.pdf}
 
 }
 
 \caption{\label{fig-factor-effects}Paired change in worst-case accuracy
 under each targeted departure, relative to the ideal condition. DynEGA,
-static EGA, and GraphicalVAR appear throughout; the oracle appears only
-for the continuous-indicator departures, and GIMME was not fitted here.
-The oracle is omitted for bounded scores and log-ratio coordinates
-because it receives the true structure directly and never sees the
-transformed data. Negative values mean worse accuracy. Intervals are
-95\% bootstrap intervals resampling whole datasets.}
+static EGA, and GraphicalVAR appear throughout; GIMME was not fitted
+here. Negative values mean worse accuracy. Intervals are 95\% bootstrap
+intervals resampling whole datasets.}
 
 \end{figure}%
 
 Independent starting states were by far the most consequential
 departure. Accuracy fell from 0.993 to 0.838 for DynEGA, from 0.912 to
-0.525 for static EGA, and from 0.683 to 0.253 for GraphicalVAR, while
-the oracle stayed at 1.000. Giving every dimension the same starting
-state had therefore been making the main benchmark easier than it looks,
-a point we return to in the Discussion and that qualifies the population
-argument in Appendix B. Replacing abrupt switches with five-observation
-gradual transitions changed almost nothing in the conditions we tested:
-DynEGA stayed at 0.993, static EGA at 0.912, and GraphicalVAR moved from
-0.683 to 0.685. Cross-loadings and correlated inputs across dimensions
-also produced small changes. Correlated residuals within a dimension
-actually helped GraphicalVAR and static EGA here, which makes sense:
-unlike the other two departures it adds no association between
-dimensions and so reinforces the very grouping the methods are looking
-for. These are one-at-a-time changes and should not be read as a general
-ranking of which conditions are hardest.
+0.525 for static EGA, and from 0.683 to 0.253 for GraphicalVAR. Giving
+every dimension the same starting state had therefore been making the
+main benchmark easier than it looks, a point we return to in the
+Discussion and that qualifies the population argument in Appendix B.
+Replacing abrupt switches with five-observation gradual transitions
+changed almost nothing in the conditions we tested: DynEGA stayed at
+0.993, static EGA at 0.912, and GraphicalVAR moved from 0.683 to 0.685.
+Cross-loadings and correlated inputs across dimensions also produced
+small changes. Correlated residuals within a dimension actually helped
+GraphicalVAR and static EGA here, which makes sense: unlike the other
+two departures it adds no association between dimensions and so
+reinforces the very grouping the methods are looking for. These are
+one-at-a-time changes and should not be read as a general ranking of
+which conditions are hardest.
 
 Bounding the scores changed the question being asked and sharply reduced
 accuracy on the original channels. DynEGA recovered the correct number
 of dimensions in 0.333 of the log-ratio datasets and 0.233 of the
 bounded-score datasets; the corresponding figures were 0.333 and 0.167
-for static EGA, and 0.087 and 0.002 for GraphicalVAR. The oracle is
-omitted here because it receives the true structure directly and never
-sees the transformed data, so its unchanged result would tell us only
-that the grouping step still works, not whether constraining scores to
-sum to one preserves the structure among the original channels. It does
-not, and these results are the reason Study 1 and Study 2 have to stay
-separate.
+for static EGA, and 0.087 and 0.002 for GraphicalVAR. Constraining
+scores to sum to one does not preserve the structure among the original
+channels, and these results are the reason Study 1 and Study 2 have to
+stay separate.
 
 A final analysis added between-clip differences in baseline and scale to
 selected stable \(T=100\) conditions, drawing the baselines within the
@@ -1637,14 +1633,14 @@ paired difference of \(-0.025\) with a 95\% percentile interval of
 \([-0.100,0.050]\). Static EGA rose from 0.275 to 1.000, because a
 baseline lying in the loading space adds strong between-clip signal
 pointing at exactly the right grouping, and static EGA is well placed to
-use it. GraphicalVAR stayed at 0.0375 and GIMME at 0.400 under both, and
-the oracle stayed at 1.000. GraphicalVAR's figure rests on three correct
-fits out of 80 deliberately chosen datasets and is not comparable with
-its 0.777 across the main benchmark. This was a focused compatibility
-check rather than a test of equivalence: DynEGA's interval still permits
-a loss as large as 0.10, every three-dimensional GIMME fit timed out,
-and GraphicalVAR's unchanged accuracy came with modest declines in ARI
-and assignment accuracy.
+use it. GraphicalVAR stayed at 0.0375 and GIMME at 0.400 under both.
+GraphicalVAR's figure rests on three correct fits out of 80 deliberately
+chosen datasets and is not comparable with its 0.777 across the main
+benchmark. This was a focused compatibility check rather than a test of
+equivalence: DynEGA's interval still permits a loss as large as 0.10,
+every three-dimensional GIMME fit timed out, and GraphicalVAR's
+unchanged accuracy came with modest declines in ARI and assignment
+accuracy.
 
 \subsection{Computational Feasibility}\label{computational-feasibility}
 
@@ -1656,7 +1652,7 @@ reused for a second community-detection algorithm.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figure7_runtime_feasibility.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Log-scale interval plot of runtimes for successful fits, by method and time-series length.}]{figures/figure7_runtime_feasibility.pdf}
 
 }
 
@@ -1705,19 +1701,19 @@ eight configurations in Figure~\ref{fig-empirical-realism} keeps that
 choice visible.
 
 Study 2 then supplied a structure known in advance. DynEGA had the
-highest worst-case accuracy of the methods that estimate from data and
-was the only one that could complete the broad grid. Static EGA also
-performed well, which shows that a good deal of the structure was
-recoverable from score levels alone, without using the time ordering.
-The two methods came apart under the departures. DynEGA barely changed
-when video clips were allowed to differ in baseline and scale, whereas
-static EGA improved sharply, because those differences lie in exactly
-the space it is looking at. Both lost accuracy under independent
-starting states. GraphicalVAR often recovered the right number of
-dimensions when it produced a usable fit, but it was more sensitive to
-conditions and far more expensive to run. GIMME was usually right when
-it worked and usually did not work. All of this describes the specific
-implementations and network conversions we used.
+highest worst-case accuracy and was the only method that could complete
+the broad grid. Static EGA also performed well, which shows that a good
+deal of the structure was recoverable from score levels alone, without
+using the time ordering. The two methods came apart under the
+departures. DynEGA barely changed when video clips were allowed to
+differ in baseline and scale, whereas static EGA improved sharply,
+because those differences lie in exactly the space it is looking at.
+Both lost accuracy under independent starting states. GraphicalVAR often
+recovered the right number of dimensions when it produced a usable fit,
+but it was more sensitive to conditions and far more expensive to run.
+GIMME was usually right when it worked and usually did not work. All of
+this describes the specific implementations and network conversions we
+used.
 
 The independent-starting-state result deserves particular emphasis,
 because it qualifies the main benchmark. Starting every dimension from
@@ -1864,7 +1860,7 @@ will not be included.
 \setlength{\parindent}{-0.5in}
 \setlength{\leftskip}{0.5in}
 
-\phantomsection\label{refs}
+\protect\phantomsection\label{refs}
 \begin{CSLReferences}{1}{0}
 \bibitem[\citeproctext]{ref-mckeownAreFacialExpression2024}
 Allison, B., \& McKeown, G. (2023). Are facial expression technologies
@@ -1885,11 +1881,6 @@ Fast unfolding of communities in large networks. \emph{Journal of
 Statistical Mechanics: Theory and Experiment}, \emph{2008}(10), P10008.
 \url{https://doi.org/10.1088/1742-5468/2008/10/P10008}
 
-\bibitem[\citeproctext]{ref-boker2015Adaptive}
-Boker, S. M. (2015). Adaptive equilibrium regulation: {A} balancing act
-in two timescales. \emph{Journal for Person-Oriented Research},
-\emph{1}(1-2), 99--109. \url{https://doi.org/10.17505/jpor.2015.10}
-
 \bibitem[\citeproctext]{ref-glla2010}
 Boker, S. M., Deboek, P. R., Edler, C., \& Keel, P. (2010). Generalized
 local linear approximation of derivatives from time series. In S. M.
@@ -1897,6 +1888,11 @@ Chow, E. Ferrer, \& F. Hsieh (Eds.), \emph{The notre dame series on
 quantitative methodology. Statistical methods for modeling human
 dynamics: An interdisciplinary dialogue} (pp. 161--178).
 Routledge/Taylor \& Francis Group.
+
+\bibitem[\citeproctext]{ref-boker2015Adaptive}
+Boker, S. M. (2015). Adaptive equilibrium regulation: {A} balancing act
+in two timescales. \emph{Journal for Person-Oriented Research},
+\emph{1}(1-2), 99--109. \url{https://doi.org/10.17505/jpor.2015.10}
 
 \bibitem[\citeproctext]{ref-boker2002Method}
 Boker, S. M., \& Nesselroade, J. R. (2002). A {Method} for {Modeling}
@@ -2588,7 +2584,7 @@ clips that fall outside the zero-mean target assumed here.
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 \begin{table}
 
-\caption{Assumptions behind the Appendix B population results and the corresponding sensitivity analyses.}
+\caption{\label{tab:unnamed-chunk-1}Assumptions behind the Appendix B population results and the corresponding sensitivity analyses.}
 \centering
 \begin{tabular}[t]{p{1.25in}p{2.25in}p{2.25in}}
 \toprule
@@ -3422,7 +3418,7 @@ Summary}\label{b.6-method-comparison-summary}
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
 \begin{longtable}[t]{lp{1.35in}p{1.65in}p{1.55in}}
-\caption{Population signal and perturbation sources for the compared recovery methods under the simplified LOMM block target.}\\
+\caption{\label{tab:unnamed-chunk-2}Population signal and perturbation sources for the compared recovery methods under the simplified LOMM block target.}\\
 \toprule
 Method & Population signal & Main perturbation & Expected implication\\
 \midrule
@@ -3456,7 +3452,7 @@ first-difference variability.
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Discrepancy between simulated and real score series for the eight configurations, complete frames analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
+\caption{\label{tab:unnamed-chunk-3}Discrepancy between simulated and real score series for the eight configurations, complete frames analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
 \centering
 \begin{tabular}[t]{llrrrrll}
 \toprule
@@ -3521,7 +3517,7 @@ Log ratio & Clip baseline + scale + activity transition & 0.3360 & 0.0020 & 0.38
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Discrepancy for each summary statistic under the baseline-and-scale configuration, complete frames analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
+\caption{\label{tab:unnamed-chunk-4}Discrepancy for each summary statistic under the baseline-and-scale configuration, complete frames analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
 \centering
 \begin{tabular}[t]{llrrrllrr}
 \toprule
@@ -3594,7 +3590,7 @@ Fits}\label{appendix-d-grouping-and-trajectory-diagnostics-among-usable-fits}
 \begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
 \begin{table}
 
-\caption{Louvain grouping diagnostics for the main benchmark with $T=100$. Each estimate uses the datasets available for it. Monte Carlo standard errors are calculated per simulated dataset, and intervals resample whole datasets, stratified by condition.}
+\caption{\label{tab:unnamed-chunk-5}Louvain grouping diagnostics for the main benchmark with $T=100$. Each estimate uses the datasets available for it. Monte Carlo standard errors are calculated per simulated dataset, and intervals resample whole datasets, stratified by condition.}
 \centering
 \begin{tabular}[t]{llrrcrrr}
 \toprule
@@ -3751,7 +3747,7 @@ Accounting}\label{appendix-e-runtime-and-feasibility-accounting}
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{lclrrrrcc}
-\caption{Runtime and feasibility per fit in the main benchmark. Completion intervals resample whole simulated datasets. Runtime summaries use successful fits and include estimating the structure plus extracting the network and partitioning. Each successful structure is reused for the three community-algorithm analyses.}\\
+\caption{\label{tab:unnamed-chunk-6}Runtime and feasibility per fit in the main benchmark. Completion intervals resample whole simulated datasets. Runtime summaries use successful fits and include estimating the structure plus extracting the network and partitioning. Each successful structure is reused for the three community-algorithm analyses.}\\
 \toprule
 Analysis & Time-series length & Method & Structure fits & Successful fits & Timeout fits & Error fits & Completion & Runtime median [IQR], s\\
 \midrule
@@ -3797,7 +3793,7 @@ oscillatory factors satisfy the cadence restriction
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{p{1.55in}rrrrrrr}
-\caption{Generator-only amplitude diagnostics for the finite-horizon amplification families with $N=50$, four indicators per dimension, loading 0.60, residual standard deviation 0.25, and 25 replications. The final-tenth energy fraction is the proportion of squared activity-scaled latent signal occurring in the last 10\% of observations, averaged across clips within a panel and then summarized across replications.}\\
+\caption{\label{tab:unnamed-chunk-7}Generator-only amplitude diagnostics for the finite-horizon amplification families with $N=50$, four indicators per dimension, loading 0.60, residual standard deviation 0.25, and 25 replications. The final-tenth energy fraction is the proportion of squared activity-scaled latent signal occurring in the last 10\% of observations, averaged across clips within a panel and then summarized across replications.}\\
 \toprule
 Scenario & Dimensions & $T$ & $H$ & Median max $|\tilde{x}|$ & 95th percentile max $|\tilde{x}|$ & Median observed IQR & Final-tenth energy fraction\\
 \midrule
@@ -3822,7 +3818,7 @@ Switching finite-horizon amplification & 4 & 300 & 74.75 & 1201.6 & 1350.2 & 4.9
 \begingroup\scriptsize\setlength{\tabcolsep}{3pt}
 
 \begin{longtable}[t]{cp{1.75in}p{0.85in}cccp{0.75in}}
-\caption{Activity schedules and dynamic-feedback settings for each scenario family.}\\
+\caption{\label{tab:unnamed-chunk-8}Activity schedules and dynamic-feedback settings for each scenario family.}\\
 \toprule
 Code & Family & Dynamic family & Switching & Gain & Dwell & Velocity feedback\\
 \midrule
@@ -3840,7 +3836,7 @@ F & Switching finite-horizon amplification & Amplification & Yes & 1.10 / 0.10 &
 \begingroup\scriptsize\setlength{\tabcolsep}{4pt}
 
 \begin{longtable}[t]{ccp{1.35in}p{1.35in}p{1.35in}}
-\caption{Dynamic parameters for each scenario family. Acceleration-input SD is the per-step standard deviation $\sigma_q$ used in each condition.}\\
+\caption{\label{tab:unnamed-chunk-9}Dynamic parameters for each scenario family. Acceleration-input SD is the per-step standard deviation $\sigma_q$ used in each condition.}\\
 \toprule
 Code & Dimensions & eta & zeta & Acceleration-input SD\\
 \midrule
@@ -3872,7 +3868,7 @@ F & 4D & -0.05; -0.10; -0.15; -0.20 & 0.08; 0.10; 0.12; 0.14 & 0.35; 0.35; 0.35;
 \begingroup\tiny\setlength{\tabcolsep}{2pt}
 
 \begin{longtable}[t]{ccrrrrrrrrrl}
-\caption{Deterministic stability diagnostics and modal exponential-rate factors $g(H)=\exp\{H\max\operatorname{Re}(r)\}$ for each scenario factor. The $g(H)$ columns describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.}\\
+\caption{\label{tab:unnamed-chunk-10}Deterministic stability diagnostics and modal exponential-rate factors $g(H)=\exp\{H\max\operatorname{Re}(r)\}$ for each scenario factor. The $g(H)$ columns describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.}\\
 \toprule
 Code & Dimensions & Factor & eta & zeta & Discriminant & Max Re(root) & rho(Phi[.4]) & rho(Phi[.25]) & g(H[100]) & g(H[300]) & Regime\\
 \midrule
@@ -3964,7 +3960,7 @@ step rather than estimator variability.
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figureS1_dimension_recovery_readout_sensitivity.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Accuracy across six scenarios for three community-detection algorithms, five methods, and two time-series lengths.}]{figures/figureS1_dimension_recovery_readout_sensitivity.pdf}
 
 }
 
@@ -3978,16 +3974,13 @@ is reused across all three community-detection algorithms.}
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/figureS2_factor_effects_readout_sensitivity.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio,alt={Paired changes in accuracy for three community-detection algorithms across departures in starting states, activity, loadings, residuals, inputs, and bounded scores.}]{figures/figureS2_factor_effects_readout_sensitivity.pdf}
 
 }
 
 \caption{\label{fig-challenge-community-sensitivity}Sensitivity of the
 paired departure effects to Louvain, Leiden, and Walktrap. Values are
-changes in worst-case accuracy relative to the ideal condition. The
-oracle is omitted from the bounded-score and log-ratio comparisons
-because it receives the true structure directly and therefore says
-nothing about what happens once scores are constrained to sum to one.}
+changes in worst-case accuracy relative to the ideal condition.}
 
 \end{figure}%
 

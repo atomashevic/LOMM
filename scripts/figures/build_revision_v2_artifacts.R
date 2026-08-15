@@ -1509,7 +1509,9 @@ revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) 
   if (!identical(algorithms, expected)) {
     stop("Recovery figure data violate the requested community-readout scope.", call. = FALSE)
   }
-  methods <- REVISION_V2_METHOD_ORDER
+  # The oracle is an implementation check, not a reported method; it stays in
+  # the validated inputs and the appendix tables but is not plotted.
+  methods <- setdiff(REVISION_V2_METHOD_ORDER, "oracle_blocks")
   horizons <- c(100L, 25L)
   offsets <- if (length(algorithms) == 1L) 0 else
     seq(-0.16, 0.16, length.out = length(algorithms))
@@ -1647,14 +1649,16 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
     stop("Challenge figure data violate the requested community-readout scope.", call. = FALSE)
   }
   data <- revision_v2_challenge_plot_data(data)
-  methods <- c("dynEGA", "graphicalVAR", "static_EGA", "oracle_blocks")
+  # The oracle is an implementation check, not a reported method; its rows stay
+  # in the validated inputs but are not plotted.
+  methods <- c("dynEGA", "graphicalVAR", "static_EGA")
   challenge_order <- revision_v2_challenge_order(data)
   offsets <- if (length(algorithms) == 1L) 0 else
     seq(-0.16, 0.16, length.out = length(algorithms))
   limits <- range(c(data$conf_low, data$conf_high, 0), finite = TRUE)
   padding <- max(0.03, diff(limits) * 0.05)
   limits <- limits + c(-padding, padding)
-  layout(matrix(seq_len(4L), nrow = 2L, byrow = TRUE))
+  layout(matrix(c(1L, 2L, 3L, 0L), nrow = 2L, byrow = TRUE))
   graphics::par(oma = c(3.5, 4.0, 2.0, 0.4), family = "sans")
   for (method in methods) {
     panel <- data[data$method_id == method, , drop = FALSE]
@@ -1667,11 +1671,7 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
       xaxt = "n",
       ylab = "",
       xlab = "",
-      main = if (method == "oracle_blocks") {
-        "Block oracle (implementation check)"
-      } else {
-        revision_v2_method_label(method)
-      },
+      main = revision_v2_method_label(method),
       bty = "n"
     )
     graphics::abline(h = 0, lty = 2, col = "grey35")
@@ -1703,15 +1703,6 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
       las = 2,
       cex.axis = 0.64
     )
-    if (method == "oracle_blocks") {
-      graphics::text(
-        x = 6.5,
-        y = limits[[1]] + 0.12 * diff(limits),
-        labels = "Not shown for bounded scores:\nthe oracle never sees them",
-        col = "grey30",
-        cex = 0.66
-      )
-    }
   }
   graphics::mtext(
     "Change in worst-case accuracy relative to the ideal condition",
@@ -1751,7 +1742,10 @@ revision_v2_plot_challenge_sensitivity <- function(data) {
 }
 
 revision_v2_plot_runtime <- function(data) {
-  methods <- REVISION_V2_METHOD_ORDER
+  # The oracle is an implementation check, not a reported method; a runtime for
+  # a step that skips estimation is not informative.
+  methods <- setdiff(REVISION_V2_METHOD_ORDER, "oracle_blocks")
+  data <- data[data$method_id %in% methods, , drop = FALSE]
   positions <- rev(seq_along(methods))
   color <- REVISION_V2_COLORS[data$method_id]
   point <- ifelse(data$time_points == 100L, 21L, 24L)
