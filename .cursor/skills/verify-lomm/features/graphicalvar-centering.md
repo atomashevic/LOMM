@@ -18,7 +18,7 @@ Preconditions:
 - Doctor reports `doctor: ok`.
 - The working directory is the repository root.
 
-- **Run test.** Execute the centering test. Run `.cursor/skills/verify-lomm/scripts/verify-lomm drive graphicalvar-centering`. Exit code `0`.
+- **Run test.** Run `.cursor/skills/verify-lomm/scripts/verify-lomm drive graphicalvar-centering`. Exit code `0`.
 - **Read PASS.** Stdout contains `GraphicalVAR finite-clip centering covariance tests: PASS`.
 - **Proof.** Open `.cursor/skills/verify-lomm/evidence/$VERIFY_LOMM_RUN_ID/graphicalvar-centering/proof.json`. `ok` is `true`.
 

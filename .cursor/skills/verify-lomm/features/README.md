@@ -1,6 +1,6 @@
 # LOMM verification map
 
-This directory is the maintained source for verifying user-facing LOMM CLI behavior. Read the index before driving, then use the matching feature file as the recipe.
+Read the index before driving, then use the matching feature file as the recipe.
 
 ## Baseline preconditions
 

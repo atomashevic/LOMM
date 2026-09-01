@@ -19,8 +19,8 @@ Preconditions:
 - Doctor reports `doctor: ok`.
 - The working directory is the repository root.
 
-- **Run example.** Generate the worked example. Run `.cursor/skills/verify-lomm/scripts/verify-lomm drive example-observation-profile`. Exit code `0`. Stdout contains a table with columns `anger`, `fear`, `happiness`, and `neutral`.
-- **Confirm surface.** Read the printed metadata. Stdout contains `public_profile` `compositional_bs`, `baseline_mode` `empirical`, and `observation_surface` `bounded_composition`.
+- **Run example.** Run `.cursor/skills/verify-lomm/scripts/verify-lomm drive example-observation-profile`. Exit code `0`. Stdout contains a table with columns `anger`, `fear`, `happiness`, and `neutral`.
+- **Confirm surface.** Stdout contains `public_profile` `compositional_bs`, `baseline_mode` `empirical`, and `observation_surface` `bounded_composition`.
 - **Proof.** Open `.cursor/skills/verify-lomm/evidence/$VERIFY_LOMM_RUN_ID/example-observation-profile/proof.json`. `ok` is `true` and `missing_tokens` is empty.
 
 ## Gotchas

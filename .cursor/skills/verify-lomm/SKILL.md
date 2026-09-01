@@ -5,7 +5,7 @@ description: Drive the LOMM paper repository from the documented CLI. Run the pu
 
 # Verify LOMM
 
-LOMM is a short-lived CLI, not a server. A user runs R scripts and a Python orchestrator from the repository root. There is no web UI.
+A user runs R scripts and a Python orchestrator from the repository root.
 
 Read [features/README.md](features/README.md) before driving. Drive every listed entry point for the feature you claim. One convenient command is not coverage when the map lists others.
 
@@ -13,7 +13,7 @@ Do not run `scripts/extract.r` as a live pipeline. Do not call orchestrator `lau
 
 ## Launch
 
-There is no process to keep alive. Launch means doctor plus a run id.
+Launch means doctor plus a run id.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -77,7 +77,7 @@ Proof standard:
 .cursor/skills/verify-lomm/scripts/verify-lomm cleanup
 ```
 
-This deletes `/tmp/verify-lomm-$VERIFY_LOMM_RUN_ID` only. It never deletes evidence. There is no daemon to kill. If a drive is still running, wait for that pid or kill that pid from the drive's process, not by process name.
+This deletes `/tmp/verify-lomm-$VERIFY_LOMM_RUN_ID` only. It never deletes evidence. If a drive is still running, wait for that pid or kill that pid from the drive's process, not by process name.
 
 ## Helpers
 
