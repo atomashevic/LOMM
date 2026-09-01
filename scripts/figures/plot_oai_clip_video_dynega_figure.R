@@ -74,7 +74,7 @@ model_description <- if (identical(model_name, "oai-large")) {
 }
 frame_scores_path <- read_char(
   "OAI_CLIP_FIGURE_FRAME_SCORES",
-  "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/frame_scores.csv"
+  ""
 )
 output_dir <- read_char(
   "OAI_CLIP_FIGURE_OUTPUT_DIR",
@@ -96,7 +96,7 @@ selected_frame_labels <- read_label_vec(
 )
 frame_image_dir <- read_char(
   "OAI_CLIP_FIGURE_FRAME_IMAGE_DIR",
-  "/home/atomasevic/FER-evaluation/results/clip-large/mafw-sample-100/_tmp"
+  ""
 )
 
 emotion_cols <- EMPIRICAL_EMOTION_COLUMNS
@@ -148,8 +148,11 @@ smooth_series <- function(x, window) {
   }, numeric(1))
 }
 
-if (!file.exists(frame_scores_path)) {
-  stop("Missing frame scores: ", frame_scores_path, call. = FALSE)
+if (!nzchar(frame_scores_path) || !file.exists(frame_scores_path)) {
+  stop(
+    "Set OAI_CLIP_FIGURE_FRAME_SCORES to the derived frame-score CSV.",
+    call. = FALSE
+  )
 }
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -233,6 +236,12 @@ selected_frames$still_path <- file.path(
   sprintf("%s-frame-%d.jpg", clip_stem, selected_frames$frame_index)
 )
 if (include_frame_stills) {
+  if (!nzchar(frame_image_dir) || !dir.exists(frame_image_dir)) {
+    stop(
+      "Set OAI_CLIP_FIGURE_FRAME_IMAGE_DIR to the selected-frame directory.",
+      call. = FALSE
+    )
+  }
   missing_stills <- selected_frames$still_path[!file.exists(selected_frames$still_path)]
   if (length(missing_stills) > 0L) {
     stop(

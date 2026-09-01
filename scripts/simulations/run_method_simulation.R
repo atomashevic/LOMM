@@ -950,18 +950,25 @@ simulate_benchmark_panel <- function(scen_row, cfg, seed) {
   panel_rows <- vector("list", N_videos)
   subject_list <- vector("list", N_videos)
   latent_list <- vector("list", N_videos)
+  init_list <- vector("list", N_videos)
+  shock_list <- vector("list", N_videos)
+  loading_list <- vector("list", N_videos)
+  error_variance_list <- vector("list", N_videos)
+  measurement_error_list <- vector("list", N_videos)
   schedule_rows <- vector("list", N_videos)
 
   for (id_idx in seq_len(N_videos)) {
-    raw_latent <- simulate_latent_multi(
+    latent_draw <- simulate_latent_multi(
       dt = dt,
       num_steps = TimeP,
       NFAC = NFAC,
       eta = scen_row$eta[[1]],
       zeta = scen_row$zeta[[1]],
       sigma_q = scen_row$sigma_q[[1]],
-      integrator = cfg$integrator
+      integrator = cfg$integrator,
+      return_components = TRUE
     )
+    raw_latent <- latent_draw$positions
 
     schedule <- build_activation_schedule(
       num_steps = TimeP,
@@ -970,6 +977,8 @@ simulate_benchmark_panel <- function(scen_row, cfg, seed) {
       video_idx = id_idx
     )
     latent <- raw_latent * schedule$envelope
+    z_init <- latent_draw$initialization_component * schedule$envelope
+    z_shock <- latent_draw$shock_component * schedule$envelope
 
     measurement_error <- if ("Error_variance" %in% names(scen_row)) {
       as.numeric(scen_row$Error_variance[[1]])
@@ -977,13 +986,15 @@ simulate_benchmark_panel <- function(scen_row, cfg, seed) {
       as.numeric(scen_row$Error[[1]])
     }
 
-    obs_df <- generate_observables_multi(
+    obs_draw <- generate_observables_multi(
       latent = latent,
       NFAC = NFAC,
       NVAR = NVAR,
       error = measurement_error,
-      loadings = scen_row$Loadings
+      loadings = scen_row$Loadings,
+      return_components = TRUE
     )
+    obs_df <- obs_draw$observables
     colnames(obs_df) <- item_names
     obs_df$time <- seq_len(nrow(obs_df))
     obs_df$id <- id_idx
@@ -992,6 +1003,11 @@ simulate_benchmark_panel <- function(scen_row, cfg, seed) {
     subject_list[[id_idx]] <- as.matrix(obs_df[, item_names, drop = FALSE])
     colnames(subject_list[[id_idx]]) <- item_names
     latent_list[[id_idx]] <- latent
+    init_list[[id_idx]] <- z_init
+    shock_list[[id_idx]] <- z_shock
+    loading_list[[id_idx]] <- obs_draw$loading_matrix
+    error_variance_list[[id_idx]] <- obs_draw$error_variance
+    measurement_error_list[[id_idx]] <- obs_draw$measurement_error
     schedule_rows[[id_idx]] <- data.frame(
       id = id_idx,
       active_dim_start = schedule$active_dim[[1]],
@@ -1009,6 +1025,11 @@ simulate_benchmark_panel <- function(scen_row, cfg, seed) {
     panel = dplyr::bind_rows(panel_rows),
     subject_list = subject_list,
     latents = latent_list,
+    latent_initialization = init_list,
+    latent_shock = shock_list,
+    loadings = loading_list,
+    error_variances = error_variance_list,
+    measurement_errors = measurement_error_list,
     item_names = item_names,
     true_membership = normalize_community_map(true_membership),
     NFAC_true = NFAC,

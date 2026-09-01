@@ -194,7 +194,8 @@ simulate_latent_multi <- function(dt, num_steps, NFAC, sigma_q, eta, zeta,
                                   q_cov = NULL,
                                   init_x_sd = NULL,
                                   init_dx_sd = NULL,
-                                  burn_in = 0L) {
+                                  burn_in = 0L,
+                                  return_components = FALSE) {
   requested_steps <- as.integer(num_steps)
   burn_in <- max(0L, as.integer(burn_in))
   total_steps <- requested_steps + burn_in
@@ -257,15 +258,52 @@ simulate_latent_multi <- function(dt, num_steps, NFAC, sigma_q, eta, zeta,
   }
 
   if (burn_in > 0L) {
-    x[(burn_in + 1L):total_steps, , drop = FALSE]
+    keep <- (burn_in + 1L):total_steps
   } else {
-    x[seq_len(requested_steps), , drop = FALSE]
+    keep <- seq_len(requested_steps)
   }
+  positions <- x[keep, , drop = FALSE]
+  if (!isTRUE(return_components)) {
+    return(positions)
+  }
+
+  x_init <- matrix(0, nrow = total_steps, ncol = NFAC)
+  dx_init <- matrix(0, nrow = total_steps, ncol = NFAC)
+  x_init[1, ] <- x[1, ]
+  dx_init[1, ] <- dxdt[1, ]
+  if (total_steps > 1L) {
+    for (i in 2:total_steps) {
+      for (f in seq_len(NFAC)) {
+        step <- integrate_step(
+          method      = integrator,
+          x_old       = x_init[i - 1, f],
+          dx_old      = dx_init[i - 1, f],
+          noise       = 0,
+          dt          = dt,
+          eta         = eta_vec[[f]],
+          zeta        = zeta_vec[[f]],
+          exact_cache = if (is.null(exact_cache)) NULL else exact_cache[[f]]
+        )
+        x_init[i, f] <- step$x
+        dx_init[i, f] <- step$dx
+      }
+    }
+  }
+  initialization <- x_init[keep, , drop = FALSE]
+  list(
+    positions = positions,
+    initialization_component = initialization,
+    shock_component = positions - initialization,
+    shocks = q_t[keep, , drop = FALSE],
+    initial_state = cbind(x = x[1, ], v = dxdt[1, ]),
+    transitions = exact_cache
+  )
 }
 
 # Build measurement model and generate observables
 generate_observables_multi <- function(latent, NFAC, NVAR,
-                                       error, loadings = 0.8) {
+                                       error, loadings = 0.8,
+                                       return_components = FALSE) {
   num_steps <- nrow(latent)
   n_items   <- NFAC * NVAR
   
@@ -289,8 +327,26 @@ generate_observables_multi <- function(latent, NFAC, NVAR,
   obs <- latent %*% t(L) + e
   obs <- as.data.frame(obs)
   colnames(obs) <- paste0("Y", seq_len(n_items))
-  
-  obs
+  if (!isTRUE(return_components)) {
+    return(obs)
+  }
+  measurement_error <- e
+  if (!is.matrix(measurement_error)) {
+    measurement_error <- matrix(
+      measurement_error,
+      nrow = num_steps,
+      ncol = n_items
+    )
+  }
+  rownames(L) <- colnames(obs)
+  colnames(L) <- paste0("F", seq_len(NFAC))
+  colnames(measurement_error) <- colnames(obs)
+  list(
+    observables = obs,
+    loading_matrix = L,
+    error_variance = var_vec,
+    measurement_error = measurement_error
+  )
 }
 
 # One simulated panel: latent NFAC oscillator trajectories -> NFAC * NVAR items (smoothed)

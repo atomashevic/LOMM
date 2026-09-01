@@ -11,10 +11,6 @@
 "Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","anti_damped","p_usable_and_correct",0.994861111111111,0.993194444444444,0.996388888888889,7200,2000
 "Primary record design (T = 100)",100,"graphicalVAR","GraphicalVAR","louvain","asymptotically_stable","p_usable_and_correct",0.753819444444444,0.747152777777778,0.761017939814815,14400,2000
 "Short-record design (T = 25)",25,"graphicalVAR","GraphicalVAR","louvain","asymptotically_stable","p_usable_and_correct",0.658194444444444,0.650277777777778,0.665972222222222,14400,2000
-"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","anti_damped","p_usable_and_correct",1,1,1,7200,2000
-"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","anti_damped","p_usable_and_correct",1,1,1,7200,2000
-"Primary record design (T = 100)",100,"oracle_blocks","Block oracle","louvain","asymptotically_stable","p_usable_and_correct",1,1,1,14400,2000
-"Short-record design (T = 25)",25,"oracle_blocks","Block oracle","louvain","asymptotically_stable","p_usable_and_correct",1,1,1,14400,2000
 "Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","anti_damped","p_usable_and_correct",1,1,1,7200,2000
 "Short-record design (T = 25)",25,"static_EGA","Static EGA","louvain","anti_damped","p_usable_and_correct",1,1,1,7200,2000
 "Primary record design (T = 100)",100,"static_EGA","Static EGA","louvain","asymptotically_stable","p_usable_and_correct",0.825902777777778,0.819861111111111,0.831990162037037,14400,2000

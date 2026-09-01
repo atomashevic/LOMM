@@ -23,7 +23,7 @@ source(aggregator, local = .GlobalEnv)
 
 profile_order <- c("000", "100", "010", "110", "001", "101", "011", "111")
 short_labels <- c(
-  `000` = "Identical clips",
+  `000` = "Common baseline\nand scale",
   `100` = "Clip baseline",
   `010` = "Clip scale",
   `110` = "Clip baseline + scale",
@@ -33,7 +33,7 @@ short_labels <- c(
   `111` = "Clip baseline + scale\n+ transition"
 )
 manuscript_profile_labels <- c(
-  `000` = "Identical clips",
+  `000` = "Common baseline-and-scale configuration",
   `100` = "Clip baseline",
   `010` = "Clip scale",
   `001` = "Activity transition",
@@ -61,12 +61,13 @@ metric_labels <- c(
   total_variance = "Total variance"
 )
 figure_caption <- paste(
-  "Discrepancy between simulated and real score series for the eight",
-  "configurations, averaged over five cross-validation folds. Points are mean",
-  "discrepancies across eight summary statistics within each representation;",
+  "Score-scale discrepancy between simulated and real score series for the eight",
+  "configurations in the five-fold cross-fitted exploratory comparison. Points are mean",
+  "discrepancies across eight summary statistics;",
   "smaller values indicate closer agreement with the real scores from 100 video",
   "clips. The diamond marks the clip baseline + scale configuration, and the",
-  "dotted line marks the identical-clips estimate in each panel. Bootstrap",
+  "dotted line marks the common baseline-and-scale configuration. The selected",
+  "composite also weights the log-ratio representation equally. Bootstrap",
   "intervals are not shown for individual configurations because their",
   "distributions were strongly displaced from the estimates themselves.",
   "Appendix C reports the bootstrap diagnostics."
@@ -212,13 +213,13 @@ scientific_selected_metric_table <- function(profile_metrics) {
   )
 }
 
-draw_profile_panel <- function(data, panel_title, limits) {
+draw_profile_panel <- function(data, panel_title, limits, show_title = TRUE) {
   ordered <- data[match(profile_order, data$profile_id), , drop = FALSE]
   y <- rev(seq_along(profile_order))
   graphics::plot(
     NA_real_, NA_real_, xlim = limits, ylim = c(0.5, 8.5), yaxt = "n",
     xlab = "Mean discrepancy on held-out clips (smaller is better)", ylab = "",
-    bty = "l", main = panel_title
+    bty = "l", main = if (isTRUE(show_title)) panel_title else ""
   )
   grid_values <- pretty(limits, n = 5L)
   graphics::abline(v = grid_values, col = "grey92", lwd = 0.7)
@@ -232,33 +233,44 @@ draw_profile_panel <- function(data, panel_title, limits) {
   graphics::box(bty = "l")
 }
 
-draw_figure <- function(primary, path, device = c("pdf", "png")) {
+draw_figure <- function(
+  primary,
+  path,
+  device = c("pdf", "png"),
+  families = names(family_labels)
+) {
   device <- match.arg(device)
+  families <- intersect(families, names(family_labels))
+  if (length(families) < 1L) artifact_stop("At least one representation is required.")
+  figure_height <- if (length(families) == 1L) 3.6 else 6.4
   temporary <- file.path(dirname(path), paste0(".", basename(path), ".tmp-", Sys.getpid()))
   on.exit(if (file.exists(temporary)) unlink(temporary), add = TRUE)
   if (device == "pdf") {
     grDevices::pdf(
-      temporary, width = 7.1, height = 6.4, useDingbats = FALSE,
+      temporary, width = 7.1, height = figure_height, useDingbats = FALSE,
       timestamp = FALSE
     )
   } else {
     grDevices::png(
-      temporary, width = 7.1, height = 6.4, units = "in", res = 300,
+      temporary, width = 7.1, height = figure_height, units = "in", res = 300,
       type = "cairo-png"
     )
   }
   old_parameters <- graphics::par(no.readonly = TRUE)
   graphics::par(
-    mfrow = c(2L, 1L), mar = c(3.4, 12.2, 2.1, 0.8), oma = c(0.4, 0, 0, 0),
+    mfrow = c(length(families), 1L),
+    mar = c(3.4, 12.2, 2.1, 0.8), oma = c(0.4, 0, 0, 0),
     family = "sans", cex = 0.82, mgp = c(2.0, 0.55, 0), tcl = -0.25
   )
-  limits <- range(primary$estimate, finite = TRUE)
+  displayed <- primary[primary$family %in% families, , drop = FALSE]
+  limits <- range(displayed$estimate, finite = TRUE)
   padding <- max(diff(limits) * 0.08, 0.005)
   limits <- limits + c(-padding, padding)
-  for (family_name in names(family_labels)) {
+  for (family_name in families) {
     draw_profile_panel(
       primary[primary$family == family_name, , drop = FALSE],
-      family_labels[[family_name]], limits
+      family_labels[[family_name]], limits,
+      show_title = length(families) > 1L
     )
   }
   graphics::par(old_parameters)
@@ -325,19 +337,30 @@ run_artifact_build <- function(args = commandArgs(trailingOnly = TRUE)) {
   )
   pdf_path <- file.path(repo_root, "paper", "figures", "compositional_profile_discrepancy.pdf")
   png_path <- file.path(repo_root, "paper", "figures", "compositional_profile_discrepancy.png")
+  all_representations_pdf_path <- file.path(
+    repo_root, "paper", "figures",
+    "compositional_profile_discrepancy_all_representations.pdf"
+  )
+  all_representations_png_path <- file.path(
+    repo_root, "paper", "figures",
+    "compositional_profile_discrepancy_all_representations.png"
+  )
   atomic_write_csv(table, table_path)
   atomic_write_csv(all_views_table, all_views_table_path)
   atomic_write_csv(selected_metric_table, selected_metric_table_path)
   atomic_write_text(figure_caption, caption_path)
   atomic_write_text(all_views_table_caption, all_views_caption_path)
   atomic_write_text(selected_metric_table_caption, selected_metric_caption_path)
-  draw_figure(primary, pdf_path, "pdf")
-  draw_figure(primary, png_path, "png")
+  draw_figure(primary, pdf_path, "pdf", families = "probability")
+  draw_figure(primary, png_path, "png", families = "probability")
+  draw_figure(primary, all_representations_pdf_path, "pdf")
+  draw_figure(primary, all_representations_png_path, "png")
   cat(
     "Published compositional-profile artifacts:\n",
     table_path, "\n", all_views_table_path, "\n", selected_metric_table_path,
     "\n", caption_path, "\n", all_views_caption_path, "\n",
     selected_metric_caption_path, "\n", pdf_path, "\n", png_path, "\n",
+    all_representations_pdf_path, "\n", all_representations_png_path, "\n",
     sep = ""
   )
   invisible(list(
@@ -345,7 +368,9 @@ run_artifact_build <- function(args = commandArgs(trailingOnly = TRUE)) {
     selected_metric_table = selected_metric_table_path, caption = caption_path,
     all_views_caption = all_views_caption_path,
     selected_metric_caption = selected_metric_caption_path,
-    pdf = pdf_path, png = png_path
+    pdf = pdf_path, png = png_path,
+    all_representations_pdf = all_representations_pdf_path,
+    all_representations_png = all_representations_png_path
   ))
 }
 

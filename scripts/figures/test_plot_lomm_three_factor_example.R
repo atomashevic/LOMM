@@ -85,4 +85,30 @@ figure_expect_true(
   "Repeated Figure 1 rendering produced different PDF bytes."
 )
 
+process_first <- figure_environment$lomm_process_data(seed = 1729L)
+process_repeat <- figure_environment$lomm_process_data(seed = 1729L)
+figure_expect_true(
+  identical(process_first, process_repeat),
+  "A fixed seed did not reproduce the worked LOMM process data."
+)
+figure_expect_true(
+  identical(
+    levels(process_first$panel),
+    c("Latent process", "Activity", "Expressed signal", "Observed indicators")
+  ),
+  "The worked LOMM process panels are incomplete or out of order."
+)
+figure_expect_true(
+  all(is.finite(process_first$value)),
+  "The worked LOMM process contains a non-finite value."
+)
+
+process_pdf <- tempfile(fileext = ".pdf")
+on.exit(unlink(process_pdf, force = TRUE), add = TRUE)
+figure_environment$lomm_process_write(process_pdf, seed = 1729L)
+figure_expect_true(
+  file.exists(process_pdf) && file.info(process_pdf)$size > 0L,
+  "The worked LOMM process PDF was not created."
+)
+
 cat("LOMM three-factor Figure 1 tests: PASS\n")

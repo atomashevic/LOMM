@@ -13,13 +13,6 @@
 "graphicalVAR","GraphicalVAR","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0.00166666666666667,0,0.005,600,2000
 "graphicalVAR","GraphicalVAR","louvain","softmax_bounded","Softmax bounded (CLR)","softmax_clr","p_usable_and_correct_difference",-0.596666666666667,-0.638333333333333,-0.555,600,2000
 "graphicalVAR","GraphicalVAR","louvain","softmax_bounded","Softmax bounded (raw)","softmax_raw","p_usable_and_correct_difference",-0.681666666666667,-0.718333333333333,-0.645,600,2000
-"oracle_blocks","Block oracle","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","residual_equicorrelation","Within-block residual dependence","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","smooth_activity_gate","Smooth Activity Gate","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","softmax_bounded","Softmax bounded (CLR; oracle implementation check only)","softmax_clr","p_usable_and_correct_difference",0,0,0,600,2000
-"oracle_blocks","Block oracle","louvain","softmax_bounded","Softmax bounded (raw; oracle implementation check only)","softmax_raw","p_usable_and_correct_difference",0,0,0,600,2000
 "static_EGA","Static EGA","louvain","cross_loadings","Cross Loadings","linear_z","p_usable_and_correct_difference",0,0,0,600,2000
 "static_EGA","Static EGA","louvain","independent_initialization","Independent Initialization","linear_z","p_usable_and_correct_difference",-0.386666666666667,-0.425,-0.345,600,2000
 "static_EGA","Static EGA","louvain","latent_shock_equicorrelation","Latent Shock Equicorrelation","linear_z","p_usable_and_correct_difference",0,0,0,600,2000

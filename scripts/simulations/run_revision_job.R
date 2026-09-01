@@ -3,10 +3,17 @@
 revision_script_path <- function() {
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
-  if (length(file_arg) != 1L) {
-    stop("Cannot locate run_revision_job.R.", call. = FALSE)
+  if (length(file_arg) == 1L) {
+    path <- normalizePath(sub("^--file=", "", file_arg), mustWork = TRUE)
+    if (identical(basename(path), "run_revision_job.R")) {
+      return(path)
+    }
   }
-  normalizePath(sub("^--file=", "", file_arg), mustWork = TRUE)
+  candidate <- file.path("scripts", "simulations", "run_revision_job.R")
+  if (file.exists(candidate)) {
+    return(normalizePath(candidate, mustWork = TRUE))
+  }
+  stop("Cannot locate run_revision_job.R.", call. = FALSE)
 }
 
 REVISION_RUNNER_PATH <- revision_script_path()
@@ -1630,6 +1637,11 @@ revision_simulate_challenge_panel <- function(scen_row) {
   panels <- vector("list", n_videos)
   subjects <- vector("list", n_videos)
   latents <- vector("list", n_videos)
+  init_list <- vector("list", n_videos)
+  shock_list <- vector("list", n_videos)
+  loading_list <- vector("list", n_videos)
+  error_variance_list <- vector("list", n_videos)
+  measurement_error_list <- vector("list", n_videos)
   schedules <- vector("list", n_videos)
   latent_standard_hashes <- character(n_videos)
   residual_standard_hashes <- character(n_videos)
@@ -1680,6 +1692,20 @@ revision_simulate_challenge_panel <- function(scen_row) {
     if (burn_in > 0L) {
       latent <- latent[(burn_in + 1L):total, , drop = FALSE]
     }
+    latent_init <- matrix(NA_real_, nrow = nrow(latent), ncol = n_factors)
+    latent_init[1L, ] <- state[, 1L]
+    velocity_init <- state[, 2L]
+    if (nrow(latent) > 1L) {
+      for (time in 2:nrow(latent)) {
+        for (factor in seq_len(n_factors)) {
+          updated <- transitions[[factor]]$transition %*%
+            c(latent_init[time - 1L, factor], velocity_init[[factor]])
+          latent_init[time, factor] <- updated[[1L]]
+          velocity_init[[factor]] <- updated[[2L]]
+        }
+      }
+    }
+    latent_shock <- latent - latent_init
     set.seed(revision_component_seed(pair_key, video, "activity_schedule"))
     schedule <- build_activation_schedule(time_points, n_factors, scen_row, video)
     schedule_hashes[[video]] <- revision_object_sha256(schedule$active_dim)
@@ -1695,6 +1721,8 @@ revision_simulate_challenge_panel <- function(scen_row) {
       schedule$envelope
     }
     latent <- latent * envelope
+    z_init <- latent_init * envelope
+    z_shock <- latent_shock * envelope
     set.seed(revision_component_seed(pair_key, video, "loading_basis"))
     loading_basis <- matrix(
       stats::rnorm(length(item_names) * n_factors, sd = 0.05),
@@ -1746,6 +1774,11 @@ revision_simulate_challenge_panel <- function(scen_row) {
     panels[[video]] <- panel
     subjects[[video]] <- observed
     latents[[video]] <- latent
+    init_list[[video]] <- z_init
+    shock_list[[video]] <- z_shock
+    loading_list[[video]] <- loadings
+    error_variance_list[[video]] <- residual_covariance
+    measurement_error_list[[video]] <- residual
     schedules[[video]] <- data.frame(
       id = video,
       switch_count = schedule$switch_count,
@@ -1759,6 +1792,11 @@ revision_simulate_challenge_panel <- function(scen_row) {
     panel = do.call(rbind, panels),
     subject_list = subjects,
     latents = latents,
+    latent_initialization = init_list,
+    latent_shock = shock_list,
+    loadings = loading_list,
+    error_variances = error_variance_list,
+    measurement_errors = measurement_error_list,
     item_names = item_names,
     true_membership = normalize_community_map(membership),
     NFAC_true = n_factors,

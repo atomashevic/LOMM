@@ -117,4 +117,43 @@ centering_expect_true(
   "Monte Carlo residual covariance disagrees with the centered formula."
 )
 
+full_residual <- graphicalvar_schur_residual(
+  analytic$previous_covariance,
+  analytic$current_covariance,
+  analytic$lag_covariance
+)
+centering_expect_equal(
+  full_residual,
+  analytic$residual_covariance,
+  tolerance = 1e-12,
+  message = "Full-matrix Schur residual disagrees with the equal-block formula."
+)
+
+orthogonal <- graphicalvar_orthogonal_residual_variance(error_variance, time_points)
+centering_expect_equal(
+  orthogonal,
+  error_variance * (time_points - 2) / (time_points - 1),
+  message = "Contrast-subspace residual variance r_perp is incorrect."
+)
+centering_expect_equal(
+  graphicalvar_orthogonal_residual_variance(error_variance, 100L),
+  error_variance * 98 / 99,
+  message = "T=100 r_perp must equal psi (T-2)/(T-1)."
+)
+
+error_matrices <- graphicalvar_centered_error_matrices(
+  diag(error_variance, indicators),
+  time_points
+)
+centering_expect_equal(
+  diag(error_matrices$contemporaneous),
+  rep(error_variance * (1 - 1 / time_points), indicators),
+  message = "Full-matrix centered error variance is incorrect."
+)
+centering_expect_equal(
+  diag(error_matrices$lag1),
+  rep(-error_variance / time_points, indicators),
+  message = "Full-matrix centered lag-1 error covariance is incorrect."
+)
+
 cat("GraphicalVAR finite-clip centering covariance tests: PASS\n")

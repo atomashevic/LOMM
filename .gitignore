@@ -35,3 +35,11 @@ AGENTS.md
 research-log.md
 research/
 tools/
+
+# Local manuscript-review and revision-working files.
+MANUSCRIPT_AUDIT_REPORT.md
+REVISION_V2_HANDOFF.md
+research.yaml
+paper/RR_V2_deliverables/
+paper/plain_language_revision_proposal.md
+paper/brm_submission_title_page.md

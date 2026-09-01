@@ -37,7 +37,12 @@ selected_metric_caption_path <- file.path(
 )
 figure_paths <- file.path(
   repo_root, "paper", "figures",
-  c("compositional_profile_discrepancy.pdf", "compositional_profile_discrepancy.png")
+  c(
+    "compositional_profile_discrepancy.pdf",
+    "compositional_profile_discrepancy.png",
+    "compositional_profile_discrepancy_all_representations.pdf",
+    "compositional_profile_discrepancy_all_representations.png"
+  )
 )
 table <- utils::read.csv(table_path, stringsAsFactors = FALSE, check.names = FALSE)
 all_views_table <- utils::read.csv(

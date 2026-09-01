@@ -13,7 +13,7 @@ lomm11_bridge_repo_root <- function() {
   candidates <- candidates[nzchar(candidates)]
   for (candidate in candidates) {
     root <- normalizePath(candidate, mustWork = FALSE)
-    if (file.exists(file.path(root, "research.yaml")) &&
+    if (file.exists(file.path(root, "README.md")) &&
         file.exists(file.path(root, "scripts", "lomm_1_1",
                               "bridge_recovery_config.json"))) {
       return(normalizePath(root, mustWork = TRUE))

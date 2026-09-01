@@ -4,12 +4,15 @@ REVISION_V2_ALGORITHMS <- c("louvain", "leiden", "walktrap")
 REVISION_V2_METHOD_ORDER <- c(
   "dynEGA", "graphicalVAR", "gimme", "static_EGA", "oracle_blocks"
 )
+REVISION_V2_REPORTED_METHODS <- c(
+  "dynEGA", "graphicalVAR", "gimme", "static_EGA"
+)
 REVISION_V2_METHOD_LABELS <- c(
   dynEGA = "DynEGA",
   graphicalVAR = "GraphicalVAR",
   gimme = "GIMME",
   static_EGA = "Static EGA",
-  oracle_blocks = "Block oracle"
+  oracle_blocks = "Known-partition diagnostic"
 )
 REVISION_V2_COLORS <- c(
   dynEGA = "#0072B2",
@@ -459,6 +462,91 @@ revision_v2_canonical_method_rows <- function(long) {
   data
 }
 
+revision_v2_filter_reported_methods <- function(data) {
+  if (!is.data.frame(data) || !"method_id" %in% names(data)) {
+    return(data)
+  }
+  data[data$method_id %in% REVISION_V2_REPORTED_METHODS, , drop = FALSE]
+}
+
+revision_v2_assert_reported_methods <- function(data, label) {
+  if (is.data.frame(data) && "method_id" %in% names(data) &&
+      any(!data$method_id %in% REVISION_V2_REPORTED_METHODS)) {
+    stop(label, " contains an unreported method.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+revision_v2_validate_internal_block_check <- function(method_rows, score_summary) {
+  block_rows <- revision_v2_nonempty(
+    method_rows[
+      method_rows$analysis_scope == "matched" &
+        method_rows$method_id == "oracle_blocks",
+      ,
+      drop = FALSE
+    ],
+    "the internal true-block implementation check"
+  )
+  expected_designs <- expand.grid(
+    TimeP = c(25L, 100L),
+    community_algorithm = REVISION_V2_ALGORITHMS,
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  observed_designs <- unique(
+    block_rows[, c("TimeP", "community_algorithm"), drop = FALSE]
+  )
+  expected_keys <- paste(
+    expected_designs$TimeP, expected_designs$community_algorithm, sep = "\r"
+  )
+  observed_keys <- paste(
+    observed_designs$TimeP, observed_designs$community_algorithm, sep = "\r"
+  )
+  if (!setequal(observed_keys, expected_keys) ||
+      any(block_rows$status != "ok") ||
+      any(is.na(block_rows$structure_fit_status)) ||
+      any(block_rows$structure_fit_status != "ok") ||
+      any(!is.finite(block_rows$n_dim_hat)) ||
+      any(block_rows$n_dim_hat != block_rows$n_dim_true)) {
+    stop("The internal true-block implementation check failed.", call. = FALSE)
+  }
+
+  partition_targets <- c(
+    adjusted_rand_index = 1,
+    variation_information = 0,
+    assignment_accuracy_conditional = 1
+  )
+  partition_rows <- revision_v2_nonempty(
+    score_summary[
+      score_summary$method_id == "oracle_blocks" &
+        score_summary$estimand_id %in% names(partition_targets),
+      ,
+      drop = FALSE
+    ],
+    "the internal true-block partition diagnostics"
+  )
+  expected_partition <- expand.grid(
+    time_points = c(25L, 100L),
+    community_algorithm = REVISION_V2_ALGORITHMS,
+    estimand_id = names(partition_targets),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  partition_columns <- c("time_points", "community_algorithm", "estimand_id")
+  expected_partition_keys <- do.call(
+    paste, c(expected_partition[partition_columns], sep = "\r")
+  )
+  observed_partition_keys <- do.call(
+    paste, c(partition_rows[partition_columns], sep = "\r")
+  )
+  target <- unname(partition_targets[partition_rows$estimand_id])
+  if (!setequal(observed_partition_keys, expected_partition_keys) ||
+      any(abs(partition_rows$estimate - target) > 1e-12)) {
+    stop("The internal true-block partition diagnostics failed.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
 revision_v2_prepare_condition_key <- function(method_rows) {
   matched <- revision_v2_nonempty(
     method_rows[method_rows$analysis_scope == "matched", , drop = FALSE],
@@ -561,20 +649,20 @@ revision_v2_prepare_empirical <- function(estimands) {
 
 revision_v2_estimand_label <- function(id) {
   labels <- c(
-    p_usable = "Usable fit probability",
-    p_correct_given_usable = "Correct dimension given usable",
-    p_usable_and_correct = "Usable and correct probability",
+    p_usable = "Valid network output probability",
+    p_correct_given_usable = "Correct dimension given valid network output",
+    p_usable_and_correct = "Valid output and correct dimension probability",
     signed_dimension_error = "Signed dimension error",
     absolute_dimension_error = "Absolute dimension error",
     adjusted_rand_index = "Adjusted Rand index",
     variation_information = "Variation of information",
-    assignment_accuracy_conditional = "Assignment accuracy given usable",
+    assignment_accuracy_conditional = "Assignment accuracy given valid network output",
     score_correlation_correct_dimension = paste(
-      "Score correlation (correct-dimensional usable fits)"
+      "Trajectory correlation (correct-dimensional valid network outputs)"
     ),
-    score_nrmse_correct_dimension = "Score NRMSE (correct-dimensional usable fits)",
-    score_correlation_marginal = "Score correlation (status-aware marginal)",
-    score_nrmse_marginal = "Score NRMSE (status-aware marginal)"
+    score_nrmse_correct_dimension = "Trajectory NRMSE (correct-dimensional valid network outputs)",
+    score_correlation_marginal = "All-attempt failure-adjusted trajectory correlation",
+    score_nrmse_marginal = "All-attempt failure-adjusted trajectory NRMSE"
   )
   result <- unname(labels[id])
   result[is.na(result)] <- revision_v2_humanize(id[is.na(result)])
@@ -852,15 +940,7 @@ revision_v2_label_challenge_effects <- function(data) {
   ] <- "Softmax bounded (CLR)"
   data$challenge_label[
     data$challenge_id == "residual_equicorrelation"
-  ] <- "Within-block residual dependence"
-  oracle_bounded <- data$method_id == "oracle_blocks" &
-    data$challenge_id == "softmax_bounded"
-  data$challenge_label[
-    oracle_bounded & data$representation == "softmax_raw"
-  ] <- "Softmax bounded (raw; oracle implementation check only)"
-  data$challenge_label[
-    oracle_bounded & data$representation == "softmax_clr"
-  ] <- "Softmax bounded (CLR; oracle implementation check only)"
+  ] <- "Residual equicorrelation (.10 across all indicators)"
   data
 }
 
@@ -1213,6 +1293,7 @@ revision_v2_validate_table <- function(data, filename) {
   if (nrow(data) == 0L) {
     stop("Table is empty: ", filename, call. = FALSE)
   }
+  revision_v2_assert_reported_methods(data, filename)
   permitted_missing <- character()
   if (identical(filename, "table3_runtime_feasibility.csv")) {
     runtime_columns <- c("runtime_median_sec", "runtime_q1_sec", "runtime_q3_sec")
@@ -1317,6 +1398,7 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     "Score-quality horizon estimates",
     allow_undefined = TRUE
   )
+  revision_v2_validate_internal_block_check(method_rows, score_sensitivity)
   trajectory_correct_dimension <-
     revision_v2_prepare_correct_dimension_trajectories(method_rows)
   score_sensitivity <- rbind(
@@ -1367,20 +1449,28 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     supplementary_score_quality_readout_sensitivity.csv = score_sensitivity,
     supplementary_factor_effects_readout_sensitivity.csv = challenge
   )
+  tables <- lapply(tables, revision_v2_filter_reported_methods)
   for (filename in names(tables)) {
     revision_v2_validate_table(tables[[filename]], filename)
   }
+  figure_data <- list(
+    empirical = empirical,
+    recovery = recovery_primary,
+    challenge = challenge_primary,
+    recovery_sensitivity = recovery,
+    challenge_sensitivity = challenge,
+    runtime = runtime,
+    condition_key = condition_key
+  )
+  figure_data <- lapply(figure_data, revision_v2_filter_reported_methods)
+  for (label in names(figure_data)) {
+    revision_v2_assert_reported_methods(
+      figure_data[[label]], paste("Figure data", label)
+    )
+  }
   list(
     tables = tables,
-    figure_data = list(
-      empirical = empirical,
-      recovery = recovery_primary,
-      challenge = challenge_primary,
-      recovery_sensitivity = recovery,
-      challenge_sensitivity = challenge,
-      runtime = runtime,
-      condition_key = condition_key
-    )
+    figure_data = figure_data
   )
 }
 
@@ -1509,9 +1599,7 @@ revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) 
   if (!identical(algorithms, expected)) {
     stop("Recovery figure data violate the requested community-readout scope.", call. = FALSE)
   }
-  # The oracle is an implementation check, not a reported method; it stays in
-  # the validated inputs and the appendix tables but is not plotted.
-  methods <- setdiff(REVISION_V2_METHOD_ORDER, "oracle_blocks")
+  methods <- REVISION_V2_REPORTED_METHODS
   horizons <- c(100L, 25L)
   offsets <- if (length(algorithms) == 1L) 0 else
     seq(-0.16, 0.16, length.out = length(algorithms))
@@ -1559,7 +1647,7 @@ revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) 
       }
       if (identical(method, methods[[1]])) {
         graphics::mtext(
-          if (time_points == 100L) "Main benchmark\n(T = 100)" else
+          if (time_points == 100L) "Primary simulation design\n(T = 100)" else
             "Shorter series\n(T = 25)",
           side = 2,
           line = 2.0,
@@ -1569,7 +1657,7 @@ revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) 
     }
   }
   graphics::mtext(
-    "Worst-case accuracy: usable fit and correct number of dimensions",
+    "Overall correct-dimension recovery rate",
     outer = TRUE,
     side = 2,
     line = 1.5
@@ -1578,7 +1666,7 @@ revision_v2_plot_recovery <- function(data, condition_key, sensitivity = FALSE) 
     if (isTRUE(sensitivity)) {
       "Sensitivity to the community-detection algorithm"
     } else {
-      "Accuracy by scenario (Louvain)"
+      "Overall correct-dimension recovery by scenario (Louvain)"
     },
     outer = TRUE,
     side = 3,
@@ -1614,7 +1702,7 @@ revision_v2_challenge_order <- function(data) {
     independent_initialization = "Independent init.",
     smooth_activity_gate = "Smooth gate",
     cross_loadings = "Cross-loadings",
-    residual_equicorrelation = "Residual dep.\n(within block)",
+    residual_equicorrelation = "Residual equicorr.\n(all indicators)",
     latent_shock_equicorrelation = "Latent-shock corr."
   )
   key <- paste(data$challenge_id, data$representation, sep = "|")
@@ -1628,16 +1716,8 @@ revision_v2_challenge_order <- function(data) {
 }
 
 revision_v2_challenge_plot_data <- function(data) {
-  oracle_bounded <- data$method_id == "oracle_blocks" &
-    data$challenge_id == "softmax_bounded"
-  output <- data[!oracle_bounded, , drop = FALSE]
-  if (any(
-    output$method_id == "oracle_blocks" &
-      output$challenge_id == "softmax_bounded"
-  )) {
-    stop("Bounded-output oracle rows were not removed from the figure data.", call. = FALSE)
-  }
-  output
+  revision_v2_assert_reported_methods(data, "Challenge figure data")
+  data
 }
 
 revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
@@ -1649,8 +1729,6 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
     stop("Challenge figure data violate the requested community-readout scope.", call. = FALSE)
   }
   data <- revision_v2_challenge_plot_data(data)
-  # The oracle is an implementation check, not a reported method; its rows stay
-  # in the validated inputs but are not plotted.
   methods <- c("dynEGA", "graphicalVAR", "static_EGA")
   challenge_order <- revision_v2_challenge_order(data)
   offsets <- if (length(algorithms) == 1L) 0 else
@@ -1705,7 +1783,7 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
     )
   }
   graphics::mtext(
-    "Change in worst-case accuracy relative to the ideal condition",
+    "Change in overall correct-dimension recovery rate relative to the ideal condition",
     outer = TRUE,
     side = 2,
     line = 1.8
@@ -1742,9 +1820,7 @@ revision_v2_plot_challenge_sensitivity <- function(data) {
 }
 
 revision_v2_plot_runtime <- function(data) {
-  # The oracle is an implementation check, not a reported method; a runtime for
-  # a step that skips estimation is not informative.
-  methods <- setdiff(REVISION_V2_METHOD_ORDER, "oracle_blocks")
+  methods <- REVISION_V2_REPORTED_METHODS
   data <- data[data$method_id %in% methods, , drop = FALSE]
   positions <- rev(seq_along(methods))
   color <- REVISION_V2_COLORS[data$method_id]
@@ -1801,7 +1877,7 @@ revision_v2_plot_runtime <- function(data) {
     graphics::text(
       rep(limits[[1]], sum(!runtime_available)),
       y[!runtime_available],
-      labels = "No successful fits",
+      labels = "No valid network outputs",
       pos = 4,
       cex = 0.72
     )
@@ -1809,7 +1885,7 @@ revision_v2_plot_runtime <- function(data) {
   graphics::legend(
     "bottomright",
     legend = c(
-      "Main benchmark (T = 100)",
+      "Primary simulation design (T = 100)",
       "Shorter series (T = 25)"
     ),
     pch = c(21L, 24L),
@@ -2163,6 +2239,19 @@ revision_v2_fixture_estimands <- function() {
   horizon$monte_carlo_se <- 0.01
   horizon$conf_low <- horizon$estimate - 0.05
   horizon$conf_high <- horizon$estimate + 0.05
+  internal_partition_targets <- c(
+    adjusted_rand_index = 1,
+    variation_information = 0,
+    assignment_accuracy_conditional = 1
+  )
+  internal_partition <- horizon$method_id == "oracle_blocks" &
+    horizon$estimand_id %in% names(internal_partition_targets)
+  internal_target <- unname(
+    internal_partition_targets[horizon$estimand_id[internal_partition]]
+  )
+  horizon$estimate[internal_partition] <- internal_target
+  horizon$conf_low[internal_partition] <- internal_target
+  horizon$conf_high[internal_partition] <- internal_target
   horizon$n_panels <- 20L
   horizon$bootstrap_reps <- REVISION_V2_BOOTSTRAP_REPS
   horizon$empirical_family <- NA_character_
@@ -2307,8 +2396,14 @@ revision_v2_run_fixture_tests <- function() {
   challenge_plot_sensitivity <- revision_v2_challenge_plot_data(
     prepared$figure_data$challenge_sensitivity
   )
+  publication_frames <- c(prepared$tables, prepared$figure_data)
   stopifnot(
+    "oracle_blocks" %in% method_rows$method_id,
     identical(names(prepared$tables), names(revision_v2_table_schemas())),
+    all(vapply(publication_frames, function(data) {
+      !"method_id" %in% names(data) ||
+        all(data$method_id %in% REVISION_V2_REPORTED_METHODS)
+    }, logical(1))),
     identical(unique(prepared$figure_data$recovery$community_algorithm), "louvain"),
     setequal(
       unique(prepared$figure_data$recovery_sensitivity$community_algorithm),
@@ -2320,7 +2415,7 @@ revision_v2_run_fixture_tests <- function() {
     ),
     setequal(
       unique(prepared$tables$table1_method_overall.csv$method_id),
-      REVISION_V2_METHOD_ORDER
+      REVISION_V2_REPORTED_METHODS
     ),
     all(
       prepared$tables$table1_method_overall.csv$n_usable_correct_dimension <=
@@ -2368,22 +2463,9 @@ revision_v2_run_fixture_tests <- function() {
       unique(prepared$figure_data$challenge$challenge_label[
         prepared$figure_data$challenge$challenge_id == "residual_equicorrelation"
       ]),
-      "Within-block residual dependence"
+      "Residual equicorrelation (.10 across all indicators)"
     ),
-    all(grepl(
-      "oracle implementation check only",
-      prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$challenge_label[
-        prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$method_id ==
-          "oracle_blocks" &
-          prepared$tables$supplementary_factor_effects_readout_sensitivity.csv$challenge_id ==
-            "softmax_bounded"
-      ],
-      fixed = TRUE
-    )),
-    !any(
-      challenge_plot_sensitivity$method_id == "oracle_blocks" &
-        challenge_plot_sensitivity$challenge_id == "softmax_bounded"
-    ),
+    all(challenge_plot_sensitivity$method_id %in% REVISION_V2_REPORTED_METHODS),
     all(
       prepared$tables$table3_runtime_feasibility_accounting.csv$readout_rows ==
         3L * prepared$tables$table3_runtime_feasibility_accounting.csv$structure_fits
@@ -2408,6 +2490,13 @@ revision_v2_run_fixture_tests <- function() {
         )
     )
   )
+  leaked <- prepared$tables$table1_method_overall.csv
+  leaked$method_id[[1L]] <- "oracle_blocks"
+  leak_failed <- tryCatch({
+    revision_v2_validate_table(leaked, "table1_method_overall.csv")
+    FALSE
+  }, error = function(error) TRUE)
+  stopifnot(leak_failed)
   invalid <- prepared$tables$table1_method_overall.csv
   invalid$estimate[[1]] <- Inf
   failed <- tryCatch({

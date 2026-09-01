@@ -185,6 +185,123 @@ lomm_figure1_write <- function(
   invisible(normalizePath(output_path, mustWork = TRUE))
 }
 
+lomm_process_data <- function(seed = 20260901L, time_points = 80L, dt = 0.4) {
+  parameter <- lomm_figure1_parameters()[2L, , drop = FALSE]
+  latent <- lomm_figure1_simulate(
+    parameter,
+    time_points = time_points,
+    dt = dt,
+    stochastic = TRUE,
+    seed = seed
+  )
+  progress <- (seq_len(time_points) - 1L) / (time_points - 1L)
+  activity <- ifelse(
+    progress < 0.18,
+    0.15,
+    ifelse(
+      progress < 0.32,
+      0.15 + 0.85 * (progress - 0.18) / 0.14,
+      ifelse(
+        progress < 0.72,
+        1,
+        1 - 0.75 * (progress - 0.72) / 0.28
+      )
+    )
+  )
+  expressed <- latent$position * activity
+  loadings <- c(0.65, 0.75, 0.85, 0.70)
+  errors <- lomm_figure1_with_seed(seed + 1L, function() {
+    matrix(
+      stats::rnorm(time_points * length(loadings), sd = 0.18),
+      nrow = time_points,
+      ncol = length(loadings)
+    )
+  })
+  indicators <- outer(expressed, loadings) + errors
+  common <- data.frame(
+    physical_time = latent$physical_time,
+    stringsAsFactors = FALSE
+  )
+  output <- rbind(
+    transform(common, panel = "Latent process", series = "Latent level", value = latent$position),
+    transform(common, panel = "Activity", series = "Activity", value = activity),
+    transform(common, panel = "Expressed signal", series = "Activity x latent level", value = expressed),
+    do.call(rbind, lapply(seq_along(loadings), function(index) {
+      transform(
+        common,
+        panel = "Observed indicators",
+        series = paste("Indicator", index),
+        value = indicators[, index]
+      )
+    }))
+  )
+  output$panel <- factor(
+    output$panel,
+    levels = c("Latent process", "Activity", "Expressed signal", "Observed indicators")
+  )
+  output
+}
+
+lomm_process_plot <- function(data) {
+  series_colors <- c(
+    "Indicator 1" = "#0072B2",
+    "Indicator 2" = "#D55E00",
+    "Indicator 3" = "#009E73",
+    "Indicator 4" = "#CC79A7"
+  )
+  ggplot(data, aes(x = physical_time, y = value)) +
+    geom_hline(yintercept = 0, color = "grey82", linewidth = 0.3) +
+    geom_line(
+      data = subset(data, panel == "Latent process"),
+      color = "#0072B2", linewidth = 0.65
+    ) +
+    geom_line(
+      data = subset(data, panel == "Activity"),
+      color = "#E69F00", linewidth = 0.65
+    ) +
+    geom_line(
+      data = subset(data, panel == "Expressed signal"),
+      color = "#009E73", linewidth = 0.65
+    ) +
+    geom_line(
+      data = subset(data, panel == "Observed indicators"),
+      aes(color = series), linewidth = 0.65
+    ) +
+    facet_grid(panel ~ ., scales = "free_y") +
+    scale_color_manual(values = series_colors, drop = FALSE) +
+    labs(x = "Physical time", y = NULL, color = NULL) +
+    theme_minimal(base_size = 9) +
+    theme(
+      legend.position = "top",
+      panel.grid.minor = element_blank(),
+      strip.text.y = element_text(face = "bold", angle = 0),
+      strip.placement = "outside"
+    )
+}
+
+lomm_process_write <- function(
+  output_path = file.path(
+    lomm_figure1_root,
+    "paper",
+    "figures",
+    "lomm_process_overview.pdf"
+  ),
+  seed = 20260901L
+) {
+  dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
+  figure <- lomm_process_plot(lomm_process_data(seed = seed))
+  ggsave(
+    output_path,
+    figure,
+    width = 7.15,
+    height = 5.4,
+    units = "in",
+    device = cairo_pdf,
+    bg = "white"
+  )
+  invisible(normalizePath(output_path, mustWork = TRUE))
+}
+
 lomm_figure1_invoked_directly <- function() {
   file_argument <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
   if (length(file_argument) != 1L) {
@@ -201,4 +318,6 @@ lomm_figure1_invoked_directly <- function() {
 if (lomm_figure1_invoked_directly()) {
   written <- lomm_figure1_write()
   cat("Wrote", written, "\n")
+  process_written <- lomm_process_write()
+  cat("Wrote", process_written, "\n")
 }

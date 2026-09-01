@@ -66,3 +66,56 @@ graphicalvar_centered_block_moments <- function(
     centered_error_lag1_covariance = d
   )
 }
+
+graphicalvar_schur_residual <- function(
+  previous_covariance,
+  current_covariance,
+  lag_covariance
+) {
+  previous_covariance <- as.matrix(previous_covariance)
+  current_covariance <- as.matrix(current_covariance)
+  lag_covariance <- as.matrix(lag_covariance)
+  if (
+    nrow(previous_covariance) != ncol(previous_covariance) ||
+      !identical(dim(previous_covariance), dim(current_covariance)) ||
+      !identical(dim(previous_covariance), dim(lag_covariance))
+  ) {
+    stop("Lag-pair moment matrices must be square and aligned.", call. = FALSE)
+  }
+  previous_covariance <- (previous_covariance + t(previous_covariance)) / 2
+  current_covariance <- (current_covariance + t(current_covariance)) / 2
+  inverse_previous <- tryCatch(
+    solve(previous_covariance),
+    error = function(error) {
+      eig <- eigen(previous_covariance, symmetric = TRUE)
+      values <- pmax(Re(eig$values), 1e-12)
+      eig$vectors %*% (t(eig$vectors) / values)
+    }
+  )
+  current_covariance -
+    lag_covariance %*% inverse_previous %*% t(lag_covariance)
+}
+
+graphicalvar_centered_error_matrices <- function(error_covariance, time_points) {
+  error_covariance <- as.matrix(error_covariance)
+  if (nrow(error_covariance) != ncol(error_covariance)) {
+    stop("error_covariance must be square.", call. = FALSE)
+  }
+  if (
+    length(time_points) != 1L || !is.finite(time_points) ||
+      time_points < 2 || time_points != as.integer(time_points)
+  ) {
+    stop("time_points must be an integer of at least 2.", call. = FALSE)
+  }
+  time_points <- as.integer(time_points)
+  list(
+    contemporaneous = error_covariance * (1 - 1 / time_points),
+    lag1 = -error_covariance / time_points
+  )
+}
+
+graphicalvar_orthogonal_residual_variance <- function(error_variance, time_points) {
+  moments <- graphicalvar_centered_error_moments(error_variance, time_points)
+  moments$contemporaneous_variance -
+    moments$lag1_covariance^2 / moments$contemporaneous_variance
+}
