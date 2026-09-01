@@ -1,0 +1,359 @@
+#!/usr/bin/env python3
+"""Drive documented LOMM CLI paths and capture transcripts."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import time
+import uuid
+
+
+REQUIRED_R_PACKAGES = (
+    "digest",
+    "dplyr",
+    "jsonlite",
+    "knitr",
+    "MASS",
+    "readr",
+    "tibble",
+    "tidyr",
+)
+
+FEATURES = {
+    "example-observation-profile": {
+        "commands": [["Rscript", "scripts/lomm/example_observation_profile.R"]],
+        "stdout_must_contain": (
+            "bounded_composition",
+            "compositional_bs",
+            "empirical",
+        ),
+        "isolate_paper": False,
+        "require_paper_tools": False,
+    },
+    "public-observation-tests": {
+        "commands": [["Rscript", "scripts/lomm/test_observation_profile.R"]],
+        "stdout_must_contain": ("Public LOMM observation-profile tests: PASS",),
+        "isolate_paper": False,
+        "require_paper_tools": False,
+    },
+    "graphicalvar-centering": {
+        "commands": [
+            ["Rscript", "scripts/simulations/test_graphicalvar_centering_covariance.R"]
+        ],
+        "stdout_must_contain": (
+            "GraphicalVAR finite-clip centering covariance tests: PASS",
+        ),
+        "isolate_paper": False,
+        "require_paper_tools": False,
+    },
+    "job-graph-inspect": {
+        "commands": [
+            [
+                "python3",
+                "scripts/simulations/orchestrate_revision_jobs.py",
+                "plan",
+                "--json",
+            ],
+            [
+                "python3",
+                "scripts/simulations/orchestrate_revision_jobs.py",
+                "validate",
+                "--structural-only",
+            ],
+            [
+                "python3",
+                "scripts/simulations/orchestrate_revision_jobs.py",
+                "print-launch",
+                "--job",
+                "t25_static_oracle",
+            ],
+        ],
+        "stdout_must_contain": (
+            "empirical_cv",
+            "Manifest valid: 16 jobs",
+            "authorized invocation:",
+            "LONG-RUNS-AUTHORIZED",
+        ),
+        "isolate_paper": False,
+        "require_paper_tools": False,
+        "forbid_execute": True,
+    },
+    "paper-render": {
+        "commands": [],
+        "stdout_must_contain": (),
+        "isolate_paper": True,
+        "require_paper_tools": True,
+    },
+}
+
+def repo_root_from(start: Path) -> Path:
+    for candidate in (start, *start.parents):
+        if (candidate / "scripts/lomm/observation_profile.R").is_file() and (
+            candidate / "REPRODUCIBILITY.md"
+        ).is_file():
+            return candidate
+    raise SystemExit("Cannot find the LOMM repo root from " + str(start))
+
+
+def run_id() -> str:
+    existing = os.environ.get("VERIFY_LOMM_RUN_ID")
+    if existing:
+        return existing
+    return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]
+
+
+def evidence_dir(root: Path, rid: str) -> Path:
+    return root / ".cursor/skills/verify-lomm/evidence" / rid
+
+
+def scratch_dir(rid: str) -> Path:
+    override = os.environ.get("VERIFY_LOMM_SCRATCH")
+    if override:
+        return Path(override) / rid
+    return Path("/tmp") / f"verify-lomm-{rid}"
+
+
+def write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def capture(command: list[str], cwd: Path) -> dict:
+    result = subprocess.run(
+        command,
+        cwd=cwd,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return {
+        "command": command,
+        "cwd": str(cwd),
+        "exit_code": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
+
+
+def which(name: str) -> str | None:
+    return shutil.which(name)
+
+
+def r_packages(repo: Path) -> dict[str, bool]:
+    script = (
+        "pkgs <- c("
+        + ", ".join(f'"{name}"' for name in REQUIRED_R_PACKAGES)
+        + '); cat(paste(pkgs, pkgs %in% rownames(installed.packages()), sep="=", collapse="\\n"), "\\n")'
+    )
+    result = capture(["Rscript", "-e", script], repo)
+    found: dict[str, bool] = {name: False for name in REQUIRED_R_PACKAGES}
+    if result["exit_code"] != 0:
+        return found
+    for line in result["stdout"].splitlines():
+        if "=" in line:
+            name, value = line.split("=", 1)
+            found[name] = value.strip() == "TRUE"
+    return found
+
+
+def command_doctor(repo: Path, require_paper_tools: bool) -> int:
+    tools = {
+        "Rscript": which("Rscript"),
+        "python3": which("python3"),
+        "quarto": which("quarto"),
+        "pdflatex": which("pdflatex"),
+    }
+    packages = r_packages(repo) if tools["Rscript"] else {name: False for name in REQUIRED_R_PACKAGES}
+    missing_tools = [name for name in ("Rscript", "python3") if not tools[name]]
+    if require_paper_tools:
+        missing_tools.extend(name for name in ("quarto", "pdflatex") if not tools[name])
+    missing_packages = [name for name, ok in packages.items() if not ok]
+    report = {
+        "repo": str(repo),
+        "tools": tools,
+        "r_packages": packages,
+        "missing_tools": missing_tools,
+        "missing_packages": missing_packages,
+    }
+    print(json.dumps(report, indent=2))
+    if missing_tools or missing_packages:
+        print("doctor: fail", file=sys.stderr)
+        return 1
+    print("doctor: ok")
+    return 0
+
+
+def assert_safe_command(command: list[str], feature: dict) -> None:
+    if not feature.get("forbid_execute"):
+        return
+    joined = " ".join(command)
+    if "--execute" in command or " --execute " in f" {joined} ":
+        raise SystemExit("Refusing a job-graph command that includes --execute.")
+    if command[:1] == ["python3"] and len(command) > 2 and command[2] in {"launch", "resume"}:
+        raise SystemExit("Refusing orchestrator launch/resume. Use print-launch only.")
+
+
+def drive_paper_render(repo: Path, scratch: Path, out_dir: Path) -> list[dict]:
+    isolated = scratch / "paper"
+    if isolated.exists():
+        shutil.rmtree(isolated)
+    shutil.copytree(repo / "paper", isolated, dirs_exist_ok=False)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    qmd = isolated / "Paper_emotion_dynamics_HGolino_RR.qmd"
+    letter = isolated / "response_letter.tex"
+    runs = [
+        capture(
+            [
+                "quarto",
+                "render",
+                str(qmd),
+                "--to",
+                "pdf",
+                "--output-dir",
+                str(out_dir),
+            ],
+            isolated,
+        ),
+        capture(
+            [
+                "pdflatex",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                f"-output-directory={out_dir}",
+                str(letter),
+            ],
+            isolated,
+        ),
+    ]
+    return runs
+
+
+def command_drive(repo: Path, feature_id: str, rid: str) -> int:
+    if feature_id not in FEATURES:
+        known = ", ".join(sorted(FEATURES))
+        raise SystemExit(f"Unknown feature {feature_id}. Known: {known}")
+    feature = FEATURES[feature_id]
+    if command_doctor(repo, feature["require_paper_tools"]) != 0:
+        return 1
+    evidence = evidence_dir(repo, rid)
+    scratch = scratch_dir(rid)
+    evidence.mkdir(parents=True, exist_ok=True)
+    scratch.mkdir(parents=True, exist_ok=True)
+    feature_dir = evidence / feature_id
+    if feature_dir.exists():
+        shutil.rmtree(feature_dir)
+    feature_dir.mkdir(parents=True, exist_ok=True)
+
+    if feature["isolate_paper"]:
+        runs = drive_paper_render(repo, scratch, scratch / "paper-out")
+        pdf = scratch / "paper-out" / "Paper_emotion_dynamics_HGolino_RR.pdf"
+        letter_pdf = scratch / "paper-out" / "response_letter.pdf"
+        extra_ok = pdf.is_file() and letter_pdf.is_file()
+        if extra_ok:
+            shutil.copy2(pdf, feature_dir / pdf.name)
+            shutil.copy2(letter_pdf, feature_dir / letter_pdf.name)
+        combined_stdout = "\n".join(run["stdout"] for run in runs)
+        missing_tokens: list[str] = []
+        if not extra_ok:
+            missing_tokens.append("isolated PDF outputs")
+    else:
+        runs = []
+        for command in feature["commands"]:
+            assert_safe_command(command, feature)
+            runs.append(capture(command, repo))
+        combined_stdout = "\n".join(run["stdout"] for run in runs)
+        missing_tokens = [
+            token
+            for token in feature["stdout_must_contain"]
+            if token not in combined_stdout
+        ]
+        extra_ok = True
+
+    proof = {
+        "feature": feature_id,
+        "run_id": rid,
+        "repo": str(repo),
+        "evidence_dir": str(feature_dir),
+        "scratch_dir": str(scratch),
+        "exit_codes": [run["exit_code"] for run in runs],
+        "commands": [run["command"] for run in runs],
+        "missing_tokens": missing_tokens,
+        "ok": all(run["exit_code"] == 0 for run in runs) and not missing_tokens and extra_ok,
+    }
+    for index, run in enumerate(runs, start=1):
+        write_text(feature_dir / f"{index:02d}.stdout.txt", run["stdout"])
+        write_text(feature_dir / f"{index:02d}.stderr.txt", run["stderr"])
+        write_text(feature_dir / f"{index:02d}.command.txt", " ".join(run["command"]) + "\n")
+        write_text(feature_dir / f"{index:02d}.exit_code.txt", str(run["exit_code"]) + "\n")
+    write_text(feature_dir / "proof.json", json.dumps(proof, indent=2) + "\n")
+    print(json.dumps(proof, indent=2))
+    if not proof["ok"]:
+        print("drive: fail", file=sys.stderr)
+        return 1
+    print("drive: ok")
+    return 0
+
+
+def command_cleanup(repo: Path, rid: str) -> int:
+    scratch = scratch_dir(rid)
+    if scratch.exists():
+        shutil.rmtree(scratch)
+    evidence = evidence_dir(repo, rid)
+    print(
+        json.dumps(
+            {
+                "removed_scratch": str(scratch),
+                "evidence_kept": str(evidence),
+                "evidence_exists": evidence.is_dir(),
+            },
+            indent=2,
+        )
+    )
+    print("cleanup: ok")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", type=Path, default=Path.cwd())
+    parser.add_argument("--run-id", default=None)
+    sub = parser.add_subparsers(dest="command", required=True)
+    doctor = sub.add_parser("doctor", help="Read-only readiness check.")
+    doctor.add_argument("--paper-tools", action="store_true")
+    drive = sub.add_parser("drive", help="Drive one mapped feature.")
+    drive.add_argument("feature")
+    sub.add_parser("cleanup", help="Remove this run's scratch directory. Keep evidence.")
+    sub.add_parser("features", help="List feature ids.")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    repo = repo_root_from(args.repo.resolve())
+    rid = args.run_id or run_id()
+    os.environ["VERIFY_LOMM_RUN_ID"] = rid
+    if args.command == "doctor":
+        return command_doctor(repo, args.paper_tools)
+    if args.command == "features":
+        print("\n".join(FEATURES))
+        return 0
+    if args.command == "drive":
+        return command_drive(repo, args.feature, rid)
+    if args.command == "cleanup":
+        return command_cleanup(repo, rid)
+    parser.error("unknown command")
+    return 2
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        raise SystemExit(130)
