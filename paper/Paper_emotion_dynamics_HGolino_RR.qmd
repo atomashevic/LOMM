@@ -148,7 +148,7 @@ knitr::include_graphics(pipeline_path)
 
 LOMM represents a standard psychometric situation: several observed variables are fallible indicators of a smaller number of latent processes, and those processes change over time. As an illustration, suppose a simulation has three latent dimensions labeled approach-affiliation, threat-defense, and orienting-novelty, and the anger, fear, disgust, and anxiety channels are assigned as indicators of threat-defense. Those four channels would covary over time because they load on the same latent dimension, and each would also carry channel-specific measurement error. A recovery method should group the four channels together and should find three dimensions. These labels only illustrate a possible simulation design; whether MAFW scores have this structure is not tested here.
 
-LOMM generates data in three layers. The latent layer describes how each latent dimension changes over time. The activity layer determines how strongly that dimension is expressed at each observation. The observation layer creates multiple indicators with prespecified loadings and measurement error. Keeping these layers separate allows a researcher to change the dynamics, the expression pattern, or the measurement quality while holding the other components fixed.
+LOMM generates data in three layers (@fig-lomm-process). The latent layer describes how each latent dimension changes over time. The activity layer determines how strongly that dimension is expressed at each observation. The observation layer creates multiple indicators with prespecified loadings and measurement error. Keeping these layers separate allows a researcher to change the dynamics, the expression pattern, or the measurement quality while holding the other components fixed.
 
 *Notation.* Clips are indexed by $i=1,\ldots,N$ and observations within a clip by $n=1,\ldots,T$, at times $t_n=(n-1)\Delta$, where $\Delta$ is the observation interval. Latent dimensions are indexed by $f=1,\ldots,m$. Continuous indicators are indexed by $j=1,\ldots,p$; in Study 2, $p=mk$ with $k$ indicators per dimension. Bounded scores have $J$ channels. Bold symbols are vectors or matrices.
 
@@ -187,10 +187,10 @@ Row $j$ of $\boldsymbol\Lambda_i$ contains the loadings of indicator $j$ on the 
 
 ```{r}
 #| label: fig-lomm-process
-#| fig-cap: "A worked LOMM example for one latent dimension. Panels from top to bottom: the latent trajectory without and with acceleration inputs; the activity schedule; the expressed signal, which is the product of the latent level and the activity value; and four observed indicators that load on the expressed signal plus measurement error."
-#| fig-alt: "Four vertically aligned panels showing latent trajectories without and with acceleration inputs, an activity schedule, the expressed signal, and four noisy observed indicators."
+#| fig-cap: "A worked LOMM example with three latent dimensions, $T=100$ observations, and $\\Delta=0.4$. (A) Latent trajectories of three damped oscillators that share an initial state and receive independent acceleration inputs; grey lines show the same oscillators without inputs. (B) Activity schedule with one active dimension at a time, using the family C gains of 1.00 (active) and 0.08 (background); shaded bands mark the active dimension in every panel. (C) Expressed signal, the product of the latent level and the activity value; the switches at $t=8$ and $t=20$ produce abrupt changes without any change in the oscillators. (D) Four observed indicators per dimension with loadings 0.65 to 0.85 and residual SD 0.20; the black line is the expressed signal scaled by the mean loading. (E) Correlations among the twelve indicators from this clip, ordered by dimension; the three blocks are the grouping that Study 2 asks the methods to recover."
+#| fig-alt: "Five-panel figure. Four aligned time-series panels show three latent oscillator trajectories, a switching activity schedule, the expressed signals, and twelve noisy indicators grouped by dimension. A heatmap shows the indicator correlation matrix with three blocks."
 #| fig-align: center
-#| out-width: "0.88\\linewidth"
+#| out-width: "0.98\\linewidth"
 #| echo: false
 #| message: false
 #| warning: false
