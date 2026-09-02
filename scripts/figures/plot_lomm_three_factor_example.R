@@ -57,15 +57,27 @@ lomm_figure1_simulate <- function(
   if (time_points < 2L || !is.finite(dt) || dt <= 0) {
     stop("time_points must be at least 2 and dt must be positive.", call. = FALSE)
   }
-  if (length(initial_state) != 2L || any(!is.finite(initial_state))) {
-    stop("initial_state must contain finite position and velocity values.", call. = FALSE)
-  }
   required <- c("eta", "zeta", "sigma_q", "factor_label")
   if (!all(required %in% names(parameters)) || nrow(parameters) < 1L) {
     stop("parameters must define eta, zeta, sigma_q, and factor_label.", call. = FALSE)
   }
 
   factor_count <- nrow(parameters)
+  # A single (position, velocity) pair is shared by every factor; a matrix with
+  # one row per factor gives each factor its own initial state.
+  if (is.matrix(initial_state)) {
+    if (nrow(initial_state) != factor_count || ncol(initial_state) != 2L) {
+      stop("initial_state matrix must have one row per factor and two columns.", call. = FALSE)
+    }
+  } else {
+    if (length(initial_state) != 2L) {
+      stop("initial_state must contain a position and a velocity.", call. = FALSE)
+    }
+    initial_state <- matrix(initial_state, nrow = factor_count, ncol = 2L, byrow = TRUE)
+  }
+  if (any(!is.finite(initial_state))) {
+    stop("initial_state must contain finite position and velocity values.", call. = FALSE)
+  }
   shocks <- matrix(0, nrow = time_points, ncol = factor_count)
   if (isTRUE(stochastic)) {
     shocks[-1L, ] <- lomm_figure1_with_seed(seed, function() {
@@ -80,8 +92,8 @@ lomm_figure1_simulate <- function(
 
   position <- matrix(NA_real_, nrow = time_points, ncol = factor_count)
   velocity <- matrix(NA_real_, nrow = time_points, ncol = factor_count)
-  position[1L, ] <- initial_state[[1L]]
-  velocity[1L, ] <- initial_state[[2L]]
+  position[1L, ] <- initial_state[, 1L]
+  velocity[1L, ] <- initial_state[, 2L]
 
   for (factor_index in seq_len(factor_count)) {
     exact <- revision_exact_transition(
@@ -89,7 +101,7 @@ lomm_figure1_simulate <- function(
       parameters$zeta[[factor_index]],
       dt
     )
-    state <- matrix(initial_state, ncol = 1L)
+    state <- matrix(initial_state[factor_index, ], ncol = 1L)
     for (time_index in 2:time_points) {
       state <- exact$transition %*% state +
         exact$innovation_map * shocks[time_index, factor_index]
@@ -185,20 +197,48 @@ lomm_figure1_write <- function(
   invisible(normalizePath(output_path, mustWork = TRUE))
 }
 
-# Worked LOMM example (main-text Figure 2): three uncoupled dimensions share an
-# initial state, one dimension is active at a time with the family C gains
-# (1.00 active / 0.08 background), and four indicators load on each dimension.
+# Worked LOMM example (main-text Figure 2): three uncoupled dimensions start
+# from different initial states so their peaks fall at different times, one
+# dimension is active at a time with the family C gains (1.00 active / 0.08
+# background), and four indicators load on each dimension.
 lomm_process_settings <- function() {
   list(
     active_gain = 1.00,
     background_gain = 0.08,
+    # Independent initial (position, velocity) per dimension: an early peak,
+    # an early trough that rebounds, and a start near equilibrium.
+    initial_states = rbind(
+      c(0.25, 2.0),
+      c(-0.80, -1.20),
+      c(0.05, 0.30)
+    ),
     # Dominant dimension per dwell segment and the segment boundaries as
-    # fractions of the record (dwell fractions lie in the family C range).
-    dominant = c(1L, 2L, 3L, 1L),
-    boundaries = c(0, 0.20, 0.50, 0.80, 1),
+    # fractions of the record.
+    dominant = c(1L, 2L, 3L, 1L, 2L, 3L),
+    boundaries = c(0, 0.13, 0.30, 0.45, 0.63, 0.80, 1),
+    # Primary loadings of the four indicators of each dimension, and secondary
+    # loadings of selected indicators on another dimension, which produce
+    # cross-dimension correlations of both signs.
     loadings = c(0.65, 0.75, 0.85, 0.70),
+    cross_loadings = data.frame(
+      indicator = c(1L, 2L, 4L, 5L, 7L, 8L, 9L, 10L, 12L),
+      dimension = c(2L, 3L, 3L, 1L, 3L, 3L, 1L, 2L, 1L),
+      loading = c(0.35, -0.30, 0.30, 0.35, -0.30, 0.30, -0.35, 0.30, 0.30)
+    ),
     residual_sd = 0.20
   )
+}
+
+lomm_process_loading_matrix <- function(settings = lomm_process_settings()) {
+  per_dimension <- length(settings$loadings)
+  loading_matrix <- matrix(0, nrow = 3L * per_dimension, ncol = 3L)
+  for (dimension in 1:3) {
+    rows <- (dimension - 1L) * per_dimension + seq_len(per_dimension)
+    loading_matrix[rows, dimension] <- settings$loadings
+  }
+  cross <- settings$cross_loadings
+  loading_matrix[cbind(cross$indicator, cross$dimension)] <- cross$loading
+  loading_matrix
 }
 
 lomm_process_dimension_labels <- function() {
@@ -229,6 +269,7 @@ lomm_process_data <- function(seed = 20260901L, time_points = 100L, dt = 0.4) {
     parameters,
     time_points = time_points,
     dt = dt,
+    initial_state = settings$initial_states,
     stochastic = TRUE,
     seed = seed
   )
@@ -236,18 +277,21 @@ lomm_process_data <- function(seed = 20260901L, time_points = 100L, dt = 0.4) {
     parameters,
     time_points = time_points,
     dt = dt,
+    initial_state = settings$initial_states,
     stochastic = FALSE
   )
   schedule <- lomm_process_activity(time_points, settings)
   position <- matrix(latent_inputs$position, nrow = time_points)
   expressed <- position * schedule$activity
   loadings <- settings$loadings
+  loading_matrix <- lomm_process_loading_matrix(settings)
   errors <- lomm_figure1_with_seed(seed + 1L, function() {
     matrix(
-      stats::rnorm(time_points * length(loadings) * 3L, sd = settings$residual_sd),
+      stats::rnorm(time_points * nrow(loading_matrix), sd = settings$residual_sd),
       nrow = time_points
     )
   })
+  indicators <- expressed %*% t(loading_matrix) + errors
   physical_time <- (seq_len(time_points) - 1L) * dt
   rows <- list()
   for (dimension in 1:3) {
@@ -291,7 +335,7 @@ lomm_process_data <- function(seed = 20260901L, time_points = 100L, dt = 0.4) {
         panel = "Observed indicators",
         dimension = label,
         series = sprintf("z%d", column),
-        value = loadings[[index]] * expressed[, dimension] + errors[, column],
+        value = indicators[, column],
         stringsAsFactors = FALSE
       )
     }
@@ -342,8 +386,7 @@ lomm_process_correlation <- function(data) {
 lomm_process_plot <- function(data) {
   dimension_labels <- levels(data$dimension)
   dimension_colors <- stats::setNames(c("#0072B2", "#D55E00", "#009E73"), dimension_labels)
-  dimension_linetypes <- stats::setNames(c("solid", "longdash", "dotdash"), dimension_labels)
-  short_labels <- stats::setNames(paste("Dim.", 1:3), dimension_labels)
+  column_labels <- stats::setNames(sub(" (", "\n(", dimension_labels, fixed = TRUE), dimension_labels)
   bands <- lomm_process_bands(data)
   settings <- lomm_process_settings()
   x_limits <- range(data$physical_time) + c(-0.2, 0.2)
@@ -352,21 +395,23 @@ lomm_process_plot <- function(data) {
     theme(
       panel.grid.minor = element_blank(),
       panel.grid.major.x = element_blank(),
+      panel.spacing.x = grid::unit(8, "pt"),
       plot.title = element_text(size = 8.5, face = "bold", margin = margin(b = 2)),
       plot.title.position = "plot",
-      strip.text.y = element_text(size = 7.5, angle = 0, hjust = 0),
+      strip.text.x = element_text(size = 7.5, face = "bold", lineheight = 0.95),
       axis.title.y = element_text(size = 9),
       axis.title.x = element_text(size = 8.5),
-      legend.position = "bottom",
-      legend.text = element_text(size = 7.5),
+      axis.text = element_text(size = 7),
+      legend.position = "none",
       plot.margin = margin(2, 4, 2, 4)
     )
-  hide_x <- theme(legend.position = "none", axis.text.x = element_blank())
+  hide_x <- theme(axis.text.x = element_blank())
+  no_strip <- theme(strip.text.x = element_blank())
   band_layer <- geom_rect(
     data = bands,
     aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf, fill = dimension),
     inherit.aes = FALSE,
-    alpha = 0.10,
+    alpha = 0.12,
     show.legend = FALSE
   )
   dimension_scales <- list(
@@ -374,132 +419,95 @@ lomm_process_plot <- function(data) {
     scale_fill_manual(values = dimension_colors, drop = FALSE),
     scale_x_continuous(limits = x_limits, expand = c(0, 0))
   )
-  linetype_scale <- scale_linetype_manual(values = dimension_linetypes, drop = FALSE)
+  columns <- facet_grid(. ~ dimension, labeller = as_labeller(column_labels))
 
   latent <- subset(data, panel == "Latent process")
-  panel_a <- ggplot(
-    subset(latent, series == "With acceleration inputs"),
-    aes(x = physical_time, y = value, color = dimension, linetype = dimension)
-  ) +
+  latent_inputs <- subset(latent, series == "With acceleration inputs")
+  panel_a <- ggplot(latent_inputs, aes(x = physical_time, y = value, color = dimension)) +
     band_layer +
     geom_hline(yintercept = 0, color = "grey80", linewidth = 0.3) +
-    geom_line(
-      data = subset(latent, series == "No acceleration inputs"),
-      aes(group = dimension),
-      color = "grey62",
-      linewidth = 0.45
-    ) +
-    geom_line(linewidth = 0.7) +
-    geom_text(
-      data = bands,
-      aes(
-        x = (start + end) / 2,
-        y = Inf,
-        label = paste(short_labels[as.character(dimension)], "active"),
-        color = dimension
-      ),
-      inherit.aes = FALSE,
-      vjust = 1.4,
-      size = 2.5,
-      show.legend = FALSE
-    ) +
+    geom_line(linewidth = 0.8) +
+    columns +
     dimension_scales +
-    linetype_scale +
-    scale_y_continuous(expand = expansion(mult = c(0.05, 0.25))) +
     labs(
-      title = expression(
-        bold("A  Latent process ") * x[f * ",n"] * ": damped oscillator with acceleration inputs (grey: without inputs)"
-      ),
+      title = expression(bold("A  Latent process") ~ "(damped oscillator with acceleration inputs)"),
       x = NULL,
-      y = expression(x[f]),
-      color = NULL,
-      linetype = NULL
+      y = expression(x[f])
     ) +
     base_theme +
     hide_x
 
   activity <- subset(data, panel == "Activity")
-  panel_b <- ggplot(
-    activity,
-    aes(x = physical_time, y = value, color = dimension, linetype = dimension)
-  ) +
+  panel_b <- ggplot(activity, aes(x = physical_time, y = value, color = dimension)) +
     band_layer +
-    geom_step(linewidth = 0.7, direction = "mid") +
-    facet_grid(dimension ~ ., labeller = as_labeller(short_labels)) +
+    geom_step(linewidth = 0.8, direction = "mid") +
+    columns +
     dimension_scales +
-    linetype_scale +
     scale_y_continuous(
       breaks = c(settings$background_gain, settings$active_gain),
       labels = c("0.08", "1.00"),
       limits = c(-0.12, 1.15)
     ) +
     labs(
-      title = expression(
-        bold("B  Activity ") * a[f * ",n"] * ": 1.00 for the active dimension, 0.08 for the others"
-      ),
+      title = expression(bold("B  Activity") ~ "(1.00 in the shaded active interval, 0.08 otherwise)"),
       x = NULL,
-      y = expression(a[f]),
-      color = NULL,
-      linetype = NULL
+      y = expression(a[f])
     ) +
     base_theme +
     hide_x +
-    theme(panel.spacing.y = grid::unit(1.5, "pt"))
+    no_strip
 
   expressed <- subset(data, panel == "Expressed signal")
-  panel_c <- ggplot(
-    expressed,
-    aes(x = physical_time, y = value, color = dimension, linetype = dimension)
-  ) +
+  panel_c <- ggplot(expressed, aes(x = physical_time, y = value, color = dimension)) +
     band_layer +
     geom_hline(yintercept = 0, color = "grey80", linewidth = 0.3) +
-    geom_line(linewidth = 0.7) +
+    geom_line(data = latent_inputs, color = "grey70", linewidth = 0.5) +
+    geom_line(linewidth = 0.8) +
+    columns +
     dimension_scales +
-    linetype_scale +
     labs(
-      title = expression(
-        bold("C  Expressed signal ") * tilde(x)[f * ",n"] == a[f * ",n"] * x[f * ",n"]
-      ),
+      title = expression(bold("C  Expressed signal") ~ "= latent level" %*% "activity (grey: the latent level from A)"),
       x = NULL,
-      y = expression(tilde(x)[f]),
-      color = NULL,
-      linetype = NULL
+      y = expression(tilde(x)[f])
     ) +
     base_theme +
-    hide_x
+    hide_x +
+    no_strip
 
   indicators <- subset(data, panel == "Observed indicators")
-  loaded_signal <- transform(
-    expressed,
-    value = value * mean(settings$loadings)
-  )
+  indicators$index <- as.integer(sub("^z", "", indicators$series))
+  per_dimension <- length(settings$loadings)
+  shade <- function(base, amount) {
+    rgb_base <- grDevices::col2rgb(base) / 255
+    target <- if (amount < 0) c(1, 1, 1) else c(0, 0, 0)
+    mixed <- rgb_base * (1 - abs(amount)) + target * abs(amount)
+    grDevices::rgb(mixed[1L], mixed[2L], mixed[3L])
+  }
+  shade_steps <- c(-0.45, -0.15, 0.15, 0.45)
+  series_colors <- unlist(lapply(dimension_labels, function(label) {
+    stats::setNames(
+      vapply(shade_steps, function(step) shade(dimension_colors[[label]], step), character(1)),
+      sprintf("z%d", (match(label, dimension_labels) - 1L) * per_dimension + seq_len(per_dimension))
+    )
+  }))
   panel_d <- ggplot(
     indicators,
-    aes(x = physical_time, y = value, color = dimension, group = series)
+    aes(x = physical_time, y = value, color = series, group = series)
   ) +
     band_layer +
     geom_hline(yintercept = 0, color = "grey80", linewidth = 0.3) +
-    geom_line(linewidth = 0.3, alpha = 0.55) +
-    geom_line(
-      data = loaded_signal,
-      aes(x = physical_time, y = value, group = dimension),
-      inherit.aes = FALSE,
-      color = "black",
-      linewidth = 0.7
-    ) +
-    facet_grid(dimension ~ ., labeller = as_labeller(short_labels)) +
-    dimension_scales +
+    geom_line(linewidth = 0.4, alpha = 0.7) +
+    columns +
+    scale_color_manual(values = series_colors) +
+    scale_fill_manual(values = dimension_colors, drop = FALSE) +
+    scale_x_continuous(limits = x_limits, expand = c(0, 0)) +
     labs(
-      title = expression(
-        bold("D  Observed indicators ") * z[j * ",n"] == lambda[j] * tilde(x)[f * ",n"] + epsilon[j * ",n"] *
-          ", four per dimension (black: " * bar(lambda) * tilde(x)[f * ",n"] * ")"
-      ),
+      title = expression(bold("D  Observed indicators") ~ "(four per dimension, light to dark: " * z[1] - z[4] * ", " * z[5] - z[8] * ", " * z[9] - z[12] * ")"),
       x = expression("Time " * t[n] ~ "(" * Delta == 0.4 * ")"),
-      y = expression(z[j]),
-      color = NULL
+      y = expression(z[j])
     ) +
     base_theme +
-    theme(legend.position = "none", panel.spacing.y = grid::unit(1.5, "pt"))
+    no_strip
 
   correlation <- lomm_process_correlation(data)
   dimension_of <- attr(correlation, "dimension_of")
@@ -535,33 +543,15 @@ lomm_process_plot <- function(data) {
       legend.text = element_text(size = 6.5)
     )
 
-  legend_source <- ggplot(
-    subset(latent, series == "With acceleration inputs"),
-    aes(x = physical_time, y = value, color = dimension, linetype = dimension)
-  ) +
-    geom_line() +
-    scale_color_manual(values = dimension_colors, drop = FALSE) +
-    scale_linetype_manual(values = dimension_linetypes, drop = FALSE) +
-    labs(color = NULL, linetype = NULL) +
-    theme_minimal(base_size = 8.5) +
-    theme(
-      legend.position = "top",
-      legend.direction = "vertical",
-      legend.text = element_text(size = 7.5),
-      legend.key.width = grid::unit(18, "pt")
-    )
-  legend_grob <- cowplot::get_plot_component(legend_source, "guide-box-top", return_all = TRUE)
-  panel_legend <- patchwork::wrap_elements(full = legend_grob)
-
   left <- patchwork::wrap_plots(
     panel_a, panel_b, panel_c, panel_d,
-    ncol = 1L, heights = c(1.45, 1.15, 1.1, 2.2)
+    ncol = 1L, heights = c(1.4, 0.6, 1.1, 1.4)
   )
   right <- patchwork::wrap_plots(
-    panel_legend, panel_e, patchwork::plot_spacer(),
-    ncol = 1L, heights = c(0.8, 2.3, 0.6)
+    patchwork::plot_spacer(), panel_e, patchwork::plot_spacer(),
+    ncol = 1L, heights = c(0.9, 2.2, 0.9)
   )
-  patchwork::wrap_plots(left, right, ncol = 2L, widths = c(2.8, 1.1))
+  patchwork::wrap_plots(left, right, ncol = 2L, widths = c(3.3, 1))
 }
 
 lomm_process_write <- function(
@@ -581,7 +571,7 @@ lomm_process_write <- function(
     output_path,
     figure,
     width = 7.15,
-    height = 6.6,
+    height = 5.8,
     units = "in",
     device = cairo_pdf,
     bg = "white"

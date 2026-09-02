@@ -292,39 +292,49 @@ factor-analytic observation model
 (\citeproc{ref-nesselroade2002}{Nesselroade et al., 2002};
 \citeproc{ref-nesselroade2008dfm}{Zhang et al., 2008}).
 
-We use LOMM in two studies (Figure~\ref{fig-pipeline}). Study 1 compares
-simulated score series with classifier scores from 100 clips in MAFW, a
-facial-expression video database (\citeproc{ref-liu_mafw_2022}{Liu et
-al., 2022}), and asks whether eight descriptive features of the
-simulated and real series are similar. Study 2 uses LOMM to generate
-continuous indicators with a known factor structure and asks whether
-four methods recover the number of dimensions and the indicator
-assignments: Dynamic Exploratory Graph Analysis (DynEGA), static EGA,
-GraphicalVAR, and GIMME. Static EGA ignores temporal order and is
-computationally inexpensive; it shows how much structure is recoverable
-from contemporaneous indicator levels alone. Study 2 also examines two
-conditions that limit the main result: whether a shared initial state
-across dimensions inflates recovery, and whether the indicator grouping
-is preserved after the indicators are transformed to bounded scores that
-sum to one, as classifier scores do. Because the empirical clips are
-short (median 35 observations), Study 2 also reports a secondary
-analysis with 25 observations per clip.
+We use LOMM in two studies (Figure~\ref{fig-pipeline}). In Study 1 the
+real data are the target. LOMM is calibrated on training clips from
+MAFW, a facial-expression video database
+(\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}), its output is mapped
+to bounded scores of the kind a classifier returns, and eight
+descriptive features of the simulated score series are compared with
+those of the classifier scores from held-out clips; 100 clips are used
+in total. In Study 2 the LOMM design is the target. LOMM generates
+continuous indicators with a known number of dimensions and a known
+assignment of indicators to dimensions, and four methods estimate a
+network among the indicators and group them into communities: Dynamic
+Exploratory Graph Analysis (DynEGA), static EGA, GraphicalVAR, and
+GIMME. The question is whether the recovered communities match the
+structure that generated the data. Static EGA ignores temporal order and
+is computationally inexpensive; it shows how much structure is
+recoverable from contemporaneous indicator levels alone. Study 2 also
+examines two conditions that limit the main result: whether a shared
+initial state across dimensions inflates recovery, and whether the
+indicator grouping is preserved after the indicators are transformed to
+bounded scores that sum to one, as classifier scores do. Because the
+empirical clips are short (median 35 observations), Study 2 also reports
+a secondary analysis with 25 observations per clip.
 
 \begin{figure}
 
 \centering{
 
-\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_pipeline_visual_abstract.png}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_pipeline_visual_abstract_nhb.png}
 
 }
 
-\caption{\label{fig-pipeline}Overview of the two studies. Study 1
-compares descriptive features of simulated bounded scores with
-classifier scores from MAFW videos. Study 2 compares the number of
-dimensions and the indicator assignments recovered by four methods with
-the factor structure used to generate continuous indicators. A separate
-Study 2 condition tests whether that grouping is preserved after the
-indicators are transformed to scores that sum to one.}
+\caption{\label{fig-pipeline}Overview of the two studies. (A) Real data:
+a classifier scores each frame of an MAFW clip, giving one score series
+per label. (B) LOMM: latent oscillators, an activity schedule that sets
+how strongly each is expressed at each observation, and observed
+indicators with a known assignment to dimensions (colored blocks). (C)
+Recovery methods: DynEGA, static EGA, GraphicalVAR, and GIMME each
+estimate a network among the indicators and group them into communities.
+Study 1 calibrates LOMM on training clips (dashed arrow), maps the
+simulated indicators to bounded scores with the softmax, and asks
+whether the simulated score series resemble the held-out real series.
+Study 2 fits the four methods to simulated indicators and asks whether
+the recovered communities match the known assignment.}
 
 \end{figure}%
 
@@ -344,13 +354,14 @@ four channels together and should find three dimensions. These labels
 only illustrate a possible simulation design; whether MAFW scores have
 this structure is not tested here.
 
-LOMM generates data in three layers. The latent layer describes how each
-latent dimension changes over time. The activity layer determines how
-strongly that dimension is expressed at each observation. The
-observation layer creates multiple indicators with prespecified loadings
-and measurement error. Keeping these layers separate allows a researcher
-to change the dynamics, the expression pattern, or the measurement
-quality while holding the other components fixed.
+LOMM generates data in three layers (Figure~\ref{fig-lomm-process}). The
+latent layer describes how each latent dimension changes over time. The
+activity layer determines how strongly that dimension is expressed at
+each observation. The observation layer creates multiple indicators with
+prespecified loadings and measurement error. Keeping these layers
+separate allows a researcher to change the dynamics, the expression
+pattern, or the measurement quality while holding the other components
+fixed.
 
 \emph{Notation.} Clips are indexed by \(i=1,\ldots,N\) and observations
 within a clip by \(n=1,\ldots,T\), at times \(t_n=(n-1)\Delta\), where
@@ -425,18 +436,46 @@ equation, including optional clip-specific baseline and scale terms.
 
 \centering{
 
-\includegraphics[width=0.88\linewidth,height=\textheight,keepaspectratio]{figures/lomm_process_overview.pdf}
+\includegraphics[width=0.98\linewidth,height=\textheight,keepaspectratio]{figures/lomm_process_overview.pdf}
 
 }
 
-\caption{\label{fig-lomm-process}A worked LOMM example for one latent
-dimension. Panels from top to bottom: the latent trajectory without and
-with acceleration inputs; the activity schedule; the expressed signal,
-which is the product of the latent level and the activity value; and
-four observed indicators that load on the expressed signal plus
-measurement error.}
+\caption{\label{fig-lomm-process}One simulated LOMM clip with three
+latent dimensions, \(T=100\) observations, and \(\Delta=0.4\). Each
+column follows one dimension from the latent layer to the observed
+indicators. (A) Latent trajectory; the oscillator parameters are given
+in the column headers, and each dimension has its own initial state and
+acceleration inputs. (B) Activity, 1.00 in the shaded active interval
+and 0.08 otherwise. (C) Expressed signal, the product of the latent
+level and the activity value, drawn over the latent level in grey. (D)
+The four observed indicators of each dimension in shades from light to
+dark, with primary loadings 0.65 to 0.85, secondary loadings of
+\(\pm 0.30\) or \(\pm 0.35\) on another dimension for nine of the twelve
+indicators, and residual SD 0.20. (E) Correlations among the twelve
+indicators from this clip, ordered by dimension.}
 
 \end{figure}%
+
+Figure~\ref{fig-lomm-process} shows the three layers for one simulated
+clip. In panel A the dimensions differ in their feedback parameters and
+start from different states: dimension 1 rises to an early peak and
+decays smoothly, dimension 2 starts in a trough and rebounds, and
+dimension 3 oscillates faster and is driven mainly by its acceleration
+inputs. Panel B shows the activity schedule, in which the dimensions
+take turns being active. Panel C shows the product of the two layers. A
+latent peak that falls inside an active interval is expressed at full
+size; the same peak outside the interval is reduced to 8\% of its size
+and is barely visible in the indicators. The steps at the boundaries of
+the active intervals appear in the indicators although no oscillator has
+accelerated there. Panel D shows the twelve indicators; each loads
+mainly on its own dimension, and nine also carry a smaller loading on
+another dimension. Panel E shows the correlation matrix among the twelve
+indicators from this clip. The three diagonal blocks reflect the
+indicator assignments, which is the structure that Study 2 asks the
+methods to recover. The weaker positive and negative correlations
+between blocks come from the secondary loadings, so the block structure
+is not clean; the secondary loadings in this example are larger than in
+the Study 2 cross-loading condition, which limits them to \(\pm 0.10\).
 
 LOMM can output two types of observed variables. The first is the vector
 of continuous indicators \(\mathbf z_{in}\), used in the primary Study 2
