@@ -49,10 +49,10 @@ authornote: |
    ORCID: Hudson Golino 0000-0002-1601-1447, Aleksandar Tomašević 0000-0003-4863-6051, and Alexander P. Christensen 0000-0002-9798-7037.
 
 abstract: |
- Machine-learning models for facial-expression recognition can turn video of a person into multivariate time series of classifier scores. These scores contain measurement error from model limitations, video quality, and observation conditions. They therefore cannot establish whether channels labeled as positive or negative emotion reflect lower-dimensional latent expressive processes, or whether an analysis method can recover those processes. We introduce the Latent Oscillator Measurement Model (LOMM), a measurement-aware simulation environment that separately specifies oscillator-based latent dynamics, time-varying activity, and an observation model with fallible indicators. In Study 1, a five-fold cross-fitted exploratory comparison evaluated simulated and real score series from 100 facial-expression video clips. Allowing clips to differ in baseline and scale reduced the selected composite discrepancy by 21.0%, from 0.3250 to 0.2567. Study 2 evaluated four methods used in network psychometrics and intensive longitudinal analysis through a common network-community recovery target using synthetic continuous indicators. At 100 observations per clip, with failed or timed-out attempts counted as incorrect, overall correct-dimension recovery was 0.939 for DynEGA, 0.884 for static EGA, 0.777 for GraphicalVAR, and 0.176 for GIMME. Independent starting states reduced recovery for all three methods tested, indicating that common-initial-state results were optimistic. LOMM provides a way to test whether methods recover intended structure before empirical score patterns are given psychological meaning.
+ Facial-expression classifiers convert video of a person into multivariate time series of classifier scores. These scores contain measurement error from the classifier, the video, and the recording conditions, and the latent structure that generated them is unknown. Empirical score series alone therefore cannot show whether the score channels are indicators of a smaller number of latent expressive processes, or whether an analysis method would recover those processes if they existed. We introduce the Latent Oscillator Measurement Model (LOMM), a data-generating model that specifies three components separately: latent dynamics as damped, undamped, or amplifying linear oscillators; a time-varying activity level that determines how strongly each latent dimension is expressed; and a factor-analytic observation model with fallible indicators. Study 1 compared simulated score series with classifier scores from 100 facial-expression video clips using five-fold cross-fitting, in which parameters were estimated on training clips and discrepancies were evaluated on held-out clips. Allowing clips to differ in baseline and scale reduced the composite discrepancy by 21.0%, from 0.3250 to 0.2567. Study 2 generated continuous indicators with a known number of dimensions and known indicator assignments and asked whether four methods, Dynamic Exploratory Graph Analysis (DynEGA), static EGA, GraphicalVAR, and GIMME, recovered that structure through a common community-detection step. At 100 observations per clip, with failed or timed-out fits counted as incorrect, overall correct-dimension recovery was 0.939 for DynEGA, 0.884 for static EGA, 0.777 for GraphicalVAR, and 0.176 for GIMME. Replacing a shared initial state with independent initial states reduced recovery for DynEGA, static EGA, and GraphicalVAR, so a shared initial state overstates recovery. LOMM lets researchers test whether a method recovers a known structure before empirical score patterns are interpreted psychologically.
 
 keywords          : "classifier scores, simulation, dimensional recovery, compositional data, dynamic networks"
-wordcount         : "4,200"
+wordcount         : "4,300"
 
 bibliography      : "references.bib"
 csl               : "apa.csl"
@@ -117,20 +117,20 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 
 # Introduction
 
-Facial-expression classifiers can turn video of a person into multivariate time series of classifier scores. Each frame yields a vector of scores for a chosen label set. These series have a temporal resolution that manual coding cannot sustain.
+Facial-expression classifiers convert video of a person into multivariate time series. Each frame yields a vector of scores, one for each label in a chosen label set, at a temporal resolution that manual coding cannot match.
 
-Earlier systems usually returned scores for categories inherited from their training data, whereas CLIP-based vision-language models can score user-specified labels [@radford2021LearningTransferable; @foteinopoulou2023EmoCLIP; @li2023CLIPER]. The scores are measurements produced by a model, a prompt set, and a video-processing pipeline. Their values also depend on image quality and observation conditions. Benchmark performance varies with model adaptation, label choice, and evaluation data [@foteinopoulou2023EmoCLIP; @li2023CLIPER]. An interpretable pattern among score channels may therefore reflect expressive behavior, the measurement process, or both. The eleven-channel procedure examined here is treated as a source of classifier scores, without a frame-level claim that its labels measure subjective emotional experience.
+Earlier classifiers returned scores only for the categories in their training data. Vision-language models such as CLIP can score any label supplied as text [@radford2021LearningTransferable; @foteinopoulou2023EmoCLIP; @li2023CLIPER]. The scores are nonetheless measurements: they depend on the model, the label set, the video-processing pipeline, image quality, and recording conditions, and their accuracy varies with model adaptation, label choice, and evaluation data [@foteinopoulou2023EmoCLIP; @li2023CLIPER]. A pattern among score channels may therefore reflect expressive behavior, the measurement process, or both. In this paper, classifier scores are treated as fallible measurements of visible expression, not as measures of subjective emotional experience.
 
-This creates a psychometric problem. Several score channels may be analyzed separately, or they may be treated as fallible indicators of fewer latent expressive processes [@russellCoreAffect2003; @mehu2015Emotion; @nesselroade2002]. Measurement error can change the structure recovered by dynamic methods [@kankaanpaa2026multipleindicator]. Empirical data alone cannot show whether a method would recover the number of dimensions and the assignment of indicators to dimensions under a known measurement structure.
+This raises a psychometric question. Score channels can be analyzed as separate variables, or they can be treated as fallible indicators of a smaller number of latent expressive processes [@russellCoreAffect2003; @mehu2015Emotion; @nesselroade2002]. Measurement error changes the structure that dynamic methods recover [@kankaanpaa2026multipleindicator]. Empirical data cannot settle the question, because the true number of latent dimensions and the true assignment of indicators to dimensions are unknown, so there is no way to check whether a method recovered them.
 
-We introduce the Latent Oscillator Measurement Model (LOMM) to make that comparison possible. LOMM is a measurement-aware data generator for multivariate intensive longitudinal data. It simulates latent processes that change over time, specifies how strongly each process is expressed at each observation, and converts those processes into fallible observed indicators. The number of dimensions, indicator assignments, dynamics, activity pattern, loadings, and measurement error are specified before a recovery method is applied. LOMM combines oscillator models of intraindividual dynamics with a factor-analytic observation model [@boker2002Method; @boker2015Adaptive; @nesselroade2002; @nesselroade2008dfm].
+We introduce the Latent Oscillator Measurement Model (LOMM) to make that check possible. LOMM is a data-generating model for multivariate intensive longitudinal data with an explicit measurement model. It simulates latent processes that change over time, specifies how strongly each process is expressed at each observation, and maps the processes onto fallible observed indicators. The number of dimensions, the indicator assignments, the dynamics, the activity pattern, the loadings, and the measurement error are all fixed before a recovery method is applied. LOMM combines the damped linear oscillator model of intraindividual dynamics [@boker2002Method; @boker2015Adaptive] with a factor-analytic observation model [@nesselroade2002; @nesselroade2008dfm].
 
-We use LOMM in two studies. Study 1 is a five-fold cross-fitted exploratory comparison of simulated scores with classifier scores from 100 MAFW videos. It asks whether eight descriptive features of the simulated and real score series are similar. Study 2 evaluates four methods used in network psychometrics and intensive longitudinal analysis: Dynamic Exploratory Graph Analysis (DynEGA), static EGA, GraphicalVAR, and GIMME. It asks whether they recover a factor structure used to generate synthetic continuous indicators. Static EGA provides a deliberately time-agnostic and computationally light benchmark, showing how much structure is recoverable from contemporaneous indicator levels alone. Study 2 also tests two consequential boundaries: whether a common initial state makes recovery easier and whether the original indicator grouping survives transformation to bounded scores. Because the empirical segments are short, the Study 2 results include a $T=25$ panel as an ecological-length check rather than a second primary design. @fig-pipeline summarizes the distinct questions.
+We use LOMM in two studies (@fig-pipeline). Study 1 compares simulated score series with classifier scores from 100 clips in MAFW, a facial-expression video database [@liu_mafw_2022], and asks whether eight descriptive features of the simulated and real series are similar. Study 2 uses LOMM to generate continuous indicators with a known factor structure and asks whether four methods recover the number of dimensions and the indicator assignments: Dynamic Exploratory Graph Analysis (DynEGA), static EGA, GraphicalVAR, and GIMME. Static EGA ignores temporal order and is computationally inexpensive; it shows how much structure is recoverable from contemporaneous indicator levels alone. Study 2 also examines two conditions that limit the main result: whether a shared initial state across dimensions inflates recovery, and whether the indicator grouping is preserved after the indicators are transformed to bounded scores that sum to one, as classifier scores do. Because the empirical clips are short (median 35 observations), Study 2 also reports a secondary analysis with 25 observations per clip.
 
 ```{r}
 #| label: fig-pipeline
-#| fig-cap: "The two uses of LOMM in this paper. Study 1 compares descriptive features of simulated bounded scores with classifier scores from MAFW videos. Study 2 compares the dimensionality and indicator assignments recovered by four methods with the factor structure used to generate synthetic continuous indicators. A targeted bounded-score condition tests whether that original grouping survives transformation to scores that sum to one."
-#| fig-alt: "Two-panel roadmap showing Study 1 as a simulated-versus-real score comparison and Study 2 as recovery of a known factor structure, with a bounded-score boundary check."
+#| fig-cap: "Overview of the two studies. Study 1 compares descriptive features of simulated bounded scores with classifier scores from MAFW videos. Study 2 compares the number of dimensions and the indicator assignments recovered by four methods with the factor structure used to generate continuous indicators. A separate Study 2 condition tests whether that grouping is preserved after the indicators are transformed to scores that sum to one."
+#| fig-alt: "Two-panel overview showing Study 1 as a simulated-versus-real score comparison and Study 2 as recovery of a known factor structure, with a separate bounded-score condition."
 #| fig-align: center
 #| out-width: "0.98\\linewidth"
 #| echo: false
@@ -146,11 +146,13 @@ knitr::include_graphics(pipeline_path)
 
 # The Latent Oscillator Measurement Model
 
-LOMM represents a familiar psychometric situation: several observed channels are fallible indicators of fewer latent processes, and those processes change over time. Consider a simulation with three expressive processes: approach-affiliation, threat-defense, and orienting-novelty. Anger, fear, disgust, and anxiety could be assigned as indicators of threat-defense. Their observed scores would share movement from that process while retaining channel-specific measurement error. A successful recovery method should place those indicators together and recover all three dimensions. These labels illustrate a possible simulation design; validation of corresponding affect categories in MAFW lies outside this study.
+LOMM represents a standard psychometric situation: several observed variables are fallible indicators of a smaller number of latent processes, and those processes change over time. As an illustration, suppose a simulation has three latent dimensions labeled approach-affiliation, threat-defense, and orienting-novelty, and the anger, fear, disgust, and anxiety channels are assigned as indicators of threat-defense. Those four channels would covary over time because they load on the same latent dimension, and each would also carry channel-specific measurement error. A recovery method should group the four channels together and should find three dimensions. These labels only illustrate a possible simulation design; whether MAFW scores have this structure is not tested here.
 
-LOMM generates data in three layers. The latent layer describes how each process changes. The activity layer determines how strongly that process is expressed at each observation. The observation layer creates multiple indicators with prespecified loadings and measurement error. Keeping these layers separate allows a researcher to change the dynamics, expression pattern, or measurement quality while holding the other components fixed.
+LOMM generates data in three layers. The latent layer describes how each latent dimension changes over time. The activity layer determines how strongly that dimension is expressed at each observation. The observation layer creates multiple indicators with prespecified loadings and measurement error. Keeping these layers separate allows a researcher to change the dynamics, the expression pattern, or the measurement quality while holding the other components fixed.
 
-For recording $i$ and dimension $f$, let $x_{if}(t)$ denote the latent level and $\dot{x}_{if}(t)$ its rate of change. LOMM treats each dimension as a linear second-order oscillator:
+*Notation.* Clips are indexed by $i=1,\ldots,N$ and observations within a clip by $n=1,\ldots,T$, at times $t_n=(n-1)\Delta$, where $\Delta$ is the observation interval. Latent dimensions are indexed by $f=1,\ldots,m$. Continuous indicators are indexed by $j=1,\ldots,p$; in Study 2, $p=mk$ with $k$ indicators per dimension. Bounded scores have $J$ channels. Bold symbols are vectors or matrices.
+
+For clip $i$ and latent dimension $f$, let $x_{if}(t)$ denote the latent level and $\dot{x}_{if}(t)$ its rate of change. LOMM treats each dimension as a linear second-order oscillator:
 
 \begin{equation}
 \ddot{x}_{if}(t)
@@ -164,11 +166,11 @@ q_{if,n},
 \label{eq:lomm-latent}
 \end{equation}
 
-The position-feedback parameter $\eta_f$ governs the pull toward rest, and the velocity-feedback parameter $\zeta_f$ governs damping or amplification. The acceleration input $q_{if,n}$ adds irregular peaks and reversals during the interval between observations $n$ and $n+1$. Negative $\eta_f$ and $\zeta_f$ produce asymptotic return, with oscillation when the characteristic roots are complex. Setting $\zeta_f=0$ with $\eta_f<0$ produces undamped oscillation, while positive $\zeta_f$ in the tested conditions produces finite-horizon amplification. Appendix A gives the exact transition used to advance this system between observations, the stability conditions, and the initialization rules.
+Equation 1 is the damped linear oscillator used in research on intraindividual dynamics [@boker2002Method]. The position-feedback parameter $\eta_f$ determines the strength of the restoring force toward equilibrium; more negative values produce faster oscillation. The velocity-feedback parameter $\zeta_f$ determines damping: negative values damp the motion, zero leaves it undamped, and positive values amplify it. The term $q_{if,n}$ is a random acceleration input, drawn independently for each interval between observations $n$ and $n+1$ and held constant within that interval; it produces irregular peaks and reversals in the trajectory. When $\eta_f$ and $\zeta_f$ are both negative, the trajectory returns toward equilibrium, with oscillation when the characteristic roots are complex. In the conditions tested here, positive $\zeta_f$ produces amplitudes that grow over the observed record; we call this finite-horizon amplification because the record ends before the growth becomes extreme. Appendix A gives the exact discrete-time transition used to advance the system between observations, the stability conditions, and the initialization rules.
 
-The activity layer multiplies the latent trajectory by a nonnegative value, $\tilde{x}_{if,n}=a_{if,n}x_{if,n}$. A process may remain strongly expressed, remain near a background level, or alternate with other processes. This layer matters because an abrupt change in activity can create a large observed change even when the underlying oscillator has not accelerated.
+The activity layer multiplies the latent level at each observation by a nonnegative activity value, $\tilde{x}_{if,n}=a_{if,n}x_{if,n}$. A latent dimension can therefore remain strongly expressed throughout a clip, remain near a low background level, or alternate with other dimensions. This layer matters for recovery because an abrupt change in activity produces a large change in the observed indicators even when the oscillator itself has not accelerated.
 
-The observation layer is an ordinary factor model:
+The observation layer is a standard factor model:
 
 \begin{equation}
 \mathbf z_{in}
@@ -181,12 +183,12 @@ The observation layer is an ordinary factor model:
 \label{eq:lomm-measurement}
 \end{equation}
 
-Each row of $\boldsymbol\Lambda_i$ contains an indicator's loadings on the latent dimensions, and $\boldsymbol\varepsilon_{in}$ represents measurement error in the observed channels. Some configurations also allow recordings to differ in their overall baseline and scale. Study 1 estimates those components from training videos. The primary Study 2 design removes them while retaining small recording-specific differences in loadings and residual variances. Appendix A gives the complete observation equation and each construction.
+Row $j$ of $\boldsymbol\Lambda_i$ contains the loadings of indicator $j$ on the $m$ latent dimensions, and $\boldsymbol\varepsilon_{in}$ is measurement error with covariance $\boldsymbol\Sigma_i$. Appendix A gives the complete observation equation, including optional clip-specific baseline and scale terms.
 
 ```{r}
 #| label: fig-lomm-process
-#| fig-cap: "A worked LOMM example. The latent panel shows the same oscillator with acceleration inputs off and on. Activity determines how strongly the process is expressed, their product is the expressed signal, and the observation model produces grouped indicators that share that signal plus measurement error."
-#| fig-alt: "Four vertically aligned panels showing latent trajectories with and without kicks, an activity schedule, their product, and grouped noisy observed indicators."
+#| fig-cap: "A worked LOMM example for one latent dimension. Panels from top to bottom: the latent trajectory without and with acceleration inputs; the activity schedule; the expressed signal, which is the product of the latent level and the activity value; and four observed indicators that load on the expressed signal plus measurement error."
+#| fig-alt: "Four vertically aligned panels showing latent trajectories without and with acceleration inputs, an activity schedule, the expressed signal, and four noisy observed indicators."
 #| fig-align: center
 #| out-width: "0.88\\linewidth"
 #| echo: false
@@ -200,20 +202,20 @@ if (!file.exists(lomm_process_path)) {
 knitr::include_graphics(lomm_process_path)
 ```
 
-LOMM supports two observed data forms. The primary Study 2 designs retain the continuous indicators $\mathbf z_{in}$, so the factor structure used to generate the data is defined directly on the variables being analyzed. Study 1 maps lower-dimensional coordinates to positive scores that sum to one, matching the form of classifier output. A targeted Study 2 condition applies the same type of bounded transformation to the continuous indicators and tests whether their original grouping survives. Appendix A gives the softmax, log-ratio, and identification details.
+LOMM can output two types of observed variables. The first is the vector of continuous indicators $\mathbf z_{in}$, used in the primary Study 2 designs; there, the factor structure that generated the data is defined directly on the analyzed variables. The second is a vector of $J$ positive scores that sum to one, which matches the form of classifier output and is used in Study 1. To produce bounded scores, LOMM maps the latent dimensions to a $(J-1)$-dimensional vector of log-ratio coordinates and applies the softmax function. Because scores that sum to one are compositional data, they are analyzed both as scores and in log-ratio coordinates, which remove the sum constraint. A separate Study 2 condition applies the softmax directly to the $p$ continuous indicators and tests whether their original grouping is preserved. Appendix A gives the softmax, log-ratio, and identification details.
 
-In this paper, LOMM supplies datasets with known dimensionality and indicator assignments. It is not fitted to the MAFW videos. Estimating oscillator, activity, and measurement parameters from empirical data would require additional sign, scale, temperature, and frequency constraints, which are stated in Appendix A.
+In this paper, LOMM is used only to generate data with known dimensionality and indicator assignments; it is not fitted to the MAFW videos. Study 1 estimates the distribution of clip baselines and scales from training clips. The primary Study 2 design sets clip baselines to zero and scales to one but lets loadings and residual variances vary slightly across clips. Estimating oscillator, activity, and measurement parameters from empirical data would require the sign, scale, temperature, and frequency constraints stated in Appendix A.
 
 
 # Study 1: Comparing Simulated and Real Score Series
 
-Study 1 asks whether LOMM can reproduce selected features of real classifier-score series. We analyzed 100 naturalistic clips from the *MAFW: A Large-scale, Multi-modal, Compound Affective Database for Dynamic Facial Expression Recognition in the Wild* dataset [@liu_mafw_2022]. The transforEmotion package scored up to 50 frames per clip with the `oai-large` setting, which uses the OpenAI CLIP ViT-Large/14 model family [@tomasevic2026TransforEmotion]. Eleven MAFW labels were passed directly to the text encoder. These channels are model outputs. The dataset and scoring procedure do not validate the labels as measures of subjective emotion.
+Study 1 asks whether LOMM can reproduce selected statistical features of real classifier-score series. The real series come from 100 clips in MAFW, a large multimodal database of facial-expression video recorded in naturalistic settings [@liu_mafw_2022]. Frames were scored with the transforEmotion R package [@tomasevic2026TransforEmotion] using OpenAI's CLIP ViT-Large/14 model (setting `oai-large`), with up to 50 frames sampled per clip. Eleven labels from the MAFW label set served as the text prompts: anger, disgust, fear, happiness, neutral, sadness, surprise, contempt, anxiety, helplessness, and disappointment. For each frame, the classifier returns one score per label, normalized to sum to one. These eleven scores are the channels analyzed here. They are classifier outputs; nothing in the dataset or the scoring procedure validates them as measures of subjective emotion.
 
-@fig-mafwvideo shows the empirical data used as the comparison target. The main analysis contains 3,557 observations in 188 uninterrupted clip segments from the 100 videos. Segment lengths range from 16 to 50 observations, with a median of 35. Because these records are short, autocorrelation and spectral summaries require caution. A sensitivity analysis interpolated internal gaps of at most two frames. Appendix B gives the face-processing, score-validity, missing-data, and sampling details.
+@fig-mafwvideo shows the score series for one clip. Frames without a detected face have missing scores, so each clip was divided into segments of consecutive scored frames. The main analysis contains 3,557 observations in 188 segments from the 100 clips; segment lengths range from 16 to 50 observations, with a median of 35. Because segments are short, autocorrelation and spectral statistics are estimated imprecisely. A sensitivity analysis interpolated internal gaps of at most two frames, producing longer segments. Appendix B gives the face-detection, score-validity, missing-data, and sampling details.
 
 ```{r}
 #| label: fig-mafwvideo
-#| fig-cap: "Score series from one MAFW video clip. Panel A shows four frames reproduced to clarify the academic analysis under the MAFW research-use terms. Panel B shows the classifier scores assigned to those frames. Panel C shows smoothed trajectories for the channels with the highest mean scores. Scores were generated with transforEmotion using OpenAI CLIP ViT-Large/14."
+#| fig-cap: "Score series from one MAFW clip. Panel A shows four frames from the clip, reproduced under the MAFW research-use terms. Panel B shows the eleven classifier scores for those frames. Panel C shows smoothed score trajectories for the channels with the highest mean scores. Scores were generated with transforEmotion using OpenAI CLIP ViT-Large/14."
 #| fig-alt: "Three-panel illustration with selected video frames, their classifier scores, and score trajectories over time."
 #| fig-align: center
 #| out-width: "0.98\\linewidth"
@@ -228,17 +230,17 @@ if (!file.exists(figure_2_path)) {
 knitr::include_graphics(figure_2_path)
 ```
 
-Study 1 compares eight LOMM configurations formed by including or excluding three features: clip-specific baseline, clip-specific scale, and a brief transition in activity. The comparison uses eight summary statistics. Six describe each channel over time: median level, variability of levels, variability of observation-to-observation changes, lag-1 autocorrelation, entropy of monotonic run lengths, and normalized spectral entropy. Effective rank and total variance describe the channels jointly. We evaluate all eight statistics on both the bounded scores and their log-ratio coordinates.
+Study 1 compares eight LOMM configurations, formed by including or excluding each of three features: clip-specific baseline, clip-specific scale, and a brief transition in activity. Each configuration is compared with the real data on eight summary statistics. Six are computed for each score channel within each clip: median level; interquartile range of levels; interquartile range of observation-to-observation changes; lag-1 autocorrelation; entropy of the distribution of monotonic run lengths, which summarizes how often the series changes direction; and normalized spectral entropy, which is low when variance is concentrated at a few frequencies and high when it is spread across many. Two are computed across channels within a clip: effective rank, which summarizes how many independent components the channels contain, and total variance. All eight statistics are computed on the scores and on their log-ratio coordinates, giving 16 comparisons.
 
-For each statistic, discrepancy combines the standardized difference in medians with the Wasserstein distance between the simulated and real distributions across clips. The larger distance is retained, then the eight statistics are averaged within each representation and the score and log-ratio representations receive equal weight. Smaller values indicate closer agreement.
+For each statistic and each representation, discrepancy is computed from the distributions of the statistic across clips in the simulated and real data, in three steps. First, two distances are computed: the absolute difference between the simulated and real medians, and the Wasserstein distance between the two distributions, which measures how far one distribution must be shifted to match the other. Second, both distances are standardized by the spread of the real values, and the larger is retained. Third, the eight standardized distances are averaged within each representation, and the score and log-ratio averages are weighted equally in the composite. Smaller values indicate closer agreement.
 
-The videos were divided into five folds. Measurement parameters and candidate settings were estimated or selected using the training clips, and each selected configuration generated 100 datasets matching the held-out clips' observation indices and segment structure. The held-out folds were used to compare the eight configurations and select the best one, so this is a cross-fitted exploratory comparison rather than external validation. Appendix B gives the complete discrepancy, calibration, search, and bootstrap procedures.
+The 100 clips were divided into five folds of 20 clips. Within each fold, the measurement parameters (coordinate center, loading directions and scales, and the covariance of clip baselines) were estimated from the 80 training clips, and the oscillator period, damping ratio, and observation scale were selected from a small grid using training clips only. Each selected configuration then generated 100 simulated datasets matching the held-out clips' observation indices and segment structure, and discrepancy was computed on the held-out clips. Because the same held-out folds were used both to compare the eight configurations and to select the best one, the reported discrepancy of the selected configuration is optimistically biased. The analysis is therefore an exploratory comparison, not an external validation. Appendix B gives the complete discrepancy, calibration, search, and bootstrap procedures.
 
 # Study 2: Recovery of Dimensionality and Indicator Assignments
 
-Study 2 asks whether four network-based procedures recover a prespecified number of dimensions and indicator assignments. The primary analyses use synthetic continuous indicators. Each dataset contains $p=mk$ indicators, where $m$ is the number of dimensions and $k$ is the number of indicators per dimension. Clips share the groups of indicators measuring the same latent dimension and the nominal settings, with small clip-specific loading and uniqueness jitter. @tbl-scenario-words lists the six activity-dynamics families. Appendix B gives their exact schedules and parameters.
+*Data-generating conditions.* Study 2 asks whether four network-based methods recover a prespecified number of dimensions and a prespecified assignment of indicators to dimensions. The primary analyses use continuous indicators generated by LOMM. Each dataset contains $N$ clips with $T$ observations each and $p=mk$ indicators. All clips in a dataset share the same indicator assignments and the same nominal loadings and residual variances; each clip's loadings and residual variances are perturbed by small random amounts. Datasets are generated under six scenario families (@tbl-scenario-words), which differ in how strongly and how persistently each latent dimension is expressed and in whether the oscillator dynamics are stable or amplifying. Appendix B gives the exact activity schedules and parameters.
 
-Every method receives the same simulated dataset. Each method estimates its own structure, that structure is converted to an undirected network by a prespecified rule, and the same community-detection procedure identifies groups of indicators. The estimated grouping is then compared with the assignment used to generate the data. This creates a common recovery target while preserving the statistical model and row handling of each procedure.
+Every method receives the same simulated dataset. Each method estimates its own structure, that structure is converted to an undirected network by a prespecified rule, and the same community-detection procedure identifies groups of indicators. The estimated grouping is then compared with the assignment used to generate the data. This creates a common recovery target while preserving each method's own statistical model and data handling.
 
 ```{r}
 #| label: tbl-scenario-words
@@ -250,10 +252,10 @@ scenario_word_table <- tibble::tribble(
   ~Code, ~Family,
   "A", "Weak expression, one dominant dimension",
   "B", "Strong expression, one dominant dimension",
-  "C", "Strong expression, switching dimension",
-  "D", "Rapid switching",
-  "E", "Growing expression, one dominant dimension",
-  "F", "Growing expression, switching dimension"
+  "C", "Strong expression, switching dominant dimension",
+  "D", "Strong expression, rapid switching",
+  "E", "Amplifying dynamics, one dominant dimension",
+  "F", "Amplifying dynamics, switching dominant dimension"
 )
 cat("\\begingroup\\small\\setlength{\\tabcolsep}{6pt}\n")
 print(knitr::kable(
@@ -268,16 +270,16 @@ cat("\\endgroup\n")
 
 ```{r}
 #| label: tbl-method-roles
-#| tbl-cap: "The four Study 2 procedures and the structure used for the common grouping target."
+#| tbl-cap: "The four Study 2 methods, the structure each supplies for the common grouping step, and its role in the comparison."
 #| tbl-pos: "H"
 #| results: asis
 
 method_role_table <- tibble::tribble(
   ~Method, ~`Structure used for grouping`, ~`Role in the comparison`,
-  "DynEGA", "Partial-correlation network of estimated changes", "Focal dynamic grouping method",
-  "Static EGA", "Partial-correlation network of contemporaneous levels", "Time-agnostic, computationally light benchmark",
-  "GraphicalVAR", "Contemporaneous residual partial-correlation network", "Lagged network-model comparison",
-  "GIMME", "Average residual-covariance network across clip-level fits", "Feasibility-stress comparison"
+  "DynEGA", "Partial-correlation network of estimated changes", "Method of primary interest",
+  "Static EGA", "Partial-correlation network of contemporaneous levels", "Ignores temporal order; computationally inexpensive benchmark",
+  "GraphicalVAR", "Contemporaneous residual partial-correlation network", "Dynamic network model with lagged and contemporaneous relations",
+  "GIMME", "Average residual-covariance network across clip-level fits", "Fitted per clip and averaged; tests computational feasibility"
 )
 cat("\\begingroup\\small\\setlength{\\tabcolsep}{3pt}\n")
 print(knitr::kable(
@@ -290,25 +292,25 @@ print(knitr::kable(
 cat("\\endgroup\n")
 ```
 
-DynEGA is the focal method because it groups indicators whose estimated changes are coordinated over time [@glla2010; @golino2017ega1; @golino2019investigating; @golino2020modeling]. GraphicalVAR separates lagged relations from contemporaneous relations and supplies the latter for grouping [@epskampggm; @graphicalVAR2024]. GIMME fits each clip separately; we average residual covariance matrices from successful fits before grouping [@gates2012group; @lane2019uncovering]. This use places GIMME under unusual computational strain, so its findings concern the executed comparison and should not be generalized to idiographic applications.
+*Recovery procedures.* DynEGA [@glla2010; @golino2017ega1; @golino2019investigating; @golino2020modeling] is the method of primary interest. It estimates the first derivative of each indicator from time-delay embeddings, estimates a regularized partial-correlation network among the derivatives, and applies a community-detection algorithm to the network; the communities are the estimated dimensions. GraphicalVAR [@epskampggm; @graphicalVAR2024] fits a multilevel vector autoregression that separates lagged from contemporaneous relations; its contemporaneous residual partial-correlation network is used for grouping. GIMME [@gates2012group; @lane2019uncovering] fits a structural vector autoregression to each clip separately; residual covariance matrices from successful fits are averaged across clips, and the average is used for grouping. This use of GIMME is computationally demanding and differs from its intended idiographic application, so the GIMME results apply to this comparison only.
 
-Static EGA applies EBICglasso and the same grouping step to the contemporaneous correlation matrix, without using the observation order. It provides a direct statistical baseline: if the prespecified groups are already visible in contemporaneous levels, a dynamic model may not improve this recovery target. It also provides a technical baseline because it requires much less computation. Comparing static EGA with DynEGA and GraphicalVAR therefore shows whether modeling temporal structure improves grouping enough to justify its cost in these conditions.
+Static EGA estimates a regularized partial-correlation network from the contemporaneous correlation matrix of indicator levels, ignoring the observation order, and applies the same community-detection step. It serves two purposes. Statistically, it shows how much of the grouping is recoverable from contemporaneous levels alone; if most of it is, a dynamic model cannot add much for this recovery target. Computationally, it requires far less time than the dynamic methods. Comparing static EGA with DynEGA and GraphicalVAR therefore shows whether modeling temporal structure improves grouping enough to justify its computational cost in these conditions.
 
-The primary $T=100$ design contains 21,600 datasets. It crosses six scenario families, two or three dimensions, 50 or 100 clips, three loading levels, three residual-error levels, and 100 paired replications, with four indicators per dimension. Every method receives the same dataset within a condition and replication. Because MAFW segments are short, with a median of 35 observations, a $T=25$ version of the same conditions is reported with the recovery results rather than as a co-equal design. Louvain at resolution 1.0 is the primary grouping algorithm; Leiden and Walktrap are paired sensitivity analyses applied to the same fitted networks.
+*Primary design and outcomes.* The primary design uses $T=100$ observations per clip and contains 21,600 datasets. It crosses the six scenario families, $m\in\{2,3\}$ dimensions, $N\in\{50,100\}$ clips, three loading levels (0.40, 0.60, 0.80), three residual standard deviations (0.125, 0.25, 0.50), and 100 replications, with $k=4$ indicators per dimension. Every method receives the same dataset within a condition and replication. Because the MAFW segments have a median length of 35 observations, the same 21,600 conditions were also run with $T=25$ and are reported as a secondary analysis. Louvain at resolution 1.0 is the primary community-detection algorithm; Leiden and Walktrap were applied to the same fitted networks as sensitivity analyses.
 
-The headline outcome is the overall correct-dimension recovery rate, $P(\mathrm{valid\ output\ and\ correct\ dimension})$. It counts a failed or timed-out attempt as an unsuccessful recovery. We also report $P(\mathrm{valid\ output})$ and $P(\mathrm{correct\ dimension}\mid\mathrm{valid\ output})$ so computational feasibility can be separated from accuracy among valid outputs. Assignment accuracy, adjusted Rand index, and variation of information assess the complete indicator partition among valid outputs. Trajectory-summary diagnostics for recovered-group summaries are reported in Appendix C; they are not Study 2 estimands.
+The primary outcome is the overall correct-dimension recovery rate: the proportion of datasets in which the method returned a valid network and the estimated number of dimensions equaled $m$. A failed or timed-out fit counts as an unsuccessful recovery. We also report the valid-output rate and the correct-dimension rate among valid outputs, so that computational feasibility and accuracy can be examined separately. Assignment accuracy, the adjusted Rand index, and variation of information compare the full estimated partition of indicators with the true partition among valid outputs. A secondary diagnostic summarizes each recovered group by its first principal component and compares that summary with the corresponding latent trajectory; these trajectory diagnostics are reported in Appendix C and are not primary outcomes.
 
-Three additional analyses test scope. First, paired targeted departures alter starting states, activity transitions, cross-loadings, residual dependence, input dependence, or the observed scale one feature at a time. The bounded-score departure applies softmax directly to the $p$ continuous indicators and analyzes both the raw scores and their centered log-ratio (CLR) components. This transformation changes the target geometry, so the original indicator grouping need not be preserved. Second, a restricted analysis adds clip-specific baseline and scale differences within the loading space. Third, an extended 518,400-dataset factorial simulation evaluates DynEGA over additional dimensions, indicators per dimension, and observation schedules. Appendix B gives the exact method settings, departures, outcome construction, resampling, and computing environment.
+*Additional analyses.* Three additional analyses examine the limits of the primary result. First, one-at-a-time sensitivity analyses start from a reference condition ($N=100$, $T=100$, loading 0.60, residual SD 0.25, shared initial state) and change one feature: independent rather than shared initial states, gradual rather than abrupt activity transitions, small cross-loadings, residual correlation between indicators, correlated acceleration inputs, or transformation of the indicators to bounded scores. The bounded-score condition applies the softmax function directly to the $p$ continuous indicators and analyzes either the $p$ scores or their centered log-ratio (CLR) components. Because the transformed scores must sum to one, the original block structure among the $p$ variables need not be preserved. Second, a small analysis adds clip-specific baseline and scale differences, with baselines constrained to the column space of the loading matrix so that they add no structure outside the factor model. Third, an extended factorial simulation of 518,400 datasets evaluates DynEGA alone over additional numbers of dimensions, indicators per dimension, and observation schedules. Appendix B gives the exact settings for every analysis.
 
 # Results
 
 ## Study 1 Results: Similarity of Simulated and Real Score Series
 
-@fig-empirical-realism shows the score-scale discrepancy for all eight configurations. The *common baseline-and-scale configuration* gives every clip the same baseline and scale. The *baseline-only* and *baseline-and-scale* configurations allow clips to differ in level or in both level and variability. The remaining configurations add a brief activity transition.
+@fig-empirical-realism shows the discrepancy on the score representation for all eight configurations, using the configuration names from the figure. In the *common baseline and scale* configuration every clip has the same baseline and scale. The *clip baseline*, *clip scale*, and *clip baseline + scale* configurations let clips differ in level, in variability, or in both. The remaining configurations add a brief activity transition to each of these.
 
 ```{r}
 #| label: fig-empirical-realism
-#| fig-cap: "Score-scale discrepancy between simulated and real series for the eight configurations in the five-fold cross-fitted exploratory comparison. Points average the eight summary-statistic discrepancies; smaller values indicate closer agreement. The diamond marks the baseline-and-scale configuration. The composite used for selection weighted this score representation and the log-ratio representation equally. Appendix C reports both representations and the bootstrap diagnostics."
+#| fig-cap: "Discrepancy between simulated and real series on the score representation for the eight configurations in the five-fold cross-fitted comparison. Each point averages the eight summary-statistic discrepancies; smaller values indicate closer agreement. The diamond marks the clip baseline + scale configuration. The composite used for selection weighted this score representation and the log-ratio representation equally. Appendix C reports both representations and the bootstrap diagnostics."
 #| fig-alt: "Dot plot comparing the score-scale discrepancy between simulated and real data for eight LOMM configurations."
 #| fig-align: center
 #| out-width: "0.95\\linewidth"
@@ -321,17 +323,17 @@ if (!file.exists(figure_4_path)) {
 knitr::include_graphics(figure_4_path)
 ```
 
-Averaging the score and log-ratio representations, the baseline-and-scale configuration had a discrepancy of 0.2567, compared with 0.3250 for the common baseline-and-scale configuration. Allowing clips to differ in baseline and scale therefore reduced the selected composite discrepancy by 21.0%. The baseline produced most of the improvement, the scale helped less, and adding a brief activity transition worsened the fit. Interpolating short internal gaps preserved the ordering: the baseline-and-scale discrepancy was 0.2511, compared with 0.3187 for the common configuration and 0.2707 for baseline only.
+Averaged over the score and log-ratio representations, the clip baseline + scale configuration had a composite discrepancy of 0.2567, compared with 0.3250 for the common baseline and scale configuration, a reduction of 21.0%. Most of the reduction came from the clip baseline (0.2766 for clip baseline alone); clip scale contributed less, and adding a brief activity transition increased discrepancy. The gap-interpolated sensitivity analysis gave the same ordering: 0.2511 for clip baseline + scale, 0.2707 for clip baseline, and 0.3187 for common baseline and scale.
 
-Important mismatch remained. The largest discrepancies concerned total score variance and the variability of observation-to-observation changes in log-ratio coordinates. The same held-out folds were used to compare configurations and select the best one, so these findings are exploratory. They support baseline and scale variation as a useful starting point for simulating these score series, without validating the classifier labels or LOMM as a model of emotional expression. Appendix C reports every configuration, statistic, bootstrap diagnostic, and the closest of 100 generated realizations for the example clip.
+Substantial discrepancies remained for some statistics. The largest concerned total variance of the scores and the interquartile range of observation-to-observation changes in log-ratio coordinates. Because the same held-out folds were used to compare and to select configurations, these results are exploratory. They support clip-specific baseline and scale as a reasonable starting point for simulating classifier-score series; they do not validate the classifier labels or LOMM as a model of emotional expression. Appendix C reports every configuration and statistic, the bootstrap diagnostics, and, for the example clip, the closest of 100 simulated realizations.
 
 ## Study 2 Results: Recovery of Dimensionality and Indicator Assignments
 
-@tbl-method-overall reports the $T=100$ Louvain results. The overall recovery rate requires a valid network output and the correct number of dimensions, so every failure and timeout counts as an unsuccessful recovery. The final two columns add assignment accuracy and computation time to the dimensionality results.
+@tbl-method-overall reports the $T=100$ results under Louvain. The overall recovery rate requires both a valid network and the correct number of dimensions, so every failure and timeout counts against it. The last two columns report assignment accuracy among valid outputs and median runtime.
 
 ```{r}
 #| label: tbl-method-overall
-#| tbl-cap: "Results for the primary $T=100$ simulation design under Louvain. Assignment accuracy conditions on a valid network output. Runtime is the median among valid network outputs and includes the fit-to-grouping workflow."
+#| tbl-cap: "Results for the primary $T=100$ design under Louvain. Assignment accuracy is computed among valid network outputs. Runtime is the median, in seconds, among valid network outputs and includes model fitting, network extraction, and community detection."
 #| results: asis
 
 method_table_path <- file.path("tables", "table1_method_overall.csv")
@@ -400,11 +402,11 @@ print(knitr::kable(
 cat("\\endgroup\n")
 ```
 
-DynEGA returned a valid network for all 21,600 datasets and had the highest overall correct-dimension recovery rate, 0.939. Static EGA followed at 0.884, showing that much of the grouping was visible in contemporaneous indicator levels. GraphicalVAR reached 0.777. GIMME recovered the correct dimension in 0.783 of its valid outputs, but returned a valid network for only 0.224 of datasets, reducing its overall recovery to 0.176. Conditional assignment accuracy was 0.965 for DynEGA, 0.922 for static EGA, 0.902 for GraphicalVAR, and 0.877 for GIMME. Static EGA was about 40 times faster than GraphicalVAR and had higher overall recovery and assignment accuracy for this grouping target. GraphicalVAR estimates a richer time-series model, so this result concerns the value of that additional structure for the stated target and conditions. Appendix C reports Monte Carlo errors, intervals, and the remaining partition diagnostics.
+DynEGA returned a valid network for all 21,600 datasets and had the highest overall recovery rate, 0.939. Static EGA followed at 0.884, which shows that most of the grouping was recoverable from contemporaneous indicator levels. GraphicalVAR reached 0.777. GIMME recovered the correct dimension in 0.783 of its valid outputs but returned a valid network for only 0.224 of datasets, so its overall recovery was 0.176. Assignment accuracy among valid outputs was 0.965 for DynEGA, 0.922 for static EGA, 0.902 for GraphicalVAR, and 0.877 for GIMME. Static EGA was about 40 times faster than GraphicalVAR and had higher overall recovery and assignment accuracy for this target. GraphicalVAR estimates a more complex model that includes lagged effects; the comparison evaluates only whether that additional structure improved recovery of the grouping under these conditions. Appendix C reports Monte Carlo standard errors, bootstrap intervals, and the remaining partition diagnostics.
 
 ```{r}
 #| label: fig-dimension-recovery
-#| fig-cap: "Overall correct-dimension recovery under Louvain across the six scenario families, with 25 or 100 observations per clip. A recovery requires a valid network output and the correct number of dimensions. Intervals resample whole datasets. Scenario codes are defined in Appendix B."
+#| fig-cap: "Overall correct-dimension recovery under Louvain by scenario family (codes as in Table 1), method, and observations per clip ($T=100$, top; $T=25$, bottom). A recovery requires a valid network output and the correct number of dimensions. Error bars are 95% bootstrap intervals from resampling whole datasets."
 #| fig-alt: "Interval plot of the probability of recovering the correct number of dimensions, by method and simulation scenario."
 #| fig-align: center
 #| out-width: "0.98\\linewidth"
@@ -417,39 +419,39 @@ if (!file.exists(figure_5_path)) {
 knitr::include_graphics(figure_5_path)
 ```
 
-Recovery varied across scenarios and record lengths (@fig-dimension-recovery). DynEGA was strongest in most conditions. Static EGA's high recovery reflects block structure visible in contemporaneous levels. GraphicalVAR struggled most when expression or measurement quality was weak, and GIMME's low overall rates largely reflected missing valid outputs. In the extended factorial simulation, DynEGA recovered the correct dimension in 93.7% of 518,400 datasets and assigned 95.2% of indicators correctly. Stronger loadings and smaller residual error improved recovery. Leiden and Walktrap reproduced the Louvain interpretation.
+Recovery varied across scenario families and observations per clip (@fig-dimension-recovery). DynEGA had the highest recovery in most conditions. Static EGA's recovery was high because the block structure was present in contemporaneous levels. GraphicalVAR's recovery was lowest when expression was weak or measurement error was large. GIMME's low overall rates mainly reflected missing valid outputs. In the extended factorial simulation, DynEGA recovered the correct number of dimensions in 93.7% of 518,400 datasets and assigned 95.2% of indicators correctly; stronger loadings and smaller residual error improved recovery. Leiden and Walktrap led to the same conclusions as Louvain.
 
-Among correct-dimensional valid outputs at $T=100$, trajectory correlation and NRMSE were 0.574 and 1.418 for DynEGA, 0.791 and 0.568 for GraphicalVAR, 0.606 and 0.898 for GIMME, and 0.787 and 0.563 for static EGA. These are post-estimation summaries of recovered groups. They show that grouping recovery and trajectory alignment are distinct targets and do not provide a general method ranking. Appendix C reports the complete diagnostics.
+As a secondary diagnostic, each recovered group was summarized by its first principal component and compared with the corresponding activity-scaled latent trajectory. Among valid outputs with the correct number of dimensions at $T=100$, the correlation and normalized RMSE were 0.574 and 1.418 for DynEGA, 0.791 and 0.568 for GraphicalVAR, 0.606 and 0.898 for GIMME, and 0.787 and 0.563 for static EGA. This ordering differs from the ordering for dimensional recovery. Grouping recovery and trajectory recovery are different targets, and neither ordering ranks the methods in general. Appendix C reports the complete diagnostics.
 
 ## Robustness and Sensitivity Analyses
 
-With $T=25$, static EGA had the highest overall correct-dimension recovery rate at 0.913, followed by DynEGA at 0.863 and GraphicalVAR at 0.770. Shorter records modestly reduced DynEGA recovery, left GraphicalVAR similar, and improved static EGA. Under the specified procedure and 900-second limit, no $T=25$ GIMME attempt yielded a valid network output.
+*Shorter records.* With $T=25$, static EGA had the highest overall recovery, 0.913, followed by DynEGA, 0.863, and GraphicalVAR, 0.770. Shortening the record slightly reduced DynEGA's recovery, left GraphicalVAR's about the same, and increased static EGA's. Under the 900-second limit, no GIMME fit at $T=25$ returned a valid network.
 
-Independent starting states produced the largest targeted change. Overall correct-dimension recovery fell from 0.993 to 0.838 for DynEGA, from 0.912 to 0.525 for static EGA, and from 0.683 to 0.253 for GraphicalVAR. The common-initial-state design was therefore optimistic for all three methods.
+*Initial states.* In the reference condition of the one-at-a-time analyses ($N=100$, $T=100$, loading 0.60, residual SD 0.25, shared initial state), overall recovery was 0.993 for DynEGA, 0.912 for static EGA, and 0.683 for GraphicalVAR. Replacing the shared initial state with independent initial states produced the largest change of any sensitivity condition: recovery fell to 0.838, 0.525, and 0.253, respectively. A shared initial state therefore overstates recovery for all three methods.
 
-Gradual activity transitions, small cross-loadings, and correlated inputs changed little in the tested conditions. Residual equicorrelation of 0.10 across all indicators increased recovery for GraphicalVAR and static EGA, but also created associations between dimensions and therefore has no general favorable interpretation.
+*Other one-at-a-time changes.* Gradual activity transitions, small cross-loadings, and correlated acceleration inputs changed recovery little. A residual correlation of 0.10 between every pair of indicators increased recovery for GraphicalVAR and static EGA, but because that correlation also links indicators of different dimensions, the increase should not be read as improved performance.
 
-Bounding the scores changed the question being asked and sharply reduced overall correct-dimension recovery on the original channels. DynEGA recovered the correct number of dimensions in 0.333 of the CLR datasets and 0.233 of the raw bounded-score datasets; the corresponding figures were 0.333 and 0.167 for static EGA, and 0.087 and 0.002 for GraphicalVAR. Direct softmax normalization and its accompanying projection to the zero-sum subspace did not preserve the structure among the original channels, and these results are the reason Study 1 and Study 2 have to stay separate.
+*Bounded scores.* Transforming the $p$ indicators to scores that sum to one changed the variables being analyzed and sharply reduced recovery of the original grouping. DynEGA recovered the correct number of dimensions in 0.333 of datasets analyzed as CLR components and 0.233 analyzed as raw scores; the corresponding rates were 0.333 and 0.167 for static EGA and 0.087 and 0.002 for GraphicalVAR. The softmax transformation and the accompanying projection onto the zero-sum subspace did not preserve the structure among the original indicators. For this reason, the Study 2 recovery results apply to continuous indicators and are not extended to bounded scores of the kind analyzed in Study 1.
 
-Adding clip-specific baseline and scale differences in selected stable conditions changed DynEGA from 0.775 to 0.750, a paired difference of $-0.025$ with a 95% interval of $[-0.100,0.050]$. Static EGA rose from 0.275 to 1.000 because the added baseline lay in the loading space and strengthened the intended grouping. GraphicalVAR and GIMME were unchanged in this small focused analysis, but their estimates had little support: GraphicalVAR produced only three correct outputs among 80 datasets, and every three-dimensional GIMME attempt timed out.
+*Between-clip baseline and scale.* This analysis used stable families A–D with independent stationary initial states, so its reference recovery rates are lower than in the shared-initial-state analyses. Adding clip-specific baseline and scale changed DynEGA's recovery from 0.775 to 0.750, a paired difference of $-0.025$ (95% interval $[-0.100,0.050]$). Static EGA rose from 0.275 to 1.000: the added baselines lie in the column space of the loadings, so they add between-clip variation that follows the intended grouping. GraphicalVAR and GIMME were unchanged, but those estimates rest on very few valid outputs; GraphicalVAR produced three correct outputs among 80 datasets, and every three-dimensional GIMME fit timed out.
 
-Median runtime among valid $T=100$ outputs was 2.15 seconds for static EGA, 3.69 for DynEGA, 85.41 for GraphicalVAR, and 518.16 for GIMME. GraphicalVAR timed out on 1,271 of 21,600 attempts. GIMME produced 4,846 valid outputs, 14,477 timeouts, and 2,277 post-estimation errors. DynEGA returned a valid output for every primary and extended-factorial attempt. These values describe the executed workflows on one machine. Appendix C gives the full runtime, factorial, and community-detection results.
+*Runtime and feasibility.* Median runtime among valid $T=100$ outputs was 2.15 s for static EGA, 3.69 s for DynEGA, 85.41 s for GraphicalVAR, and 518.16 s for GIMME. GraphicalVAR timed out on 1,271 of 21,600 fits. GIMME produced 4,846 valid outputs, 14,477 timeouts, and 2,277 post-estimation errors. DynEGA returned a valid output for every fit in the primary and extended designs. These runtimes are specific to our implementation and hardware. Appendix C gives the full runtime, factorial, and community-detection results.
 
 # Discussion
 
-LOMM addresses a common measurement problem in behavioral research. A classifier can produce multivariate time series from video, and an analysis can return dimensions or networks from those series, yet the empirical data alone cannot reveal whether the intended structure was recoverable. LOMM makes the recovery target explicit by specifying latent dynamics, time-varying activity, and the observation model separately. This separation is the paper's central contribution. It also applies beyond video whenever intensive longitudinal measures are treated as fallible indicators of lower-dimensional psychological processes. CLIP is external to LOMM and supplies one empirical scoring pipeline for Study 1.
+LOMM addresses a common measurement problem in behavioral research. A classifier can produce multivariate time series from video, and an analysis can return dimensions or networks from those series, yet the empirical data alone cannot reveal whether the intended structure was recoverable. LOMM makes the recovery target explicit by specifying latent dynamics, time-varying activity, and the observation model separately. This separation is the paper's central contribution. It also applies beyond video whenever intensive longitudinal measures are treated as fallible indicators of lower-dimensional psychological processes. CLIP is not part of LOMM; it is the scoring pipeline that produced the empirical series in Study 1.
 
-Study 1 evaluated resemblance to that empirical pipeline. Allowing clips to differ in baseline and scale reduced the selected discrepancy by 21.0%, with most of the improvement coming from the baseline. This result is local to 100 MAFW clips, one prompt set, one scoring model, and the chosen summary statistics. The same held-out folds supported comparison and selection, making the analysis exploratory. The result supports a simulation starting point for these score series and provides no validation of the emotion labels or of LOMM as a substantive theory of expression.
+Study 1 asked whether LOMM output resembles the score series from that pipeline. Letting clips differ in baseline and scale reduced the composite discrepancy by 21.0%, most of it from the baseline. This result is specific to 100 MAFW clips, one label set, one scoring model, and the chosen summary statistics, and because the held-out folds were used both to compare and to select configurations, it is exploratory. It supports a starting point for simulating such series; it does not validate the emotion labels or LOMM as a substantive theory of expression.
 
-Study 2 evaluated recovery from synthetic continuous indicators with a prespecified factor structure. DynEGA achieved the highest overall correct-dimension recovery and was the only method evaluated in the extended factorial simulation. Static EGA showed that much of the grouping was recoverable from contemporaneous levels. It exceeded GraphicalVAR in dimensional recovery and assignment accuracy for this target while requiring a median 2.15 seconds rather than 85.41 seconds. This accuracy-cost result is substantively useful: temporal modeling did not improve the stated grouping target enough to offset its added cost in these conditions. GraphicalVAR addresses additional temporal questions, and the comparison does not rank those broader capabilities.
+Study 2 evaluated recovery of a known factor structure from continuous indicators. DynEGA had the highest overall recovery and was the only method feasible in the extended factorial simulation. Static EGA showed that most of the grouping was recoverable from contemporaneous levels; it exceeded GraphicalVAR in both dimensional recovery and assignment accuracy while running in a median of 2.15 s rather than 85.41 s. The practical implication is that, for this recovery target and these conditions, modeling temporal structure did not improve recovery enough to offset its computational cost. GraphicalVAR answers additional questions about lagged relations, which this comparison does not evaluate.
 
-The trajectory-summary diagnostics in Appendix C reinforce the importance of defining the target. DynEGA's advantage concerned recovery of the prespecified dimensionality and indicator partition. Alignment of recovered-group summaries with latent trajectories produced a different ordering. Dimensional recovery and trajectory alignment should therefore be evaluated separately. All comparisons apply to the executed estimation, network-conversion, and grouping procedures. GIMME's low overall recovery mainly reflected its difficulty returning valid outputs under an unusual clip-level fitting procedure.
+The trajectory diagnostics in Appendix C show that the ranking of methods depends on the recovery target. DynEGA's advantage concerned recovery of the number of dimensions and the indicator partition; alignment of recovered-group summaries with the latent trajectories produced a different ordering. The two targets should be evaluated separately. All comparisons apply to the specific estimation, network-conversion, and grouping procedures used here. GIMME's low overall recovery mainly reflected its failure to return valid outputs under a clip-level fitting procedure that differs from its usual use.
 
-Initialization placed the strongest qualification on the primary design. A common starting state creates a shared transient across dimensions, which adds recoverable structure outside the measurement partition. Independent starting states reduced recovery for DynEGA, static EGA, and GraphicalVAR, showing that the common-initial-state design was optimistic. Gradual activity transitions, small cross-loadings, and correlated acceleration inputs changed little in the tested conditions. The bounded-score departure produced a sharper boundary: softmax normalization changed associations among the original indicators, and neither raw bounded scores nor CLR components preserved their original grouping. The main Study 2 recovery claim therefore applies to synthetic continuous indicators.
+The most important qualification of the primary result concerns initial states. A shared starting state creates a shared initial transient across dimensions, which adds recoverable structure that is not part of the measurement partition. Independent initial states reduced recovery for DynEGA, static EGA, and GraphicalVAR, so the shared-initial-state design overstated recovery. Gradual activity transitions, small cross-loadings, and correlated acceleration inputs changed little. The bounded-score condition set a clearer limit: the softmax transformation changed the associations among the original indicators, and neither the raw scores nor the CLR components preserved the original grouping. The Study 2 recovery claims therefore apply to continuous indicators.
 
-Several limitations define the next tests. The latent dimensions are uncoupled. The finite-horizon amplification families produce large late-record amplitudes and serve as stress tests. The $T=300$ conditions also change the observation interval, so they do not isolate record length. The GIMME residual-covariance conversion was constructed for this comparison and differs from typical idiographic use. Study 1 uses short clips from one controlled-access dataset and one zero-shot scoring pipeline. LOMM is used here as a generator with prespecified parameters; empirical estimation would require additional identification constraints.
+*Limitations.* Several limitations remain. The latent dimensions are uncoupled. The amplifying families produce large amplitudes late in the record and test recovery under those conditions only. The $T=300$ conditions also change the observation interval, so they do not isolate the number of observations per clip. The GIMME residual-covariance conversion was constructed for this comparison and differs from typical idiographic use. Study 1 uses short clips from one controlled-access dataset and one zero-shot scoring pipeline. LOMM is used here only as a generator with prespecified parameters; estimating it from data would require the identification constraints listed in Appendix A.
 
-Three practical lessons follow. Initial conditions can create structure unrelated to the intended measurement partition. A bounded transformation can change the target among the analyzed variables. Computational feasibility belongs in recovery evaluation because a method that does not return an output cannot recover the target. Applied work should therefore specify the measurement, latent dynamics, activity process, observation model, and recovery target before interpreting an empirical network. LOMM provides an environment for that sequence and can be extended to other scoring systems, coupled latent dimensions, and targets defined directly for bounded data.
+Three practical conclusions follow. Initial conditions can create structure unrelated to the intended measurement partition. Transforming indicators to bounded scores can change the structure among the analyzed variables. Computational feasibility belongs in any recovery evaluation, because a method that returns no output cannot recover the target. Applied researchers should therefore specify the latent dynamics, activity process, observation model, and recovery target before interpreting an empirical network. LOMM supports this workflow and can be extended to other scoring systems, coupled latent dimensions, and recovery targets defined directly for bounded data.
 
 
 \newpage
@@ -512,7 +514,7 @@ The study was not preregistered. The simulation and analysis code, manuscript so
 
 # Appendix A: Complete Specification of LOMM
 
-This appendix gives the formal LOMM specification behind the conceptual account in the main text. It is intended for readers who want to reimplement the generator or examine its assumptions and identification limits. Nothing in this appendix changes the reported results.
+This appendix gives the formal LOMM specification behind the conceptual account in the main text. It is intended for readers who want to reimplement the generator or examine its assumptions and identification limits.
 
 ## A.1 The Latent Transition
 
@@ -656,13 +658,13 @@ $$
 +\frac{a_{if,n+1}-a_{if,n}}{\Delta}x_{if,n}.
 $$
 
-The second term is what a derivative-based method sees at a switch even when the oscillator itself has not accelerated, which is the reason for the gradual-transition sensitivity analysis. This convention attaches the new activity value to the post-transition observation, so the activity layer multiplies each completed latent state by the schedule value at the same observation index.
+The second term is the term that enters an estimated derivative at an activity switch even when the oscillator itself has not accelerated; this motivates the gradual-transition sensitivity analysis. This convention attaches the new activity value to the post-transition observation, so the activity layer multiplies each completed latent state by the schedule value at the same observation index.
 
 The activity schedule takes two nonnegative values, $a_{\mathrm{high}}$ and $a_{\mathrm{low}}$. In non-switching families the dominant dimension remains at $a_{\mathrm{high}}$ for the whole record and the others remain at $a_{\mathrm{low}}$. In switching families, dwell fractions determine how long each dimension remains dominant before the schedule reassigns $a_{\mathrm{high}}$. Appendix B lists the numeric gains and dwell values used in the Study 2 families.
 
 ## A.5 The Observation Layer
 
-Let $J$ denote the number of positive score channels, let $d=J-1$, and let $\mathbf V\in\mathbb R^{J\times d}$ be a fixed orthonormal isometric log-ratio (ILR) basis satisfying $\mathbf V^\top\mathbf V=\mathbf I_d$ and $\mathbf V^\top\mathbf 1_J=\mathbf 0$. The Study 1 basis used here is a normalized Helmert basis constructed in the stated 11-channel order. In the full observation model, $\boldsymbol\mu\in\mathbb R^d$ is a fixed center, $\mathbf b_i\in\mathbb R^d$ is the clip baseline, $s_i>0$ is the clip scale, $\kappa>0$ is a global scale, and $\boldsymbol\Lambda_i\in\mathbb R^{d\times m}$ maps the $m$ activity-scaled latent positions into these coordinates. Conditional on the clip-specific terms and $\boldsymbol\Sigma_i$, measurement errors are independent over time and across videos, and independent of latent states, initial states, activity schedules, and acceleration inputs, with $\boldsymbol\varepsilon_{in}\mid\boldsymbol\Sigma_i\sim\mathcal N(\mathbf 0,\boldsymbol\Sigma_i)$. Dependence across coordinates follows $\boldsymbol\Sigma_i$. Designs with fixed measurement parameters set $\boldsymbol\Lambda_i=\boldsymbol\Lambda$ and $\boldsymbol\Sigma_i=\boldsymbol\Sigma$ for every clip. The targeted residual-equicorrelation departure sets $\boldsymbol\Sigma=s_\varepsilon^2\{(1-\rho)\mathbf I_p+\rho\mathbf 1_p\mathbf 1_p^\top\}$ with $\rho=0.10$ across all $p$ indicators, thereby introducing residual covariance both within and between the prespecified blocks. The clip scale multiplies both signal and residual, whereas the baseline is additive.
+Let $J$ denote the number of positive score channels, let $d=J-1$, and let $\mathbf V\in\mathbb R^{J\times d}$ be a fixed orthonormal isometric log-ratio (ILR) basis satisfying $\mathbf V^\top\mathbf V=\mathbf I_d$ and $\mathbf V^\top\mathbf 1_J=\mathbf 0$. The Study 1 basis used here is a normalized Helmert basis constructed in the stated 11-channel order. The full observation model in log-ratio coordinates is
 
 $$
 \mathbf u_{in}
@@ -675,7 +677,9 @@ $$
 \right).
 $$
 
-The three baseline constructions differ only in where $\mathbf b_i$ is allowed to live. Study 1 draws it from a zero-mean Gaussian whose covariance is estimated from training clips in the full coordinate space. Study 2's between-clip-variability analysis instead uses
+Here $\boldsymbol\mu\in\mathbb R^d$ is a fixed center, $\mathbf b_i\in\mathbb R^d$ is the clip baseline, $s_i>0$ is the clip scale, $\kappa>0$ is a global scale, and $\boldsymbol\Lambda_i\in\mathbb R^{d\times m}$ maps the $m$ activity-scaled latent positions into these coordinates. The clip scale multiplies both signal and residual, whereas the baseline is additive. Conditional on the clip-specific terms and $\boldsymbol\Sigma_i$, measurement errors are independent over time and across clips, and independent of latent states, initial states, activity schedules, and acceleration inputs, with $\boldsymbol\varepsilon_{in}\mid\boldsymbol\Sigma_i\sim\mathcal N(\mathbf 0,\boldsymbol\Sigma_i)$. Dependence across coordinates follows $\boldsymbol\Sigma_i$. Designs with fixed measurement parameters set $\boldsymbol\Lambda_i=\boldsymbol\Lambda$ and $\boldsymbol\Sigma_i=\boldsymbol\Sigma$ for every clip. The residual-correlation sensitivity condition sets $\boldsymbol\Sigma=s_\varepsilon^2\{(1-\rho)\mathbf I_p+\rho\mathbf 1_p\mathbf 1_p^\top\}$ with $\rho=0.10$ across all $p$ indicators, thereby introducing residual covariance both within and between the prespecified blocks.
+
+The three baseline constructions differ only in the subspace from which $\mathbf b_i$ is drawn. Study 1 draws it from a zero-mean Gaussian whose covariance is estimated from training clips in the full coordinate space. Study 2's between-clip-variability analysis instead uses
 
 $$
 \mathbf b_i=\boldsymbol\Lambda\boldsymbol\beta_i,
@@ -691,9 +695,9 @@ $$
 +\boldsymbol\varepsilon_{in}\right).
 $$
 
-In the matched-method and extended factorial designs, $\boldsymbol\Lambda_i$ and the diagonal of $\boldsymbol\Sigma_i$ receive small clip-specific perturbations to the loadings and residual variances. The targeted sensitivity and between-clip-variability designs use fixed equal values except where the stated condition changes them. Thus $\mathbf b_i=\mathbf 0$ and $s_i=1$ remove baseline and overall-scale differences; they do not by themselves imply a common loading matrix or residual covariance.
+In the matched-method and extended factorial designs, $\boldsymbol\Lambda_i$ and the diagonal of $\boldsymbol\Sigma_i$ receive small clip-specific perturbations to the loadings and residual variances. The one-at-a-time sensitivity and between-clip-variability designs use fixed equal values except where the stated condition changes them. Thus $\mathbf b_i=\mathbf 0$ and $s_i=1$ remove baseline and overall-scale differences; they do not by themselves imply a common loading matrix or residual covariance.
 
-The synthetic continuous indicators used in Study 2's continuous-indicator recovery designs are the continuous-indicator vector before any bounded-score mapping,
+The continuous indicators used in Study 2's primary recovery designs are the indicator vector before any bounded-score mapping,
 
 $$
 \mathbf z_{in}=\boldsymbol\Lambda_i\tilde{\mathbf x}_{in}+\boldsymbol\varepsilon_{in},
@@ -723,7 +727,7 @@ $$
 
 the second because $\mathbf V\mathbf u_{in}$ lies in the zero-sum log-ratio subspace. The fixed basis excludes the unidentified common-logit direction and the softmax produces strictly positive rows summing to one, so the scores identify the scaled coordinates $\mathbf u_{in}/\tau$ exactly. A common-logit component remains unobservable, and the unscaled coordinates and $\tau$ are not separately identified without an external scale constraint.
 
-The targeted Study 2 bounded-score departure uses the $p=mk$ continuous-indicator vector directly. With $J=p$, it computes
+The Study 2 bounded-score sensitivity condition uses the $p=mk$ continuous-indicator vector directly. With $J=p$, it computes
 
 $$
 \mathbf p^{\mathrm{dep}}_{in}
@@ -736,7 +740,7 @@ $$
 =\mathbf I_p-\frac{\mathbf 1_p\mathbf 1_p^\top}{p}.
 $$
 
-For any orthonormal ILR basis $\mathbf V_p\in\mathbb R^{p\times(p-1)}$, $\mathbf V_p\mathbf V_p^\top=\mathbf P_p$. Defining $\mathbf u^{\mathrm{dep}}_{in}=\mathbf V_p^\top\mathbf z_{in}$ therefore gives $\mathbf V_p\mathbf u^{\mathrm{dep}}_{in}=\mathbf P_p\mathbf z_{in}$. Softmax is invariant to the removed row mean, so the direct-softmax branch is equivalent to applying the basis form to $\mathbf u^{\mathrm{dep}}_{in}$. The executed analysis used the $p$ raw scores and the $p$ CLR components, which satisfy a zero-sum constraint; it did not analyze the $(p-1)$ ILR coordinates. The common-logit direction in $\mathbf z_{in}$ is unidentifiable after this transformation.
+For any orthonormal ILR basis $\mathbf V_p\in\mathbb R^{p\times(p-1)}$, $\mathbf V_p\mathbf V_p^\top=\mathbf P_p$. Defining $\mathbf u^{\mathrm{dep}}_{in}=\mathbf V_p^\top\mathbf z_{in}$ therefore gives $\mathbf V_p\mathbf u^{\mathrm{dep}}_{in}=\mathbf P_p\mathbf z_{in}$. Softmax is invariant to the removed row mean, so the direct-softmax branch is equivalent to applying the basis form to $\mathbf u^{\mathrm{dep}}_{in}$. The analysis used the $p$ raw scores and the $p$ CLR components, which satisfy a zero-sum constraint; it did not analyze the $(p-1)$ ILR coordinates. The common-logit direction in $\mathbf z_{in}$ is unidentifiable after this transformation.
 
 ## A.6 Converting Period and Damping to Feedback Parameters
 
@@ -792,7 +796,7 @@ together with a specified acceleration-input model and constraints on the latent
 
 # Appendix B: Study Designs and Implementation Details
 
-This appendix collects the design and implementation details moved from the main text. Study 1 evaluates resemblance to real bounded-score series. Study 2 evaluates recovery of a prespecified factor structure from synthetic continuous indicators. These targets remain distinct.
+This appendix gives the design and implementation details for both studies. Study 1 evaluates resemblance to real bounded-score series. Study 2 evaluates recovery of a prespecified factor structure from continuous indicators.
 
 ## B.1 Study 1 Scoring and Calibration
 
@@ -800,7 +804,7 @@ The Study 1 sample was assembled one clip at a time, with MAFW category labels u
 
 transforEmotion sampled up to 50 frames uniformly from each video and used the OpenAI CLIP ViT-Large/14 model family. A Haar cascade detected faces, and the largest detected face was expanded by 50 pixels on each side before classification. Frames without a detected face received missing scores. Eleven lowercase class labels were passed directly to the text encoder without a sentence template: anger, disgust, fear, happiness, neutral, sadness, surprise, contempt, anxiety, helplessness, and disappointment. Burned-in subtitles were not masked and could contribute when they fell inside the padded face crop.
 
-Scores were required to lie in $[0,1]$. A complete row was retained when its sum was positive, finite, and within $10^{-6}$ of one, then divided by that sum in the fixed channel order. Values were not truncated and zero replacement was disabled. The main analysis retained complete rows. The sensitivity analysis interpolated internal gaps of at most two frames within a segment. The scoring-time package release and exact checkpoint revision were not archived, so exact frame rescoring cannot be guaranteed; the retained scores support the reported analyses.
+Scores were required to lie in $[0,1]$. A complete row was retained when its sum was positive, finite, and within $10^{-6}$ of one, then divided by that sum in the fixed channel order. Values were not truncated and zero replacement was disabled. The main analysis retained complete rows. The sensitivity analysis interpolated internal gaps of at most two frames within a segment. The scoring-time package release and exact checkpoint revision were not archived, so exact frame rescoring cannot be guaranteed; all analyses use the retained scores.
 
 The comparison used eight statistics. Median level, interquartile range of levels, interquartile range of observation-to-observation changes, lag-1 autocorrelation, entropy of monotonic run lengths, and normalized spectral entropy were calculated for each channel. Effective rank and total variance described all channels jointly. Each statistic was evaluated on both bounded scores and log-ratio coordinates.
 
@@ -808,27 +812,27 @@ For every statistic and representation, disagreement between simulated and real 
 
 Clips were divided into five deterministic folds within MAFW category and length order, leaving 20 test clips per fold. The coordinate center, loading directions, loading scales, and covariance of clip baselines were estimated from training clips only. The first three eigenvectors of the within-clip covariance supplied the loading directions. Their orientation and scale were fixed deterministically. The baseline covariance was shrunk halfway toward its diagonal and eigenvalues were floored at $10^{-8}$.
 
-Within each fold and configuration, the search crossed natural periods $\{8,12,24\}$, damping ratios $\{0.05,0.20,0.50\}$, and observation scales $\kappa\in\{0.75,1.00,1.25\}$. Three paired training datasets evaluated each of the 27 candidates. Selection minimized the equally weighted representation-level discrepancy, with deterministic tie-breaking. All folds selected a 12-observation period, damping ratio 0.50, and $\kappa=1$ for the baseline-and-scale configuration.
+Within each fold and configuration, the search crossed natural periods $\{8,12,24\}$, damping ratios $\{0.05,0.20,0.50\}$, and observation scales $\kappa\in\{0.75,1.00,1.25\}$. Three paired training datasets evaluated each of the 27 candidates. Selection minimized the equally weighted representation-level discrepancy, with deterministic tie-breaking. All folds selected a 12-observation period, damping ratio 0.50, and $\kappa=1$ for the clip baseline + scale configuration.
 
 Each selected configuration generated 100 datasets per test fold, matching the held-out observation indices and segment structure. The comparison concerns distributions of summary statistics across clips, rather than frame-level reconstruction. Uncertainty used 2,000 paired bootstrap resamples of the 20 clips within each fold. The eight configurations are the factorial combinations of clip baseline, clip scale, and brief activity transition.
 
 ## B.2 Study 2 Simulation Designs
 
-For each clip, LOMM sets or draws the starting state and acceleration inputs according to the configuration, advances each latent dimension, applies the activity schedule, and constructs the observed indicators. The primary, shorter-series, and extended factorial designs use synthetic continuous indicators. Clips share the block partition and nominal measurement settings, with clip-specific loading and uniqueness jitter. The targeted conditions use fixed equal measurement parameters except for the stated departure.
+For each clip, LOMM sets or draws the starting state and acceleration inputs according to the configuration, advances each latent dimension, applies the activity schedule, and constructs the observed indicators. The primary, shorter-series, and extended factorial designs use continuous indicators. All clips share the same indicator assignments and the same nominal loadings and residual variances; each clip's loadings and residual variances are perturbed by small random amounts. The one-at-a-time sensitivity conditions use fixed equal measurement parameters except for the stated change.
 
 ```{r}
 #| label: tbl-scenario-families
-#| tbl-cap: "The six Study 2 scenario families. Dwell values are fractions of the record length."
+#| tbl-cap: "The six Study 2 scenario families. Dwell values are fractions of the number of observations per clip."
 #| results: asis
 
 scenario_family_table <- tibble::tribble(
   ~Code, ~Family, ~Switching, ~Gain, ~Dwell, ~Dynamic_rule,
   "A", "Weak expression, one dominant dimension", "No", "0.35 / 0.05", "1.00 / 1.00", "Stable, low input scale",
   "B", "Strong expression, one dominant dimension", "No", "1.00 / 0.08", "1.00 / 1.00", "Stable, standard input scale",
-  "C", "Strong expression, switching dimension", "Yes", "1.00 / 0.08", "0.20 / 0.45", "Stable, standard input scale",
+  "C", "Strong expression, switching dominant dimension", "Yes", "1.00 / 0.08", "0.20 / 0.45", "Stable, standard input scale",
   "D", "Strong expression, rapid switching", "Yes", "1.25 / 0.08", "0.03 / 0.10", "Stable, high input scale",
-  "E", "Amplifying trajectories, one dominant dimension", "No", "1.00 / 0.08", "1.00 / 1.00", "Positive velocity feedback",
-  "F", "Amplifying trajectories, switching dimension", "Yes", "1.10 / 0.10", "0.12 / 0.30", "Positive velocity feedback"
+  "E", "Amplifying dynamics, one dominant dimension", "No", "1.00 / 0.08", "1.00 / 1.00", "Positive velocity feedback",
+  "F", "Amplifying dynamics, switching dominant dimension", "Yes", "1.10 / 0.10", "0.12 / 0.30", "Positive velocity feedback"
 )
 names(scenario_family_table) <- c(
   "Code", "Family", "Switching", "Active / background gain",
@@ -845,19 +849,19 @@ print(knitr::kable(
 cat("\\endgroup\n")
 ```
 
-In non-switching scenarios, one dimension remains dominant for a whole clip and the dominant dimension rotates across clips. Switching scenarios sample dwell intervals and change the dominant dimension over time. Families A through D use stable dynamics. Families E and F use positive velocity feedback and serve as finite-horizon amplification stress tests.
+In non-switching scenarios, one dimension remains dominant for a whole clip and the dominant dimension rotates across clips. Switching scenarios sample dwell intervals and change the dominant dimension over time. Families A through D use stable dynamics. Families E and F use positive velocity feedback and test recovery under finite-horizon amplification.
 
 The primary $T=100$ design contains 21,600 datasets. It crosses six scenario families, $m\in\{2,3\}$ dimensions, $N\in\{50,100\}$ clips, loadings $\{0.40,0.60,0.80\}$, residual standard deviations $\{0.125,0.25,0.50\}$, four indicators per dimension, and 100 paired replications. The shorter-series design repeats the same 21,600 datasets with $T=25$, $\Delta=0.4$, and duration 9.6. Every method receives the same dataset within each condition and replication.
 
-The targeted analyses fix $N=100$, $T=100$, loading 0.60, residual standard deviation 0.25, and four indicators per dimension. They cross all six families, two dimensionalities, and 50 paired replications while changing one feature at a time.
+The one-at-a-time sensitivity analyses fix $N=100$, $T=100$, loading 0.60, residual standard deviation 0.25, and four indicators per dimension (the reference condition). They cross all six families, two dimensionalities, and 50 paired replications while changing one feature at a time.
 
 ```{r}
 #| label: tbl-challenge-variants
-#| tbl-cap: "Targeted departures from the fixed equal-measurement condition."
+#| tbl-cap: "One-at-a-time sensitivity conditions. Each changes one feature of the reference condition."
 #| results: asis
 
 challenge_variant_table <- tibble::tribble(
-  ~Departure, ~Specification,
+  ~`Sensitivity condition`, ~Specification,
   "Independent starting states", "Stationary zero-mean starts for stable dimensions; bounded independent starts for amplifying dimensions",
   "Gradual activity transitions", "A five-observation transition replaces each abrupt switch",
   "Cross-loadings", "Small normal cross-loadings, truncated to [-0.10, 0.10]",
@@ -878,15 +882,15 @@ cat("\\endgroup\n")
 
 The between-clip analysis uses 80 paired datasets from stable families A through D, $m\in\{2,3\}$, and 10 replications. Each dataset has $N=100$, $T=100$, four indicators per dimension, loading 0.60, residual standard deviation 0.25, and independent stationary starts. Its baseline varies within the loading space, and its scale varies across clips.
 
-The extended factorial simulation evaluates DynEGA on 518,400 datasets. It crosses $N\in\{50,100\}$, $T\in\{100,300\}$, $m\in\{2,3,4\}$, $k\in\{4,6\}$, three loading levels, three residual-error levels, six scenarios, and 400 replications. The $T=100$ conditions use $\Delta=0.4$ and the $T=300$ conditions use $\Delta=0.25$ while holding per-step input variance fixed. Their difference therefore combines record length, observation interval, physical duration, and discrete input specification.
+The extended factorial simulation evaluates DynEGA on 518,400 datasets. It crosses $N\in\{50,100\}$, $T\in\{100,300\}$, $m\in\{2,3,4\}$, $k\in\{4,6\}$, three loading levels, three residual-error levels, six scenarios, and 400 replications. The $T=100$ conditions use $\Delta=0.4$ and the $T=300$ conditions use $\Delta=0.25$ while holding per-step input variance fixed. Their difference therefore combines the number of observations, the observation interval, the physical duration, and the discrete input specification.
 
-The public lomm_observe() function documents the canonical observation step and returns the selected profile, implementation hashes, seed states, and loading and basis hashes. Study 2 uses the benchmark generator documented in the analysis code, which returns continuous indicators for the primary designs and applies the direct-softmax and CLR transformation for the targeted bounded-score departure.
+The public lomm_observe() function implements the observation step and records the configuration, seeds, and hashes needed for reproduction. Study 2 uses the benchmark generator documented in the analysis code, which returns continuous indicators for the primary designs and applies the direct-softmax and CLR transformation for the bounded-score sensitivity condition.
 
 ## B.3 Method Implementations
 
-DynEGA estimates first derivatives from time-delay embeddings, constructs an EBICglasso partial-correlation network, and groups its positive edges [@glla2010; @golino2017ega1; @golino2019investigating; @golino2020modeling]. Video identity prevents embedding windows from crossing clip boundaries. An explicit search selects the embedding dimension by the Total Entropy Fit Index, with shorter embeddings breaking ties. Candidate dimensions are $\{5,10,15,25,50\}$ for $T=100$ and $\{5,6,10,12\}$ for $T=25$. EGAnet 2.3.0 uses tau 1, delta 1, first derivatives, automatic correlations, pairwise missing-data handling, and the glasso model. The derivative scale does not affect the correlation matrix because conversion from observation units to physical time multiplies every derivative by the same positive constant.
+DynEGA estimates first derivatives from time-delay embeddings, constructs an EBICglasso partial-correlation network, and groups its positive edges [@glla2010; @golino2017ega1; @golino2019investigating; @golino2020modeling]. Video identity prevents embedding windows from crossing clip boundaries. An explicit search selects the embedding dimension by the Total Entropy Fit Index, with shorter embeddings breaking ties. Candidate dimensions are $\{5,10,15,25,50\}$ for $T=100$ and $\{5,6,10,12\}$ for $T=25$. EGAnet 2.3.0 uses GLLA embedding parameters tau = 1 and delta = 1, first derivatives, automatic correlations, pairwise missing-data handling, and the glasso model. The derivative scale does not affect the correlation matrix because conversion from observation units to physical time multiplies every derivative by the same positive constant.
 
-Static EGA applies EBICglasso to the contemporaneous correlation matrix of the stacked indicator levels and then uses the same network-processing and community-detection rules as DynEGA. It ignores the observation order. This makes it a time-agnostic benchmark for the grouping target and a computational benchmark for the temporal procedures.
+Static EGA applies EBICglasso to the contemporaneous correlation matrix of the stacked indicator levels and then uses the same network-processing and community-detection rules as DynEGA. It ignores the observation order. This makes it a benchmark that shows how much of the grouping is recoverable without temporal information, and a computational benchmark for the temporal procedures.
 
 GraphicalVAR uses mlGraphicalVAR with clip identity as the grouping variable, within-clip centering, variable standardization, and gamma 0.5 [@epskampggm; @graphicalVAR2024]. Lagged pairs never cross clip boundaries. The grouping uses the returned fixedPCC contemporaneous residual partial-correlation matrix. The diagonal is removed and the matrix is treated as an undirected weighted graph.
 
@@ -894,11 +898,11 @@ GIMME fits each standardized clip separately with unified structural equation mo
 
 For every method, negative graph weights are set to zero. If no positive edge remains, absolute values of the original off-diagonal weights are used; only an all-zero matrix produces singleton communities. The integrated outputs do not record the frequency of this fallback. Louvain at resolution 1.0 is primary [@blondel2008fast]. Leiden and Walktrap are applied to the same fitted network as sensitivity analyses [@traag2019leiden; @pons2006walktrap]. A deterministic offset from the dataset seed initializes each method fit.
 
-GraphicalVAR and GIMME were omitted from the 518,400-dataset extended factorial simulation because the full design was computationally impractical. Both were included in the primary and shorter-series designs. GraphicalVAR was also included in the targeted and between-clip analyses. GIMME was included in the between-clip analysis and excluded from the targeted one-at-a-time departures.
+GraphicalVAR and GIMME were omitted from the 518,400-dataset extended factorial simulation because the full design was computationally impractical. Both were included in the primary and shorter-series designs. GraphicalVAR was also included in the one-at-a-time sensitivity and between-clip analyses. GIMME was included in the between-clip analysis and excluded from the one-at-a-time sensitivity analyses.
 
 ## B.4 Outcomes, Uncertainty, and Computing
 
-The valid-output rate records whether a procedure returned a network that could be grouped. The conditional correct-dimension rate records correct dimensionality among valid outputs. The headline overall correct-dimension recovery rate requires both events, so errors and timeouts remain in its denominator.
+The valid-output rate records whether a procedure returned a network that could be grouped. The conditional correct-dimension rate records correct dimensionality among valid outputs. The primary outcome, the overall correct-dimension recovery rate, requires both events, so errors and timeouts remain in its denominator.
 
 Adjusted Rand index and variation of information compare the full estimated and prespecified partitions among valid outputs. Assignment accuracy matches estimated groups to dimensions to maximize correct indicator assignments. Every indicator remains in the denominator, and indicators in unmatched groups count as incorrect.
 
@@ -921,7 +925,7 @@ Runtime is elapsed wall-clock time for attempts returning a valid network output
 
 ## C.1 Full Results of the Simulated-versus-Real Comparison
 
-The complete comparison of all eight configurations is reported below for both analyses. The tables retain the bootstrap means, estimated biases, basic reverse-percentile intervals, and percentile intervals so that the displacement can be inspected directly. These quantities diagnose the behavior of the clip-resampling distribution; they are not treated as uncertainty intervals around the absolute plug-in profile discrepancies. The following table then separates the empirical-baseline plus clip-scale profile into its eight component metrics. This second table preserves discrepancies that are obscured by the composite mean, including the remaining differences in amplitude dispersion and first-difference variability.
+The complete comparison of all eight configurations is reported below for both analyses. The tables retain the bootstrap means, estimated biases, basic reverse-percentile intervals, and percentile intervals so that bootstrap bias can be inspected directly. These quantities describe the clip-resampling distribution; they are not treated as uncertainty intervals around the plug-in discrepancies. A second table then separates the clip baseline + scale configuration into its eight component statistics. It shows discrepancies that the composite mean obscures, including the remaining differences in the interquartile range of levels and in the interquartile range of observation-to-observation changes.
 
 ```{r}
 #| label: fig-empirical-realism-all
@@ -944,7 +948,7 @@ knitr::include_graphics(realism_all_path)
 
 ```{r}
 #| label: fig-lomm-mafw-realism-example
-#| fig-cap: "Real MAFW classifier scores and the closest of 100 LOMM realizations generated for the same 49-observation clip with the baseline-and-scale configuration. The selected realization had a score RMSE of 0.105 and an observation-to-observation-change RMSE of 0.083. Selection after generation makes this a best-case illustration; the cross-fitted comparison carries the aggregate evidence."
+#| fig-cap: "Real MAFW classifier scores and the closest of 100 LOMM realizations generated for the same 49-observation clip with the clip baseline + scale configuration. The selected realization had a score RMSE of 0.105 and an observation-to-observation-change RMSE of 0.083. Because the realization was selected after generation, this is a best-case illustration; the cross-fitted comparison provides the aggregate evidence."
 #| fig-alt: "Two aligned line plots comparing real classifier scores with the closest of 100 simulated realizations."
 #| fig-align: center
 #| out-width: "0.95\\linewidth"
@@ -1090,7 +1094,7 @@ for (view_name in unique(metric_table$View)) {
     dplyr::filter(View == view_name) |>
     dplyr::select(-View)
   view_caption <- paste0(
-    "Discrepancy for each summary statistic under the baseline-and-scale ",
+    "Discrepancy for each summary statistic under the clip baseline + scale ",
     "configuration, ",
     tolower(view_name),
     " analysis. Results are shown for both representations; smaller values ",
@@ -1229,12 +1233,12 @@ cat("\\normalsize\\end{landscape}\n")
 
 \newpage
 
-## C.3 Targeted Departures, Between-Clip Analyses, and Scenario Parameters
+## C.3 One-at-a-Time Sensitivity Analyses and Scenario Parameters
 
 ```{r}
 #| label: fig-factor-effects
-#| fig-cap: "Paired change in overall correct-dimension recovery under each targeted departure. Negative values indicate lower recovery than in the fixed equal-measurement condition. Intervals resample whole datasets."
-#| fig-alt: "Interval plot of paired recovery changes under departures in starting states, activity, loadings, residuals, inputs, and bounded scores."
+#| fig-cap: "Paired change in overall correct-dimension recovery under each one-at-a-time sensitivity condition. Negative values indicate lower recovery than in the reference condition. Error bars are 95% bootstrap intervals from resampling whole datasets."
+#| fig-alt: "Interval plot of paired recovery changes under changes in starting states, activity, loadings, residuals, inputs, and bounded scores."
 #| fig-align: center
 #| out-width: "0.95\\linewidth"
 #| fig-pos: "H"
@@ -1302,12 +1306,12 @@ amplification_zeta <- 0.06 + 0.02 * seq_len(4)
 
 scenario_schedule_table <- tibble::tribble(
   ~Code, ~Family, ~`Dynamic family`, ~Switching, ~Gain, ~Dwell, ~`Velocity feedback`,
-  "A", "Low-amplitude single dominance", "Stable template", "No", "0.35 / 0.05", "1.00 / 1.00", "Negative",
-  "B", "High-amplitude single dominance", "Stable template", "No", "1.00 / 0.08", "1.00 / 1.00", "Negative",
-  "C", "High-amplitude switching", "Stable template", "Yes", "1.00 / 0.08", "0.20 / 0.45", "Negative",
-  "D", "High-amplitude rapid switching", "Stable template", "Yes", "1.25 / 0.08", "0.03 / 0.10", "Negative",
-  "E", "Ranked finite-horizon amplification", "Amplification", "No", "1.00 / 0.08", "1.00 / 1.00", "Positive",
-  "F", "Switching finite-horizon amplification", "Amplification", "Yes", "1.10 / 0.10", "0.12 / 0.30", "Positive"
+  "A", "Weak expression, one dominant dimension", "Stable template", "No", "0.35 / 0.05", "1.00 / 1.00", "Negative",
+  "B", "Strong expression, one dominant dimension", "Stable template", "No", "1.00 / 0.08", "1.00 / 1.00", "Negative",
+  "C", "Strong expression, switching dominant dimension", "Stable template", "Yes", "1.00 / 0.08", "0.20 / 0.45", "Negative",
+  "D", "Strong expression, rapid switching", "Stable template", "Yes", "1.25 / 0.08", "0.03 / 0.10", "Negative",
+  "E", "Amplifying dynamics, one dominant dimension", "Amplification", "No", "1.00 / 0.08", "1.00 / 1.00", "Positive",
+  "F", "Amplifying dynamics, switching dominant dimension", "Amplification", "Yes", "1.10 / 0.10", "0.12 / 0.30", "Positive"
 )
 
 make_dynamic_rows <- function(code, eta, zeta, sigma_base) {
@@ -1430,7 +1434,7 @@ print(knitr::kable(
   stability_table,
   format = "latex",
   longtable = TRUE,
-  caption = "Deterministic stability diagnostics for the unique dynamic-parameter pairs used across scenario factors. Table C11 maps these pairs to scenarios and factors. The modal exponential-rate factors $g(H)=\\exp\\{H\\max\\operatorname{Re}(r)\\}$ describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.",
+  caption = "Deterministic stability diagnostics for the unique dynamic-parameter pairs used across scenario factors. The preceding table maps these pairs to scenarios and factors. The modal exponential-rate factors $g(H)=\\exp\\{H\\max\\operatorname{Re}(r)\\}$ describe modal rates over the observed horizon rather than total finite-horizon state amplification. $H[100]=39.6$ and $H[300]=74.75$ under the stated record designs.",
   booktabs = TRUE,
   escape = FALSE,
   align = c("l", "r", "r", "r", "r", "r", "r", "r", "r", "l")
@@ -1449,7 +1453,7 @@ The extended factorial simulation evaluated DynEGA on 518,400 datasets. It recov
 ```{r}
 #| label: fig-runtime-feasibility
 #| fig-cap: "Runtime among valid network outputs in the primary $T=100$ and shorter $T=25$ designs. Points show medians and intervals show interquartile ranges on a log10 scale. Counts use unique fitted structures."
-#| fig-alt: "Log-scale interval plot of runtime among valid outputs by method and record length."
+#| fig-alt: "Log-scale interval plot of runtime among valid outputs by method and observations per clip."
 #| fig-align: center
 #| out-width: "0.95\\linewidth"
 #| fig-pos: "H"
@@ -1541,7 +1545,7 @@ cat("\\end{landscape}\n")
 
 ## C.6 Community-Detection Sensitivity
 
-Louvain, Leiden, and Walktrap were applied to each retained fitted graph. Their results were closely aligned in the matched-method simulation designs (@fig-community-sensitivity) and led to the same interpretation of the targeted sensitivity conditions (@fig-challenge-community-sensitivity). These comparisons reuse fitted structures and therefore assess the community-detection step rather than estimator variability.
+Louvain, Leiden, and Walktrap were applied to each retained fitted graph. Their results were closely aligned in the matched-method simulation designs (@fig-community-sensitivity) and led to the same interpretation of the one-at-a-time sensitivity conditions (@fig-challenge-community-sensitivity). These comparisons reuse fitted structures and therefore assess the community-detection step rather than estimator variability.
 
 ```{r}
 #| label: fig-community-sensitivity
@@ -1564,8 +1568,8 @@ knitr::include_graphics(community_sensitivity_path)
 
 ```{r}
 #| label: fig-challenge-community-sensitivity
-#| fig-cap: "Sensitivity of the paired departure effects to Louvain, Leiden, and Walktrap. Values are changes in overall correct-dimension recovery rate relative to the ideal condition."
-#| fig-alt: "Paired changes in overall correct-dimension recovery rate for three community-detection algorithms across departures in starting states, activity, loadings, residuals, inputs, and bounded scores."
+#| fig-cap: "Sensitivity of the paired one-at-a-time effects to Louvain, Leiden, and Walktrap. Values are changes in overall correct-dimension recovery rate relative to the reference condition."
+#| fig-alt: "Paired changes in overall correct-dimension recovery rate for three community-detection algorithms across changes in starting states, activity, loadings, residuals, inputs, and bounded scores."
 #| fig-align: center
 #| out-width: "0.98\\linewidth"
 #| fig-pos: "H"
