@@ -90,13 +90,10 @@ The main simulation specification and dispatcher are:
 - `scripts/simulations/run_revision_job.R`
 - `scripts/simulations/revision_jobs.json`
 
-After validated aggregate directories have been produced, rebuild the two sets
-of paper-facing results with:
+After the validated Study 2 aggregate directory has been produced, rebuild its
+paper-facing results with:
 
 ```bash
-Rscript scripts/figures/build_compositional_profile_artifacts.R \
-  --aggregate-dir /path/to/study1-aggregate
-
 Rscript scripts/figures/build_revision_v2_artifacts.R \
   --aggregate-dir /path/to/study2-aggregate \
   --output-root paper
@@ -116,6 +113,21 @@ the following score channels:
 clip,frame_index,truth_label,anger,disgust,fear,happiness,neutral,sadness,
 surprise,contempt,anxiety,helplessness,disappointment
 ```
+
+With the restricted classifier-score input and Study 1 calibration plan in
+place, run the four-fold 25-versus-25 workflow in this order:
+
+```bash
+Rscript scripts/lomm_1_1/build_mafw_plausibility_validation_25v25.R
+Rscript scripts/lomm_1_1/build_mafw_plausibility_validation_25v25_extended.R
+Rscript scripts/lomm_1_1/build_mafw_clip_level_benchmark.R
+Rscript scripts/figures/build_mafw_study1_figures.R
+```
+
+The first two commands select the generator and compute the extended metric
+panel. The third computes the disjoint MAFW reference, plausibility, coverage,
+and metric-specific discrepancies. The final command writes the manuscript
+figures and paper-facing tables.
 
 The manuscript used the `oai-large` scoring setting. The scoring-time package
 release and exact model-checkpoint revision were not archived, so exact frame

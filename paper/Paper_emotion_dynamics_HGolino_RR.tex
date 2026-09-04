@@ -219,20 +219,20 @@ if they existed. We introduce the Latent Oscillator Measurement Model
 separately: latent dynamics as damped, undamped, or amplifying linear
 oscillators; a time-varying activity level that determines how strongly
 each latent dimension is expressed; and a factor-analytic observation
-model with fallible indicators. Study 1 compared simulated score series
-with classifier scores from 100 facial-expression video clips using
-five-fold cross-fitting, in which parameters were estimated on training
-clips and discrepancies were evaluated on held-out clips. Allowing clips
-to differ in baseline and scale reduced the composite discrepancy by
-21.0\%, from 0.3250 to 0.2567. Study 2 generated continuous indicators
-with a known number of dimensions and known indicator assignments and
-asked whether four methods, Dynamic Exploratory Graph Analysis (DynEGA),
-static EGA, GraphicalVAR, and GIMME, recovered that structure through a
-common community-detection step. At 100 observations per clip, with
-failed or timed-out fits counted as incorrect, overall correct-dimension
-recovery was 0.939 for DynEGA, 0.884 for static EGA, 0.777 for
-GraphicalVAR, and 0.176 for GIMME. Replacing a shared initial state with
-independent initial states reduced recovery for DynEGA, static EGA, and
+model with fallible indicators. Study 1 used four-fold cross-fitting
+with classifier scores from 100 MAFW videos to calibrate LOMM and
+compare generated series with MAFW series excluded from calibration.
+Median series-level plausibility and coverage were 0.970 and 0.920 for
+LOMM, compared with 0.510 and 0.370 for a static logistic-normal
+generator. Study 2 generated continuous indicators with a known number
+of dimensions and known indicator assignments and asked whether four
+methods, Dynamic Exploratory Graph Analysis (DynEGA), static EGA,
+GraphicalVAR, and GIMME, recovered that structure through a common
+community-detection step. At 100 observations per clip, with failed or
+timed-out fits counted as incorrect, overall correct-dimension recovery
+was 0.939 for DynEGA, 0.884 for static EGA, 0.777 for GraphicalVAR, and
+0.176 for GIMME. Replacing a shared initial state with independent
+initial states reduced recovery for DynEGA, static EGA, and
 GraphicalVAR, so a shared initial state overstates recovery. LOMM lets
 researchers test whether a method recovers a known structure before
 empirical score patterns are interpreted psychologically.
@@ -293,13 +293,13 @@ factor-analytic observation model
 \citeproc{ref-nesselroade2008dfm}{Zhang et al., 2008}).
 
 We use LOMM in two studies (Figure~\ref{fig-pipeline}). In Study 1 the
-real data are the target. LOMM is calibrated on training clips from
-MAFW, a facial-expression video database
-(\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}), its output is mapped
-to bounded scores of the kind a classifier returns, and eight
-descriptive features of the simulated score series are compared with
-those of the classifier scores from held-out clips; 100 clips are used
-in total. In Study 2 the LOMM design is the target. LOMM generates
+MAFW classifier-score series are the target
+(\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}). Each of four folds
+uses 75 MAFW videos to calibrate LOMM and 25 videos to evaluate the
+generated series. A static logistic-normal generator provides a
+comparison without temporal dependence. Eleven statistics computed on
+scores and log-ratio coordinates define series-level plausibility and
+coverage. In Study 2 the LOMM design is the target. LOMM generates
 continuous indicators with a known number of dimensions and a known
 assignment of indicators to dimensions, and four methods estimate a
 network among the indicators and group them into communities: Dynamic
@@ -312,8 +312,8 @@ examines two conditions that limit the main result: whether a shared
 initial state across dimensions inflates recovery, and whether the
 indicator grouping is preserved after the indicators are transformed to
 bounded scores that sum to one, as classifier scores do. Because the
-empirical clips are short (median 35 observations), Study 2 also reports
-a secondary analysis with 25 observations per clip.
+MAFW videos contain a median of 35 scored observations, Study 2 also
+reports a secondary analysis with 25 observations per clip.
 
 \begin{figure}
 
@@ -324,17 +324,16 @@ a secondary analysis with 25 observations per clip.
 }
 
 \caption{\label{fig-pipeline}Overview of the two studies. (A) Real data:
-a classifier scores each frame of an MAFW clip, giving one score series
-per label. (B) LOMM: latent oscillators, an activity schedule that sets
-how strongly each is expressed at each observation, and observed
-indicators with a known assignment to dimensions (colored blocks). (C)
-Recovery methods: DynEGA, static EGA, GraphicalVAR, and GIMME each
-estimate a network among the indicators and group them into communities.
-Study 1 calibrates LOMM on training clips (dashed arrow), maps the
-simulated indicators to bounded scores with the softmax, and asks
-whether the simulated score series resemble the held-out real series.
-Study 2 fits the four methods to simulated indicators and asks whether
-the recovered communities match the known assignment.}
+a classifier scores each sampled frame of an MAFW video, giving one
+score series per label. (B) LOMM: latent oscillators, an activity
+schedule that sets how strongly each is expressed at each observation,
+and observed indicators with a known assignment to dimensions (colored
+blocks). (C) Recovery methods: DynEGA, static EGA, GraphicalVAR, and
+GIMME each estimate a network among the indicators and group them into
+communities. Study 1 uses MAFW calibration videos to set the generator
+and compares simulated score series with MAFW evaluation series. Study 2
+fits the four methods to simulated indicators and compares the recovered
+communities with the known assignment.}
 
 \end{figure}%
 
@@ -491,41 +490,37 @@ log-ratio coordinates, which remove the sum constraint. A separate Study
 indicators and tests whether their original grouping is preserved.
 Appendix A gives the softmax, log-ratio, and identification details.
 
-In this paper, LOMM is used only to generate data with known
-dimensionality and indicator assignments; it is not fitted to the MAFW
-videos. Study 1 estimates the distribution of clip baselines and scales
-from training clips. The primary Study 2 design sets clip baselines to
-zero and scales to one but lets loadings and residual variances vary
-slightly across clips. Estimating oscillator, activity, and measurement
-parameters from empirical data would require the sign, scale,
-temperature, and frequency constraints stated in Appendix A.
+In Study 1, MAFW calibration videos determine the LOMM observation-model
+geometry and generator settings. The primary Study 2 design sets
+between-clip baselines to zero and scales to one but lets loadings and
+residual variances vary slightly across clips. Estimating oscillator,
+activity, and measurement parameters from empirical data would require
+the sign, scale, temperature, and frequency constraints stated in
+Appendix A.
 
 \section{Study 1: Comparing Simulated and Real Score
 Series}\label{study-1-comparing-simulated-and-real-score-series}
 
-Study 1 asks whether LOMM can reproduce selected statistical features of
-real classifier-score series. The real series come from 100 clips in
+Study 1 examined whether LOMM, after calibration to MAFW, could generate
+classifier-score series with statistical properties observed in MAFW
+videos excluded from calibration. The analysis used 100 videos from
 MAFW, a large multimodal database of facial-expression video recorded in
 naturalistic settings (\citeproc{ref-liu_mafw_2022}{Liu et al., 2022}).
 Frames were scored with the transforEmotion R package
 (\citeproc{ref-tomasevic2026TransforEmotion}{Tomašević et al., 2026})
 using OpenAI's CLIP ViT-Large/14 model (setting \texttt{oai-large}),
-with up to 50 frames sampled per clip. Eleven labels from the MAFW label
-set served as the text prompts: anger, disgust, fear, happiness,
+with up to 50 frames sampled per video. Eleven labels from the MAFW
+label set served as text prompts: anger, disgust, fear, happiness,
 neutral, sadness, surprise, contempt, anxiety, helplessness, and
-disappointment. For each frame, the classifier returns one score per
-label, normalized to sum to one. These eleven scores are the channels
-analyzed here. They are classifier outputs; nothing in the dataset or
-the scoring procedure validates them as measures of subjective emotion.
+disappointment. For each scored frame, the eleven classifier-score
+channels sum to one.
 
-Figure~\ref{fig-mafwvideo} shows the score series for one clip. Frames
-without a detected face have missing scores, so each clip was divided
-into segments of consecutive scored frames. The main analysis contains
-3,557 observations in 188 segments from the 100 clips; segment lengths
-range from 16 to 50 observations, with a median of 35. Because segments
-are short, autocorrelation and spectral statistics are estimated
-imprecisely. A sensitivity analysis interpolated internal gaps of at
-most two frames, producing longer segments. Appendix B gives the
+Figure~\ref{fig-mafwvideo} shows the classifier-score series for one
+MAFW video. Frames without a detected face have missing scores, so each
+video was divided into segments of consecutive scored frames. The
+analysis contains 3,557 observations in 188 segments. Videos contribute
+16 to 50 scored observations, with a median of 35; segment lengths range
+from 1 to 50 observations, with a median of 13.5. Appendix B gives the
 face-detection, score-validity, missing-data, and sampling details.
 
 \begin{figure}
@@ -536,55 +531,56 @@ face-detection, score-validity, missing-data, and sampling details.
 
 }
 
-\caption{\label{fig-mafwvideo}Score series from one MAFW clip. Panel A
-shows four frames from the clip, reproduced under the MAFW research-use
-terms. Panel B shows the eleven classifier scores for those frames.
-Panel C shows smoothed score trajectories for the channels with the
-highest mean scores. Scores were generated with transforEmotion using
-OpenAI CLIP ViT-Large/14.}
+\caption{\label{fig-mafwvideo}Classifier-score series from one MAFW
+video. Panel A shows four frames from the video, reproduced under the
+MAFW research-use terms. Panel B shows the eleven classifier scores for
+those frames. Panel C shows smoothed trajectories for the channels with
+the highest mean scores. Scores were generated with transforEmotion
+using OpenAI CLIP ViT-Large/14.}
 
 \end{figure}%
 
-Study 1 compares eight LOMM configurations, formed by including or
-excluding each of three features: clip-specific baseline, clip-specific
-scale, and a brief transition in activity. Each configuration is
-compared with the real data on eight summary statistics. Six are
-computed for each score channel within each clip: median level;
+We represented each MAFW and simulated series with a broad panel of
+statistics covering location, dispersion, short-term change, temporal
+persistence, temporal irregularity, and cross-channel dimensionality.
+Eight statistics were computed within channel and video: median level;
 interquartile range of levels; interquartile range of
-observation-to-observation changes; lag-1 autocorrelation; entropy of
-the distribution of monotonic run lengths, which summarizes how often
-the series changes direction; and normalized spectral entropy, which is
-low when variance is concentrated at a few frequencies and high when it
-is spread across many. Two are computed across channels within a clip:
-effective rank, which summarizes how many independent components the
-channels contain, and total variance. All eight statistics are computed
-on the scores and on their log-ratio coordinates, giving 16 comparisons.
+observation-to-observation changes; lag-1 autocorrelation; and
+run-length, sample, permutation, and spectral entropy. Their
+channel-specific values were summarized by the median within each video.
+Effective rank, robust level variance, and robust change variance
+described all channels jointly. Each statistic was evaluated on the
+classifier scores and their isometric log-ratio coordinates, producing
+22 features. The main analysis combines the complete feature panel in
+the plausibility and coverage measures. Appendix C reports the
+metric-specific comparisons.
 
-For each statistic and each representation, discrepancy is computed from
-the distributions of the statistic across clips in the simulated and
-real data, in three steps. First, two distances are computed: the
-absolute difference between the simulated and real medians, and the
-Wasserstein distance between the two distributions, which measures how
-far one distribution must be shifted to match the other. Second, both
-distances are standardized by the spread of the real values, and the
-larger is retained. Third, the eight standardized distances are averaged
-within each representation, and the score and log-ratio averages are
-weighted equally in the composite. Smaller values indicate closer
-agreement.
+We used four-fold cross-fitting. In each fold, 75 MAFW videos formed the
+calibration set and 25 formed the evaluation set. The calibration set
+determined the LOMM measurement geometry and the dynamic and measurement
+parameters. LOMM then generated 100 datasets with the same observation
+positions and uninterrupted segment boundaries as the evaluation videos.
+We compared LOMM with a static logistic-normal generator calibrated from
+the same 75 MAFW videos. The static generator retained the estimated
+compositional structure, between-video heterogeneity, and observation
+pattern while drawing observations independently over time. This
+comparison estimates the gain associated with temporal generation beyond
+static calibration.
 
-The 100 clips were divided into five folds of 20 clips. Within each
-fold, the measurement parameters (coordinate center, loading directions
-and scales, and the covariance of clip baselines) were estimated from
-the 80 training clips, and the oscillator period, damping ratio, and
-observation scale were selected from a small grid using training clips
-only. Each selected configuration then generated 100 simulated datasets
-matching the held-out clips' observation indices and segment structure,
-and discrepancy was computed on the held-out clips. Because the same
-held-out folds were used both to compare the eight configurations and to
-select the best one, the reported discrepancy of the selected
-configuration is optimistically biased. The analysis is therefore an
-exploratory comparison, not an external validation. Appendix B gives the
-complete discrepancy, calibration, search, and bootstrap procedures.
+For each fold, the MAFW reference comprised 1,000 comparisons between
+two disjoint, category-stratified groups of 25 videos drawn from the 75
+calibration videos. The 22 features were standardized using medians and
+robust scales estimated from the calibration set. Series similarity was
+measured by the root-mean-square Euclidean distance across these
+standardized features. The similarity threshold was the 95th percentile
+of the directional nearest-neighbor distances in the MAFW reference
+comparisons. Plausibility is the proportion of simulated series whose
+nearest MAFW evaluation series fell within this threshold. Coverage is
+the proportion of MAFW evaluation series whose nearest simulation fell
+within the threshold. Reported ranges are the 2.5th and 97.5th
+percentiles across simulation or reference replicates. Appendix B gives
+the calibration, parameter selection, metric, and reference-sampling
+procedures.
 
 \section{Study 2: Recovery of Dimensionality and Indicator
 Assignments}\label{study-2-recovery-of-dimensionality-and-indicator-assignments}
@@ -748,54 +744,44 @@ analysis.
 \subsection{Study 1 Results: Similarity of Simulated and Real Score
 Series}\label{study-1-results-similarity-of-simulated-and-real-score-series}
 
-Figure~\ref{fig-empirical-realism} shows the discrepancy on the score
-representation for all eight configurations, using the configuration
-names from the figure. In the \emph{common baseline and scale}
-configuration every clip has the same baseline and scale. The \emph{clip
-baseline}, \emph{clip scale}, and \emph{clip baseline + scale}
-configurations let clips differ in level, in variability, or in both.
-The remaining configurations add a brief activity transition to each of
-these.
+Figure~\ref{fig-mafw-clip-benchmark} compares the two generators with
+the MAFW reference. LOMM achieved a median plausibility of 0.970 (95\%
+simulation range {[}0.935, 0.990{]}) and coverage of 0.920 {[}0.900,
+0.950{]}. The corresponding MAFW-to-MAFW reference values were 0.950
+{[}0.910, 0.990{]} for both measures. The static logistic-normal
+generator achieved plausibility of 0.510 {[}0.410, 0.590{]} and coverage
+of 0.370 {[}0.290, 0.455{]}. LOMM therefore generated score series that
+usually had a close MAFW counterpart and represented most MAFW
+evaluation series, whereas static calibration alone covered
+substantially less of the empirical variation.
 
 \begin{figure}[H]
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/compositional_profile_discrepancy.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/figure4_mafw_clip_benchmark.pdf}
 
 }
 
-\caption{\label{fig-empirical-realism}Discrepancy between simulated and
-real series on the score representation for the eight configurations in
-the five-fold cross-fitted comparison. Each point averages the eight
-summary-statistic discrepancies; smaller values indicate closer
-agreement. The diamond marks the clip baseline + scale configuration.
-The composite used for selection weighted this score representation and
-the log-ratio representation equally. Appendix C reports both
-representations and the bootstrap diagnostics.}
+\caption{\label{fig-mafw-clip-benchmark}Cross-fitted similarity of LOMM
+and static logistic-normal series to MAFW evaluation series. Points are
+median proportions and bars are 2.5th and 97.5th percentiles across 100
+generated datasets for each generator or 1,000 MAFW-to-MAFW reference
+comparisons. Plausibility is the proportion of simulated series with a
+nearest MAFW evaluation series within the fold-specific threshold.
+Coverage is the proportion of MAFW evaluation series with a nearest
+simulation within the same threshold. The threshold is the 95th
+percentile of directional nearest-neighbor distances between disjoint
+MAFW calibration samples. Higher values indicate closer agreement.}
 
 \end{figure}%
 
-Averaged over the score and log-ratio representations, the clip baseline
-+ scale configuration had a composite discrepancy of 0.2567, compared
-with 0.3250 for the common baseline and scale configuration, a reduction
-of 21.0\%. Most of the reduction came from the clip baseline (0.2766 for
-clip baseline alone); clip scale contributed less, and adding a brief
-activity transition increased discrepancy. The gap-interpolated
-sensitivity analysis gave the same ordering: 0.2511 for clip baseline +
-scale, 0.2707 for clip baseline, and 0.3187 for common baseline and
-scale.
-
-Substantial discrepancies remained for some statistics. The largest
-concerned total variance of the scores and the interquartile range of
-observation-to-observation changes in log-ratio coordinates. Because the
-same held-out folds were used to compare and to select configurations,
-these results are exploratory. They support clip-specific baseline and
-scale as a reasonable starting point for simulating classifier-score
-series; they do not validate the classifier labels or LOMM as a model of
-emotional expression. Appendix C reports every configuration and
-statistic, the bootstrap diagnostics, and, for the example clip, the
-closest of 100 simulated realizations.
+Across the metric-specific comparisons, 14 of the 22 LOMM feature
+discrepancies fell within the MAFW-to-MAFW reference range. Agreement
+was strongest for dispersion, short-term change, temporal persistence,
+and robust change variance. The clearest remaining differences concerned
+sample entropy, which was higher in LOMM series, and spectral entropy,
+which was lower. Appendix C reports all metric-specific results.
 
 \subsection{Study 2 Results: Recovery of Dimensionality and Indicator
 Assignments}\label{study-2-results-recovery-of-dimensionality-and-indicator-assignments}
@@ -944,7 +930,7 @@ indicators and are not extended to bounded scores of the kind analyzed
 in Study 1.
 
 \emph{Between-clip baseline and scale.} This analysis used stable
-families A--D with independent stationary initial states, so its
+families A through D with independent stationary initial states, so its
 reference recovery rates are lower than in the shared-initial-state
 analyses. Adding clip-specific baseline and scale changed DynEGA's
 recovery from 0.775 to 0.750, a paired difference of \(-0.025\) (95\%
@@ -978,15 +964,16 @@ treated as fallible indicators of lower-dimensional psychological
 processes. CLIP is not part of LOMM; it is the scoring pipeline that
 produced the empirical series in Study 1.
 
-Study 1 asked whether LOMM output resembles the score series from that
-pipeline. Letting clips differ in baseline and scale reduced the
-composite discrepancy by 21.0\%, most of it from the baseline. This
-result is specific to 100 MAFW clips, one label set, one scoring model,
-and the chosen summary statistics, and because the held-out folds were
-used both to compare and to select configurations, it is exploratory. It
-supports a starting point for simulating such series; it does not
-validate the emotion labels or LOMM as a substantive theory of
-expression.
+Study 1 found that LOMM generated classifier-score series with high
+plausibility and broad coverage relative to the MAFW reference. The
+static logistic-normal generator preserved the calibrated score geometry
+and between-video heterogeneity. It omitted temporal dependence and
+performed substantially worse on both measures. Temporal generation was
+therefore needed to reproduce the joint statistical profile of the MAFW
+series. The metric-specific results also identify a concrete target for
+model development: LOMM captured most measures of level, dispersion,
+change, persistence, and cross-channel variation, while its entropy
+profile remained less similar to MAFW.
 
 Study 2 evaluated recovery of a known factor structure from continuous
 indicators. DynEGA had the highest overall recovery and was the only
@@ -1028,10 +1015,11 @@ the record and test recovery under those conditions only. The \(T=300\)
 conditions also change the observation interval, so they do not isolate
 the number of observations per clip. The GIMME residual-covariance
 conversion was constructed for this comparison and differs from typical
-idiographic use. Study 1 uses short clips from one controlled-access
-dataset and one zero-shot scoring pipeline. LOMM is used here only as a
-generator with prespecified parameters; estimating it from data would
-require the identification constraints listed in Appendix A.
+idiographic use. Study 1 uses 100 short MAFW videos, one zero-shot
+scoring pipeline, and one LOMM specification chosen during model
+development on the same sample. LOMM is used here only as a generator
+with prespecified parameters; estimating it from data would require the
+identification constraints listed in Appendix A.
 
 Three practical conclusions follow. Initial conditions can create
 structure unrelated to the intended measurement partition. Transforming
@@ -1544,8 +1532,9 @@ residual covariance both within and between the prespecified blocks.
 
 The three baseline constructions differ only in the subspace from which
 \(\mathbf b_i\) is drawn. Study 1 draws it from a zero-mean Gaussian
-whose covariance is estimated from training clips in the full coordinate
-space. Study 2's between-clip-variability analysis instead uses
+whose covariance is estimated from MAFW calibration videos in the full
+coordinate space. Study 2's between-clip-variability analysis instead
+uses
 
 \[
 \mathbf b_i=\boldsymbol\Lambda\boldsymbol\beta_i,
@@ -1661,10 +1650,10 @@ ratio, then
 \]
 
 and the damped angular frequency is
-\(\omega_{d,f}=\omega_{n,f}\sqrt{1-\xi_f^2}\). With \(P_f=12\),
-\(\xi_f=0.5\), and \(\Delta=1\), these give \(\eta_f=-0.2742\) and
-\(\zeta_f=-0.5236\); scaling the inputs to unit stationary position
-variance gives \(\sigma_{qf}=0.5418\).
+\(\omega_{d,f}=\omega_{n,f}\sqrt{1-\xi_f^2}\). With the Study 1 settings
+\(P_f=12\), \(\xi_f=0.20\), and \(\Delta=1\), these give
+\(\eta_f=-0.2742\) and \(\zeta_f=-0.2094\). The acceleration inputs were
+scaled to give unit stationary position variance.
 
 \subsection{A.7 Identifiability}\label{a.7-identifiability}
 
@@ -1733,73 +1722,96 @@ continuous indicators.
 \subsection{B.1 Study 1 Scoring and
 Calibration}\label{b.1-study-1-scoring-and-calibration}
 
-The Study 1 sample was assembled one clip at a time, with MAFW category
-labels used to diversify the sample rather than as validation targets.
-The main analysis contains 3,557 observations in 188 uninterrupted
-segments from 100 clips. Segment lengths range from 16 to 50
-observations, with a median of 35. The gap-interpolated sensitivity
-analysis contains 3,632 observations in 129 segments, with lengths from
-17 to 50 and a median of 36.5.
+The sample contains 100 MAFW videos selected across the available
+expression categories. Category labels served only to stratify sampling
+and fold construction. The analysis retained 3,557 complete observations
+in 188 uninterrupted segments. Individual videos contain 16 to 50
+complete observations, with a median of 35. Segment lengths range from 1
+to 50 observations, with a median of 13.5.
 
 transforEmotion sampled up to 50 frames uniformly from each video and
-used the OpenAI CLIP ViT-Large/14 model family. A Haar cascade detected
-faces, and the largest detected face was expanded by 50 pixels on each
-side before classification. Frames without a detected face received
-missing scores. Eleven lowercase class labels were passed directly to
-the text encoder without a sentence template: anger, disgust, fear,
-happiness, neutral, sadness, surprise, contempt, anxiety, helplessness,
-and disappointment. Burned-in subtitles were not masked and could
-contribute when they fell inside the padded face crop.
+used OpenAI CLIP ViT-Large/14. A Haar cascade detected faces, and the
+largest detected face was expanded by 50 pixels on each side before
+classification. Frames without a detected face received missing scores.
+Eleven lowercase labels were passed directly to the text encoder: anger,
+disgust, fear, happiness, neutral, sadness, surprise, contempt, anxiety,
+helplessness, and disappointment. Burned-in subtitles were not masked
+when they fell inside the padded face crop.
 
 Scores were required to lie in \([0,1]\). A complete row was retained
 when its sum was positive, finite, and within \(10^{-6}\) of one, then
 divided by that sum in the fixed channel order. Values were not
-truncated and zero replacement was disabled. The main analysis retained
-complete rows. The sensitivity analysis interpolated internal gaps of at
-most two frames within a segment. The scoring-time package release and
-exact checkpoint revision were not archived, so exact frame rescoring
-cannot be guaranteed; all analyses use the retained scores.
+truncated, and zero replacement was disabled. The analysis used complete
+observations and preserved the uninterrupted segment boundaries.
 
-The comparison used eight statistics. Median level, interquartile range
-of levels, interquartile range of observation-to-observation changes,
-lag-1 autocorrelation, entropy of monotonic run lengths, and normalized
-spectral entropy were calculated for each channel. Effective rank and
-total variance described all channels jointly. Each statistic was
-evaluated on both bounded scores and log-ratio coordinates.
+The evaluation panel contains eleven statistics. Median level,
+interquartile range of levels, interquartile range of
+observation-to-observation changes, lag-1 autocorrelation, and
+run-length, sample, permutation, and spectral entropy were computed
+within each channel. The median across channels summarized each
+statistic for a video. Sample entropy used embedding order 2 and a
+tolerance of 0.20 within-series standard deviations. Permutation entropy
+used order 3. Effective rank was computed from the cross-channel
+covariance eigenvalues. Robust level variance was the 10\% trimmed mean
+squared distance from the video center divided by the coordinate
+dimension. Robust change variance was the 10\% trimmed mean squared
+within-segment first difference divided by twice the coordinate
+dimension. Each statistic was computed on the eleven score channels and
+on their ten isometric log-ratio coordinates, producing 22 features per
+series.
 
-For every statistic and representation, disagreement between simulated
-and real clip distributions was measured by the absolute difference
-between medians and the one-dimensional Wasserstein distance. Both were
-standardized by the spread of the real values, using the interquartile
-range when available, followed by \(1.4826\) times the median absolute
-deviation, the standard deviation, or one. The larger standardized
-distance was retained. The composite averaged the eight statistics
-within each representation and weighted the two representations equally.
+The 100 videos were divided into four category-stratified folds. Each
+fold used 75 calibration videos and 25 evaluation videos. The
+calibration videos determined the coordinate center, loading subspace,
+between-video baseline covariance, and empirical distribution of
+within-video scale. The first three eigenvectors of the pooled
+within-video covariance supplied the loading directions. The
+between-video baseline covariance was shrunk halfway toward its
+diagonal, and its eigenvalues were floored at \(10^{-8}\). The generator
+included between-video baseline and scale variation and used abrupt
+activity schedules.
 
-Clips were divided into five deterministic folds within MAFW category
-and length order, leaving 20 test clips per fold. The coordinate center,
-loading directions, loading scales, and covariance of clip baselines
-were estimated from training clips only. The first three eigenvectors of
-the within-clip covariance supplied the loading directions. Their
-orientation and scale were fixed deterministically. The baseline
-covariance was shrunk halfway toward its diagonal and eigenvalues were
-floored at \(10^{-8}\).
+Generator settings were selected within each calibration set. The
+dynamic search crossed periods of 12, 24, and 48 observations with
+damping ratios of 0.01, 0.05, and 0.20. Selection used the interquartile
+range of changes, lag-1 autocorrelation, run-length entropy, and
+spectral entropy. Conditional on the selected dynamics, the measurement
+search crossed residual standard deviations of 0.10, 0.20, and 0.30 with
+\(\kappa\) values of 0.75, 1.00, and 1.25. Selection used the full
+discrepancy panel. Each candidate was evaluated with three calibration
+simulations. All four folds selected a period of 12 observations,
+damping ratio 0.20, residual standard deviation 0.30, and
+\(\kappa=0.75\).
 
-Within each fold and configuration, the search crossed natural periods
-\(\{8,12,24\}\), damping ratios \(\{0.05,0.20,0.50\}\), and observation
-scales \(\kappa\in\{0.75,1.00,1.25\}\). Three paired training datasets
-evaluated each of the 27 candidates. Selection minimized the equally
-weighted representation-level discrepancy, with deterministic
-tie-breaking. All folds selected a 12-observation period, damping ratio
-0.50, and \(\kappa=1\) for the clip baseline + scale configuration.
+The static logistic-normal generator used the same calibrated coordinate
+center, covariance geometry, between-video baseline and scale
+distributions, observation positions, and segment boundaries. It drew
+independent log-ratio observations within each video. Each selected
+generator produced 100 datasets per fold with 25 simulated series in
+each dataset.
 
-Each selected configuration generated 100 datasets per test fold,
-matching the held-out observation indices and segment structure. The
-comparison concerns distributions of summary statistics across clips,
-rather than frame-level reconstruction. Uncertainty used 2,000 paired
-bootstrap resamples of the 20 clips within each fold. The eight
-configurations are the factorial combinations of clip baseline, clip
-scale, and brief activity transition.
+The MAFW reference used 1,000 comparisons per fold. Each comparison drew
+two disjoint, category-stratified groups of 25 videos from the 75
+calibration videos. Every feature was standardized by the median and
+robust scale of the calibration videos. The distance between two series
+was the root-mean-square Euclidean distance across the 22 standardized
+features. The fold-specific similarity threshold was the 95th percentile
+of the pooled directional nearest-neighbor distances between the two
+MAFW groups.
+
+For each generated dataset, plausibility was the proportion of its 25
+simulated series whose nearest MAFW evaluation series fell within the
+threshold. Coverage was the proportion of the 25 MAFW evaluation series
+whose nearest simulated series fell within the threshold. Results were
+averaged across the four folds. The reported ranges are the 2.5th and
+97.5th percentiles across the 100 generated datasets or 1,000 MAFW
+reference comparisons.
+
+Metric-specific distributional discrepancy was computed separately for
+each of the 22 features. The absolute median difference and
+one-dimensional Wasserstein distance were divided by the robust
+calibration scale, and the larger standardized value was retained. The
+full distributional discrepancy is the mean across the 22 features.
 
 \subsection{B.2 Study 2 Simulation
 Designs}\label{b.2-study-2-simulation-designs}
@@ -2028,184 +2040,52 @@ Results}\label{appendix-c-supplementary-results}
 \setcounter{figure}{0}
 \renewcommand{\thefigure}{C\arabic{figure}}
 
-\subsection{C.1 Full Results of the Simulated-versus-Real
-Comparison}\label{c.1-full-results-of-the-simulated-versus-real-comparison}
+\subsection{C.1 Metric-Level Results for Study
+1}\label{c.1-metric-level-results-for-study-1}
 
-The complete comparison of all eight configurations is reported below
-for both analyses. The tables retain the bootstrap means, estimated
-biases, basic reverse-percentile intervals, and percentile intervals so
-that bootstrap bias can be inspected directly. These quantities describe
-the clip-resampling distribution; they are not treated as uncertainty
-intervals around the plug-in discrepancies. A second table then
-separates the clip baseline + scale configuration into its eight
-component statistics. It shows discrepancies that the composite mean
-obscures, including the remaining differences in the interquartile range
-of levels and in the interquartile range of observation-to-observation
-changes.
+Figure~\ref{fig-mafw-metric-benchmark} compares LOMM with the
+MAFW-to-MAFW reference for each of the 22 features. Fourteen LOMM
+discrepancies fell within the reference range. The full 22-feature
+distributional discrepancy was 0.2543 {[}0.2356, 0.2738{]} for LOMM and
+0.1811 {[}0.1521, 0.2193{]} for the MAFW reference. The corresponding
+median for the static logistic-normal generator was 0.6942.
 
-\begin{figure}[H]
+LOMM closely reproduced most measures of level, dispersion, short-term
+change, persistence, effective dimensionality, and robust variation. Its
+largest departures occurred for entropy. Sample entropy was higher and
+spectral entropy was lower than in MAFW for both scores and log-ratio
+coordinates. Log-ratio permutation entropy was lower, effective rank was
+higher, and robust level variance was lower. The score median-level
+discrepancy was just outside the reference range, although the signed
+median difference was 0.004.
 
-\centering{
-
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/compositional_profile_discrepancy_all_representations.pdf}
-
-}
-
-\caption{\label{fig-empirical-realism-all}Discrepancy between simulated
-and real series for all eight configurations, shown for bounded scores
-and log-ratio coordinates. Smaller values indicate closer agreement. The
-main text shows the score panel only; configuration selection weighted
-both representations equally.}
-
-\end{figure}%
+Diagnostic subsets gave the same interpretation. A time-domain subset
+containing level, spread, change, lag-1 autocorrelation, and run-length
+entropy had a LOMM discrepancy of 0.1463, within the MAFW reference
+interval {[}0.0967, 0.1489{]}. A local-temporal subset containing
+change, lag-1 autocorrelation, and run-length entropy also fell within
+its reference interval. The two robust variance measures together fell
+within the MAFW reference range. The entropy measures accounted for most
+of the remaining full-panel discrepancy.
 
 \begin{figure}[H]
 
 \centering{
 
-\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/lomm_mafw_closest_timeseries.pdf}
+\includegraphics[width=0.95\linewidth,height=\textheight,keepaspectratio]{figures/figureC1_mafw_metric_benchmark.pdf}
 
 }
 
-\caption{\label{fig-lomm-mafw-realism-example}Real MAFW classifier
-scores and the closest of 100 LOMM realizations generated for the same
-49-observation clip with the clip baseline + scale configuration. The
-selected realization had a score RMSE of 0.105 and an
-observation-to-observation-change RMSE of 0.083. Because the realization
-was selected after generation, this is a best-case illustration; the
-cross-fitted comparison provides the aggregate evidence.}
+\caption{\label{fig-mafw-metric-benchmark}Metric-level discrepancies
+between LOMM and MAFW classifier-score series. Blue points are medians
+across 100 LOMM simulations. Gray points and bars show the median and
+central 95\% reference range across 1,000 disjoint MAFW-to-MAFW
+comparisons. Results are averaged across four folds and shown for scores
+and isometric log-ratio coordinates. Discrepancy is the larger of the
+standardized absolute median difference and standardized Wasserstein
+distance. Smaller values indicate closer agreement.}
 
 \end{figure}%
-
-\begin{landscape}\scriptsize\setlength{\tabcolsep}{1.25pt}
-\begin{table}
-
-\caption{Discrepancy between simulated and real score series for the eight configurations, complete frames analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
-\centering
-\begin{tabular}[t]{llrrrrll}
-\toprule
-Representation & Configuration & Mean & MCSE & Bootstrap mean & Bias & Basic 95\% interval & Percentile 95\% interval\\
-\midrule
-Scores & Common baseline-and-scale configuration & 0.3236 & 0.0007 & 0.3455 & 0.0219 & {}[0.2691, 0.3322] & {}[0.3151, 0.3782]\\
-Scores & Clip baseline & 0.2353 & 0.0009 & 0.2723 & 0.0370 & {}[0.1686, 0.2268] & {}[0.2439, 0.3020]\\
-Scores & Clip scale & 0.2877 & 0.0010 & 0.3233 & 0.0356 & {}[0.2197, 0.2803] & {}[0.2951, 0.3557]\\
-Scores & Clip baseline + scale & 0.2218 & 0.0013 & 0.2701 & 0.0484 & {}[0.1433, 0.1992] & {}[0.2444, 0.3002]\\
-Scores & Activity transition & 0.3571 & 0.0012 & 0.3830 & 0.0259 & {}[0.2898, 0.3674] & {}[0.3468, 0.4245]\\
-\addlinespace
-Scores & Clip baseline + activity transition & 0.2704 & 0.0013 & 0.3090 & 0.0387 & {}[0.1958, 0.2627] & {}[0.2780, 0.3449]\\
-Scores & Clip scale + activity transition & 0.3385 & 0.0013 & 0.3708 & 0.0324 & {}[0.2641, 0.3424] & {}[0.3345, 0.4128]\\
-Scores & Clip baseline + scale + activity transition & 0.2718 & 0.0014 & 0.3149 & 0.0431 & {}[0.1891, 0.2618] & {}[0.2817, 0.3545]\\
-Log ratio & Common baseline-and-scale configuration & 0.3263 & 0.0011 & 0.3538 & 0.0275 & {}[0.2582, 0.3346] & {}[0.3180, 0.3944]\\
-Log ratio & Clip baseline & 0.3178 & 0.0011 & 0.3476 & 0.0298 & {}[0.2478, 0.3241] & {}[0.3115, 0.3878]\\
-\addlinespace
-Log ratio & Clip scale & 0.3000 & 0.0023 & 0.3453 & 0.0453 & {}[0.2180, 0.2851] & {}[0.3149, 0.3821]\\
-Log ratio & Clip baseline + scale & 0.2915 & 0.0023 & 0.3392 & 0.0476 & {}[0.2065, 0.2744] & {}[0.3087, 0.3766]\\
-Log ratio & Activity transition & 0.3420 & 0.0013 & 0.3778 & 0.0358 & {}[0.2604, 0.3447] & {}[0.3393, 0.4236]\\
-Log ratio & Clip baseline + activity transition & 0.3331 & 0.0013 & 0.3713 & 0.0382 & {}[0.2490, 0.3327] & {}[0.3335, 0.4172]\\
-Log ratio & Clip scale + activity transition & 0.3224 & 0.0018 & 0.3695 & 0.0470 & {}[0.2288, 0.3134] & {}[0.3315, 0.4160]\\
-\addlinespace
-Log ratio & Clip baseline + scale + activity transition & 0.3218 & 0.0019 & 0.3699 & 0.0481 & {}[0.2294, 0.3104] & {}[0.3332, 0.4143]\\
-\bottomrule
-\end{tabular}
-\end{table}
-\clearpage
-\begin{table}
-
-\caption{\label{tab:unnamed-chunk-1}Discrepancy between simulated and real score series for the eight configurations, gap interpolated analysis. Each estimate averages eight summary statistics within a representation across five equally weighted folds, 100 held-out video clips, and 100 simulated datasets per fold and configuration. Smaller values indicate closer agreement with the real scores. Bootstrap bias is the bootstrap mean minus the estimate. Basic reverse-percentile and percentile intervals are reported as diagnostics rather than as uncertainty intervals for individual configurations. They are conditional on the settings selected within each training fold.}
-\centering
-\begin{tabular}[t]{llrrrrll}
-\toprule
-Representation & Configuration & Mean & MCSE & Bootstrap mean & Bias & Basic 95\% interval & Percentile 95\% interval\\
-\midrule
-Scores & Common baseline-and-scale configuration & 0.3164 & 0.0007 & 0.3389 & 0.0226 & {}[0.2614, 0.3231] & {}[0.3097, 0.3714]\\
-Scores & Clip baseline & 0.2290 & 0.0009 & 0.2660 & 0.0369 & {}[0.1618, 0.2183] & {}[0.2398, 0.2963]\\
-Scores & Clip scale & 0.2803 & 0.0010 & 0.3168 & 0.0366 & {}[0.2103, 0.2713] & {}[0.2892, 0.3502]\\
-Scores & Clip baseline + scale & 0.2152 & 0.0012 & 0.2639 & 0.0487 & {}[0.1366, 0.1909] & {}[0.2395, 0.2939]\\
-Scores & Activity transition & 0.3647 & 0.0012 & 0.3886 & 0.0240 & {}[0.2996, 0.3775] & {}[0.3518, 0.4297]\\
-\addlinespace
-Scores & Clip baseline + activity transition & 0.2797 & 0.0014 & 0.3151 & 0.0353 & {}[0.2075, 0.2763] & {}[0.2832, 0.3520]\\
-Scores & Clip scale + activity transition & 0.3461 & 0.0014 & 0.3768 & 0.0307 & {}[0.2733, 0.3526] & {}[0.3395, 0.4188]\\
-Scores & Clip baseline + scale + activity transition & 0.2819 & 0.0015 & 0.3222 & 0.0403 & {}[0.2016, 0.2752] & {}[0.2887, 0.3623]\\
-Log ratio & Common baseline-and-scale configuration & 0.3209 & 0.0011 & 0.3485 & 0.0276 & {}[0.2531, 0.3296] & {}[0.3123, 0.3888]\\
-Log ratio & Clip baseline & 0.3124 & 0.0011 & 0.3424 & 0.0300 & {}[0.2433, 0.3188] & {}[0.3061, 0.3815]\\
-\addlinespace
-Log ratio & Clip scale & 0.2954 & 0.0023 & 0.3404 & 0.0450 & {}[0.2145, 0.2819] & {}[0.3089, 0.3763]\\
-Log ratio & Clip baseline + scale & 0.2869 & 0.0023 & 0.3342 & 0.0474 & {}[0.2036, 0.2710] & {}[0.3027, 0.3701]\\
-Log ratio & Activity transition & 0.3528 & 0.0015 & 0.3864 & 0.0335 & {}[0.2725, 0.3585] & {}[0.3471, 0.4331]\\
-Log ratio & Clip baseline + activity transition & 0.3439 & 0.0015 & 0.3799 & 0.0360 & {}[0.2617, 0.3466] & {}[0.3413, 0.4261]\\
-Log ratio & Clip scale + activity transition & 0.3337 & 0.0019 & 0.3782 & 0.0444 & {}[0.2418, 0.3280] & {}[0.3395, 0.4257]\\
-\addlinespace
-Log ratio & Clip baseline + scale + activity transition & 0.3360 & 0.0020 & 0.3812 & 0.0452 & {}[0.2432, 0.3288] & {}[0.3431, 0.4287]\\
-\bottomrule
-\end{tabular}
-\end{table}
-\clearpage
-\normalsize\end{landscape}
-
-\begin{landscape}\scriptsize\setlength{\tabcolsep}{2pt}
-\begin{table}
-
-\caption{Discrepancy for each summary statistic under the clip baseline + scale configuration, complete frames analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
-\centering
-\begin{tabular}[t]{llrrrllrr}
-\toprule
-Representation & Metric & Mean & MCSE & Bias & Basic 95\% interval & Percentile 95\% interval & Empirical units/fold & Simulated units/fold\\
-\midrule
-Scores & Level median & 0.1434 & 0.0020 & 0.0379 & {}[0.0657, 0.1364] & {}[0.1503, 0.2210] & 220 & 220\\
-Scores & Level IQR & 0.1456 & 0.0020 & 0.0387 & {}[0.0748, 0.1331] & {}[0.1581, 0.2163] & 220 & 220\\
-Scores & First-difference IQR & 0.1846 & 0.0024 & 0.0244 & {}[0.1235, 0.1923] & {}[0.1768, 0.2456] & 220 & 220\\
-Scores & Lag-1 autocorrelation & 0.2143 & 0.0016 & 0.0241 & {}[0.1221, 0.2419] & {}[0.1867, 0.3064] & 220 & 220\\
-Scores & Run-length entropy & 0.1160 & 0.0018 & 0.0396 & {}[0.0467, 0.1029] & {}[0.1290, 0.1852] & 220 & 220\\
-\addlinespace
-Scores & Spectral entropy & 0.2978 & 0.0031 & 0.0139 & {}[0.2122, 0.3513] & {}[0.2444, 0.3835] & 209--220 & 209--220\\
-Scores & Effective rank & 0.3227 & 0.0033 & 0.0745 & {}[0.1595, 0.3252] & {}[0.3202, 0.4859] & 20 & 20\\
-Scores & Total variance & 0.3499 & 0.0058 & 0.1337 & {}[0.0726, 0.3002] & {}[0.3995, 0.6271] & 20 & 20\\
-Log ratio & Level median & 0.0701 & 0.0008 & 0.0250 & {}[0.0322, 0.0559] & {}[0.0843, 0.1081] & 220 & 220\\
-Log ratio & Level IQR & 0.2969 & 0.0054 & 0.0497 & {}[0.1777, 0.3025] & {}[0.2913, 0.4161] & 220 & 220\\
-\addlinespace
-Log ratio & First-difference IQR & 0.4423 & 0.0073 & 0.0340 & {}[0.3177, 0.4903] & {}[0.3943, 0.5669] & 220 & 220\\
-Log ratio & Lag-1 autocorrelation & 0.2903 & 0.0021 & 0.0206 & {}[0.1778, 0.3465] & {}[0.2342, 0.4028] & 220 & 220\\
-Log ratio & Run-length entropy & 0.1323 & 0.0020 & 0.0343 & {}[0.0608, 0.1305] & {}[0.1340, 0.2037] & 220 & 220\\
-Log ratio & Spectral entropy & 0.3979 & 0.0035 & 0.0083 & {}[0.3031, 0.4734] & {}[0.3224, 0.4927] & 209--220 & 209--220\\
-Log ratio & Effective rank & 0.3455 & 0.0024 & 0.0588 & {}[0.1977, 0.3672] & {}[0.3237, 0.4932] & 20 & 20\\
-\addlinespace
-Log ratio & Total variance & 0.3570 & 0.0068 & 0.1505 & {}[0.1074, 0.2706] & {}[0.4435, 0.6067] & 20 & 20\\
-\bottomrule
-\end{tabular}
-\end{table}
-\clearpage
-\begin{table}
-
-\caption{\label{tab:unnamed-chunk-2}Discrepancy for each summary statistic under the clip baseline + scale configuration, gap interpolated analysis. Results are shown for both representations; smaller values indicate closer agreement with the real scores. For the six single-channel statistics, a unit is one clip-channel summary; for effective rank and total variance, a unit is one clip-level summary. Unit columns report the range across folds and simulation repetitions. The bootstrap means, bias estimates, and 95\% intervals are diagnostics rather than uncertainty intervals for the individual discrepancies. They are conditional on the settings selected within each fold.}
-\centering
-\begin{tabular}[t]{llrrrllrr}
-\toprule
-Representation & Metric & Mean & MCSE & Bias & Basic 95\% interval & Percentile 95\% interval & Empirical units/fold & Simulated units/fold\\
-\midrule
-Scores & Level median & 0.1431 & 0.0020 & 0.0377 & {}[0.0651, 0.1366] & {}[0.1495, 0.2210] & 220 & 220\\
-Scores & Level IQR & 0.1417 & 0.0020 & 0.0397 & {}[0.0713, 0.1281] & {}[0.1554, 0.2122] & 220 & 220\\
-Scores & First-difference IQR & 0.1879 & 0.0025 & 0.0232 & {}[0.1291, 0.1966] & {}[0.1792, 0.2467] & 220 & 220\\
-Scores & Lag-1 autocorrelation & 0.1937 & 0.0016 & 0.0236 & {}[0.1061, 0.2183] & {}[0.1691, 0.2813] & 220 & 220\\
-Scores & Run-length entropy & 0.1179 & 0.0018 & 0.0354 & {}[0.0509, 0.1096] & {}[0.1262, 0.1849] & 220 & 220\\
-\addlinespace
-Scores & Spectral entropy & 0.2724 & 0.0027 & 0.0187 & {}[0.1905, 0.3075] & {}[0.2374, 0.3543] & 220 & 220\\
-Scores & Effective rank & 0.3225 & 0.0033 & 0.0747 & {}[0.1601, 0.3244] & {}[0.3205, 0.4848] & 20 & 20\\
-Scores & Total variance & 0.3426 & 0.0058 & 0.1362 & {}[0.0593, 0.2877] & {}[0.3975, 0.6259] & 20 & 20\\
-Log ratio & Level median & 0.0687 & 0.0008 & 0.0258 & {}[0.0301, 0.0536] & {}[0.0839, 0.1073] & 220 & 220\\
-Log ratio & Level IQR & 0.3032 & 0.0054 & 0.0462 & {}[0.1867, 0.3120] & {}[0.2943, 0.4197] & 220 & 220\\
-\addlinespace
-Log ratio & First-difference IQR & 0.4639 & 0.0075 & 0.0321 & {}[0.3462, 0.5079] & {}[0.4199, 0.5816] & 220 & 220\\
-Log ratio & Lag-1 autocorrelation & 0.2645 & 0.0019 & 0.0234 & {}[0.1505, 0.3161] & {}[0.2129, 0.3786] & 220 & 220\\
-Log ratio & Run-length entropy & 0.1280 & 0.0021 & 0.0334 & {}[0.0528, 0.1272] & {}[0.1288, 0.2032] & 220 & 220\\
-Log ratio & Spectral entropy & 0.3674 & 0.0033 & 0.0095 & {}[0.2796, 0.4355] & {}[0.2993, 0.4553] & 220 & 220\\
-Log ratio & Effective rank & 0.3452 & 0.0024 & 0.0584 & {}[0.1971, 0.3662] & {}[0.3242, 0.4932] & 20 & 20\\
-\addlinespace
-Log ratio & Total variance & 0.3541 & 0.0068 & 0.1502 & {}[0.1100, 0.2658] & {}[0.4424, 0.5982] & 20 & 20\\
-\bottomrule
-\end{tabular}
-\end{table}
-\clearpage
-\normalsize\end{landscape}
 
 \newpage
 

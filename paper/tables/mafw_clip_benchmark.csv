@@ -1,0 +1,4 @@
+"source","replicates","plausibility_q025","plausibility_median","plausibility_q975","coverage_q025","coverage_median","coverage_q975","median_plausibility_distance","median_coverage_distance"
+"LOMM",100,0.93475,0.97,0.99,0.9,0.92,0.95,0.5871780612105,0.628536763593643
+"MAFW reference",1000,0.91,0.95,0.99,0.91,0.95,0.99,0.599731736437529,0.599209874788927
+"Static logistic-normal",100,0.41,0.51,0.59,0.29,0.37,0.45525,1.03562507234335,1.137988411398
