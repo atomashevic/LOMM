@@ -31,8 +31,8 @@ summary <- audit_summarize(fixture, 1L)
 stopifnot(
   nrow(summary) == 8L,
   identical(sort(unique(summary$Scenario)), c(
-    "Ranked finite-horizon amplification",
-    "Switching finite-horizon amplification"
+    "Amplifying dynamics, one dominant dimension",
+    "Amplifying dynamics, switching dominant dimension"
   )),
   all(summary$Replications == 1L),
   all(summary$`Nonfinite latent values` == 0L),

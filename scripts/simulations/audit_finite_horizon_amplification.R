@@ -70,9 +70,9 @@ audit_summarize <- function(rows, replications) {
     data <- rows[indices, , drop = FALSE]
     data.frame(
       Scenario = if (data$scenario[[1]] == "oai_ranked_persistence") {
-        "Ranked finite-horizon amplification"
+        "Amplifying dynamics, one dominant dimension"
       } else {
-        "Switching finite-horizon amplification"
+        "Amplifying dynamics, switching dominant dimension"
       },
       Dimensions = data$dimensions[[1]],
       `Time points` = data$time_points[[1]],

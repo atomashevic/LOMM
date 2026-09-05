@@ -1475,11 +1475,34 @@ compute_assignment_accuracy <- function(true_membership, est_membership) {
 }
 
 build_common_scores <- function(panel, item_names, membership) {
-  membership <- membership[item_names]
-  membership <- membership[!is.na(membership)]
-  if (length(membership) == 0L) {
-    membership <- setNames(rep(1L, length(item_names)), item_names)
+  if (!is.character(item_names) || length(item_names) == 0L ||
+      anyNA(item_names) || any(!nzchar(trimws(item_names))) ||
+      anyDuplicated(item_names)) {
+    stop("Score construction requires unique, nonempty indicator names.", call. = FALSE)
   }
+  panel_names <- colnames(panel)
+  if (any(vapply(item_names, function(item) {
+    sum(panel_names == item, na.rm = TRUE) != 1L
+  }, logical(1)))) {
+    stop("Score indicators must occur exactly once in the panel.", call. = FALSE)
+  }
+  member_names <- names(membership)
+  if (length(membership) == 0L || is.null(member_names) ||
+      anyNA(member_names) || any(!nzchar(trimws(member_names)))) {
+    stop("Score membership must name every indicator.", call. = FALSE)
+  }
+  # DynEGA labels derivative-network nodes with .Ord0 or .Ord1; scores use levels.
+  member_names <- sub("\\.Ord[01]$", "", member_names)
+  if (anyDuplicated(member_names) || !setequal(member_names, item_names)) {
+    stop("Score membership must match every indicator exactly once after removing derivative suffixes.",
+      call. = FALSE)
+  }
+  if (anyNA(membership) || any(!nzchar(trimws(as.character(membership)))) ||
+      (is.numeric(membership) && any(!is.finite(membership)))) {
+    stop("Score membership must have a defined group for every indicator.", call. = FALSE)
+  }
+  names(membership) <- member_names
+  membership <- membership[item_names]
   blocks <- sort(unique(membership))
   observed <- panel[, names(membership), drop = FALSE]
   standardized <- safe_scale_matrix(observed)
@@ -1507,6 +1530,10 @@ build_common_scores <- function(panel, item_names, membership) {
 
   score_mat <- do.call(cbind, score_list)
   score_mat <- as.matrix(score_mat)
+  if (ncol(score_mat) != length(blocks) || nrow(score_mat) != nrow(panel)) {
+    stop("Score construction must return one column per recovered group and one row per observation.",
+      call. = FALSE)
+  }
   colnames(score_mat) <- paste0("dim_", seq_len(ncol(score_mat)))
   score_mat
 }

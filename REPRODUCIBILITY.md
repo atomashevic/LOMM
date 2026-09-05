@@ -99,6 +99,39 @@ Rscript scripts/figures/build_revision_v2_artifacts.R \
   --output-root paper
 ```
 
+The retained July 2026 DynEGA results require correction of their trajectory
+diagnostics because derivative suffixes prevented matching partitions to the
+original indicators. Recompute from the stored seeds and partitions, then rebuild
+the affected summaries:
+
+```bash
+correction_dir=simulation_outputs/revision_v2/trajectory_score_correction/20260905
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 Rscript scripts/simulations/recompute_dynega_scores.R \
+  --output-dir "$correction_dir" --workers 1 --batch-size 16
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 REVISION_JOB_WORKERS=4 \
+  Rscript scripts/simulations/summarize_corrected_dynega_scores.R \
+  --corrections-dir "$correction_dir"
+```
+
+On the numerical backend used for this correction, the retained challenge panels
+with correlated residuals reproduce their stored hashes with four OpenBLAS threads
+at R startup. Reconstruction with one thread fails those checks; the original run
+did not record its startup thread setting.
+Use one reconstruction worker to keep the total within four threads. The matched
+cohorts also reproduced their stored hashes with four workers and one BLAS thread
+per worker. Four reconstruction workers with four BLAS threads each also passed
+the reconstruction checks when all processes were restricted to four logical CPUs
+using `taskset -c 0-3`; this setting reduced elapsed time for component hashing.
+Choose four CPUs permitted by the host if using this configuration.
+
+Add `--resume` to the first command to continue its checkpoint. Input hashes,
+original diagnostics, score counts, and observation supports are checked during
+reconstruction. Original results remain available; corrected diagnostics and
+summaries are stored in the correction directory. The artifact builder accepts
+`--score-corrections "$correction_dir"` and verifies the completed correction
+before using it. It also loads the `trajectory_score_correction/active` link for
+the matching original aggregate, when that link has been activated after review.
+
 ## MAFW-derived inputs
 
 MAFW is a third-party dataset. Request access from

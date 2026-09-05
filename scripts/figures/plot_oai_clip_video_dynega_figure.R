@@ -87,7 +87,7 @@ smooth_window <- as.integer(read_num("OAI_CLIP_FIGURE_SMOOTH_WINDOW", 7))
 top_emotion_count <- as.integer(read_num("OAI_CLIP_FIGURE_TOP_N", 4))
 include_frame_stills <- read_bool("OAI_CLIP_FIGURE_INCLUDE_STILLS", TRUE)
 figure_width <- read_num("OAI_CLIP_FIGURE_WIDTH", 10.8)
-figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", if (include_frame_stills) 10.8 else 9.0)
+figure_height <- read_num("OAI_CLIP_FIGURE_HEIGHT", if (include_frame_stills) 7.84 else 5.9)
 figure_dpi <- as.integer(read_num("OAI_CLIP_FIGURE_DPI", 300))
 selected_frame_indices <- read_int_vec("OAI_CLIP_FIGURE_FRAMES", c(7L, 16L, 19L, 23L))
 selected_frame_labels <- read_label_vec(
@@ -591,10 +591,8 @@ if (include_frame_stills) {
     bar_row,
     make_section_header("C", "Smoothed classifier-output trajectories"),
     time_panel,
-    make_section_header("D", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
-    network_panel,
     ncol = 1,
-    rel_heights = c(0.11, 0.72, 0.10, 0.94, 0.10, 1.16, 0.10, 1.08)
+    rel_heights = c(0.11, 0.72, 0.10, 0.94, 0.10, 1.16)
   )
 } else {
   figure_body <- plot_grid(
@@ -602,10 +600,8 @@ if (include_frame_stills) {
     bar_row,
     make_section_header("B", "Smoothed classifier-output trajectories"),
     time_panel,
-    make_section_header("C", sprintf("Dynamic EGA model with %d discovered communities.", dynega_fit$n_dim)),
-    network_panel,
     ncol = 1,
-    rel_heights = c(0.12, 1.02, 0.10, 1.34, 0.10, 1.18)
+    rel_heights = c(0.12, 1.02, 0.10, 1.34)
   )
 }
 figure <- ggdraw() +

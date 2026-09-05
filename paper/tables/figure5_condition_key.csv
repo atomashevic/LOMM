@@ -3,5 +3,5 @@
 "B","high_amplitude_single_dominance","High-amplitude single-dominance","asymptotically_stable"
 "C","high_amplitude_switching","High-amplitude switching","asymptotically_stable"
 "D","high_amplitude_rapid_switching","High-amplitude rapid switching","asymptotically_stable"
-"E","ranked_finite_horizon_amplification","Ranked finite-horizon amplification","anti_damped"
-"F","switching_finite_horizon_amplification","Switching finite-horizon amplification","anti_damped"
+"E","ranked_finite_horizon_amplification","Amplifying dynamics, one dominant dimension","anti_damped"
+"F","switching_finite_horizon_amplification","Amplifying dynamics, switching dominant dimension","anti_damped"

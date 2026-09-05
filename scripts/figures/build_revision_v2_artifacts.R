@@ -62,8 +62,8 @@ REVISION_V2_SCENARIO_LABELS <- c(
   high_amplitude_single_dominance = "High-amplitude single-dominance",
   high_amplitude_switching = "High-amplitude switching",
   high_amplitude_rapid_switching = "High-amplitude rapid switching",
-  ranked_finite_horizon_amplification = "Ranked finite-horizon amplification",
-  switching_finite_horizon_amplification = "Switching finite-horizon amplification"
+  ranked_finite_horizon_amplification = "Amplifying dynamics, one dominant dimension",
+  switching_finite_horizon_amplification = "Amplifying dynamics, switching dominant dimension"
 )
 
 revision_v2_table_schemas <- function() {
@@ -139,7 +139,8 @@ revision_v2_figure_stems <- function() {
 }
 
 revision_v2_parse_cli <- function(arguments) {
-  value <- list(aggregate_dir = NULL, output_root = NULL, fixture_test = FALSE)
+  value <- list(aggregate_dir = NULL, output_root = NULL, score_corrections = NULL,
+    fixture_test = FALSE)
   index <- 1L
   while (index <= length(arguments)) {
     flag <- arguments[[index]]
@@ -148,11 +149,12 @@ revision_v2_parse_cli <- function(arguments) {
       index <- index + 1L
       next
     }
-    if (!flag %in% c("--aggregate-dir", "--output-root") || index == length(arguments)) {
+    if (!flag %in% c("--aggregate-dir", "--output-root", "--score-corrections") ||
+        index == length(arguments)) {
       stop(
         paste(
           "Usage: build_revision_v2_artifacts.R",
-          "--aggregate-dir DIR --output-root DIR [--fixture-test]."
+          "--aggregate-dir DIR --output-root DIR [--score-corrections DIR] [--fixture-test]."
         ),
         call. = FALSE
       )
@@ -789,7 +791,12 @@ revision_v2_prepare_factor_screen <- function(estimands) {
   output
 }
 
-revision_v2_prepare_correct_dimension_trajectories <- function(method_rows) {
+revision_v2_prepare_correct_dimension_trajectories <- function(
+    method_rows, methods = REVISION_V2_METHOD_ORDER) {
+  if (anyDuplicated(methods) || !length(methods) ||
+      !all(methods %in% REVISION_V2_METHOD_ORDER)) {
+    stop("Unknown or duplicate methods for trajectory summaries.", call. = FALSE)
+  }
   matched <- revision_v2_nonempty(
     method_rows[method_rows$analysis_scope == "matched", , drop = FALSE],
     "correct-dimensional trajectory estimates"
@@ -803,7 +810,7 @@ revision_v2_prepare_correct_dimension_trajectories <- function(method_rows) {
   })
   designs <- expand.grid(
     TimeP = c(25L, 100L),
-    method_id = REVISION_V2_METHOD_ORDER,
+    method_id = methods,
     community_algorithm = REVISION_V2_ALGORITHMS,
     KEEP.OUT.ATTRS = FALSE,
     stringsAsFactors = FALSE
@@ -861,9 +868,9 @@ revision_v2_prepare_correct_dimension_trajectories <- function(method_rows) {
     c("time_points", "method_id", "community_algorithm", "estimand_id"),
     "Correct-dimensional trajectory estimates"
   )
-  expected <- 2L * length(REVISION_V2_METHOD_ORDER) *
+  expected <- 2L * length(methods) *
     length(REVISION_V2_ALGORITHMS) * length(metrics) -
-    length(REVISION_V2_ALGORITHMS) * length(metrics)
+    as.integer("gimme" %in% methods) * length(REVISION_V2_ALGORITHMS) * length(metrics)
   if (nrow(output) != expected || any(output$n_panels < 2L)) {
     stop(
       "Correct-dimensional trajectory estimates omit an estimable method-design-readout group.",
@@ -1699,11 +1706,11 @@ revision_v2_challenge_order <- function(data) {
     "residual_equicorrelation", "latent_shock_equicorrelation"
   )
   labels <- c(
-    independent_initialization = "Independent init.",
-    smooth_activity_gate = "Smooth gate",
+    independent_initialization = "Independent\ninitialization",
+    smooth_activity_gate = "Smooth activity\ntransitions",
     cross_loadings = "Cross-loadings",
-    residual_equicorrelation = "Residual equicorr.\n(all indicators)",
-    latent_shock_equicorrelation = "Latent-shock corr."
+    residual_equicorrelation = "Residual correlation\nall indicators",
+    latent_shock_equicorrelation = "Correlated\nacceleration inputs"
   )
   key <- paste(data$challenge_id, data$representation, sep = "|")
   order_key <- c(
@@ -1711,7 +1718,7 @@ revision_v2_challenge_order <- function(data) {
     "softmax_bounded|softmax_raw",
     "softmax_bounded|softmax_clr"
   )
-  display <- c(unname(labels[preferred]), "Softmax raw", "Softmax CLR")
+  display <- c(unname(labels[preferred]), "Softmax scores\nraw", "Softmax scores\ncentered log-ratios")
   list(key = order_key, display = display, observed = key)
 }
 
@@ -1736,63 +1743,61 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
   limits <- range(c(data$conf_low, data$conf_high, 0), finite = TRUE)
   padding <- max(0.03, diff(limits) * 0.05)
   limits <- limits + c(-padding, padding)
-  layout(matrix(c(1L, 2L, 3L, 0L), nrow = 2L, byrow = TRUE))
-  graphics::par(oma = c(3.5, 4.0, 2.0, 0.4), family = "sans")
+  layout(matrix(seq_along(methods), nrow = 1L))
+  graphics::par(oma = c(3.6, 10.8, 3.4, 0.8), family = "sans")
   for (method in methods) {
     panel <- data[data$method_id == method, , drop = FALSE]
     panel$key <- paste(panel$challenge_id, panel$representation, sep = "|")
-    graphics::par(mar = c(4.1, 3.3, 2.6, 0.8), cex = 0.78)
+    graphics::par(mar = c(2.4, 0.6, 2.4, 0.6), cex = 1)
     graphics::plot(
       NA,
-      xlim = c(0.5, length(challenge_order$key) + 0.5),
-      ylim = limits,
-      xaxt = "n",
+      xlim = limits,
+      ylim = c(0.5, length(challenge_order$key) + 0.5),
+      yaxt = "n",
+      cex.axis = 0.85,
       ylab = "",
       xlab = "",
       main = revision_v2_method_label(method),
       bty = "n"
     )
-    graphics::abline(h = 0, lty = 2, col = "grey35")
+    graphics::abline(v = 0, lty = 2, col = "grey35")
     for (algorithm_index in seq_along(algorithms)) {
       algorithm <- algorithms[[algorithm_index]]
       values <- panel[panel$community_algorithm == algorithm, , drop = FALSE]
       values <- values[match(challenge_order$key, values$key), , drop = FALSE]
-      x <- seq_along(challenge_order$key) + offsets[[algorithm_index]]
-      graphics::lines(
-        x,
-        values$estimate,
-        col = REVISION_V2_COLORS[[method]],
-        lty = REVISION_V2_ALGORITHM_LTY[[algorithm]],
-        lwd = 1
-      )
-      graphics::segments(x, values$conf_low, x, values$conf_high, col = "grey30")
+      y <- rev(seq_along(challenge_order$key)) + offsets[[algorithm_index]]
+      graphics::segments(values$conf_low, y, values$conf_high, y, col = "grey30")
       graphics::points(
-        x,
         values$estimate,
+        y,
         pch = REVISION_V2_ALGORITHM_PCH[[algorithm]],
         bg = REVISION_V2_COLORS[[method]],
         col = "black"
       )
     }
-    graphics::axis(
-      1,
-      at = seq_along(challenge_order$key),
-      labels = challenge_order$display,
-      las = 2,
-      cex.axis = 0.64
-    )
+    if (identical(method, methods[[1L]])) {
+      graphics::axis(
+        2,
+        at = rev(seq_along(challenge_order$key)),
+        labels = challenge_order$display,
+        las = 1,
+        tick = FALSE,
+        cex.axis = 0.96
+      )
+    }
   }
+
   graphics::mtext(
-    "Change in overall correct-dimension recovery rate relative to the ideal condition",
+    "Change in overall correct-dimension recovery rate relative to the reference condition",
     outer = TRUE,
-    side = 2,
-    line = 1.8
+    side = 1,
+    line = 1.0
   )
   graphics::mtext(
     if (isTRUE(sensitivity)) {
       "Sensitivity to the community-detection algorithm"
     } else {
-      "Paired departures from the ideal condition (Louvain)"
+      "Paired departures from the reference condition (Louvain)"
     },
     outer = TRUE,
     side = 3,
@@ -1800,14 +1805,15 @@ revision_v2_plot_challenge <- function(data, sensitivity = FALSE) {
     font = 2
   )
   if (isTRUE(sensitivity)) {
+    graphics::par(fig = c(0, 1, 0, 1), mar = rep(0, 4), oma = rep(0, 4), new = TRUE)
+    graphics::plot.new()
     graphics::legend(
       "bottom",
-      inset = -0.02,
+      inset = 0.005,
       xpd = NA,
       horiz = TRUE,
       legend = revision_v2_humanize(algorithms),
       pch = REVISION_V2_ALGORITHM_PCH[algorithms],
-      lty = REVISION_V2_ALGORITHM_LTY[algorithms],
       pt.bg = "grey65",
       bty = "n",
       cex = 0.8
@@ -2141,10 +2147,85 @@ revision_v2_render_prepared <- function(prepared, output_root) {
   revision_v2_validate_generated_tree(output_root)
 }
 
-revision_v2_build <- function(aggregate_dir, output_root) {
+revision_v2_corrected_scores <- function(aggregate_dir, corrections_dir, long) {
+  receipt_path <- file.path(corrections_dir, "summary_status.json")
+  if (!file.exists(receipt_path)) {
+    stop("Trajectory correction summaries are incomplete: ", corrections_dir, call. = FALSE)
+  }
+  receipt <- jsonlite::read_json(receipt_path, simplifyVector = TRUE)
+  if (!identical(receipt$status, "complete")) {
+    stop("Trajectory correction summaries have not completed.", call. = FALSE)
+  }
+  verify <- function(path, expected) {
+    if (length(expected) != 1L || !file.exists(path) ||
+        !identical(digest::digest(file = path, algo = "sha256"), unname(expected))) {
+      stop("Trajectory correction hash mismatch: ", path, call. = FALSE)
+    }
+  }
+  for (filename in c("revision_results_long.csv", "revision_estimand_results.csv",
+      "revision_paired_differences.csv")) {
+    verify(file.path(aggregate_dir, filename),
+      receipt$input_hashes[[file.path(receipt$source_aggregate_dir, filename)]])
+  }
+  for (filename in c("revision_estimand_results.csv", "revision_paired_differences.csv")) {
+    verify(file.path(corrections_dir, filename), receipt$output_hashes[[filename]])
+  }
+  checkpoint_path <- file.path(corrections_dir, "checkpoint_results.csv")
+  checkpoint_hash <- unlist(receipt$input_hashes)[
+    basename(names(receipt$input_hashes)) == "checkpoint_results.csv"]
+  verify(checkpoint_path, checkpoint_hash)
+  correction <- utils::read.csv(checkpoint_path, stringsAsFactors = FALSE)
+  required <- c("unit_key", "source_job", "panel_key", "old_score_cor_common",
+    "old_score_nrmse_common", "score_cor_common", "score_nrmse_common")
+  if (length(setdiff(required, names(correction)))) {
+    stop("Trajectory correction columns are incomplete.", call. = FALSE)
+  }
+  expected_rows <- which(!is.na(long$method_id) & long$method_id == "dynEGA")
+  expected_units <- long$unit_key[expected_rows]
+  if (anyNA(correction$unit_key) || anyDuplicated(correction$unit_key) ||
+      anyDuplicated(expected_units) ||
+      nrow(correction) != receipt$corrected_readouts ||
+      !setequal(correction$unit_key, expected_units)) {
+    stop("Trajectory corrections do not cover the selected DynEGA outputs.", call. = FALSE)
+  }
+  index <- expected_rows[match(correction$unit_key, expected_units)]
+  if (anyNA(correction[c("source_job", "panel_key")]) ||
+      any(correction$source_job != long$.source_job[index]) ||
+      any(correction$panel_key != long$panel_key[index])) {
+    stop("Trajectory correction identities disagree with the aggregate.", call. = FALSE)
+  }
+  for (metric in c("score_cor_common", "score_nrmse_common")) {
+    if (!isTRUE(all.equal(correction[[paste0("old_", metric)]], long[[metric]][index],
+        tolerance = 1e-12, check.attributes = FALSE)) ||
+        any(!is.finite(correction[[metric]]))) {
+      stop("Trajectory correction values disagree with the aggregate: ", metric, call. = FALSE)
+    }
+    long[[metric]][index] <- correction[[metric]]
+  }
+  message("Using verified trajectory corrections from ", corrections_dir)
+  long
+}
+
+revision_v2_build <- function(aggregate_dir, output_root, score_corrections = NULL) {
   revision_v2_require_aggregate_contract(aggregate_dir)
+  if (is.null(score_corrections)) {
+    active <- file.path(dirname(dirname(aggregate_dir)), "trajectory_score_correction", "active")
+    if (dir.exists(active)) {
+      receipt_path <- file.path(active, "summary_status.json")
+      if (!file.exists(receipt_path)) stop("Active trajectory correction is incomplete.", call. = FALSE)
+      receipt <- jsonlite::read_json(receipt_path, simplifyVector = TRUE)
+      if (!identical(receipt$status, "complete") || length(receipt$source_aggregate_dir) != 1L ||
+          is.na(receipt$source_aggregate_dir) || !nzchar(receipt$source_aggregate_dir)) {
+        stop("Active trajectory correction has an invalid completion receipt.", call. = FALSE)
+      }
+      if (identical(basename(aggregate_dir), basename(receipt$source_aggregate_dir))) {
+        score_corrections <- active
+      }
+    }
+  }
+  summary_dir <- if (is.null(score_corrections)) aggregate_dir else score_corrections
   estimands <- revision_v2_read_csv(
-    aggregate_dir,
+    summary_dir,
     "revision_estimand_results.csv",
     c(
       "summary_level", "analysis_scope", "method_id", "community_algorithm",
@@ -2154,7 +2235,7 @@ revision_v2_build <- function(aggregate_dir, output_root) {
     )
   )
   paired <- revision_v2_read_csv(
-    aggregate_dir,
+    summary_dir,
     "revision_paired_differences.csv",
     c(
       "comparison_type", "left_label", "right_label", "community_algorithm",
@@ -2166,6 +2247,9 @@ revision_v2_build <- function(aggregate_dir, output_root) {
     "revision_results_long.csv",
     revision_v2_method_columns()
   )
+  if (!is.null(score_corrections)) {
+    long <- revision_v2_corrected_scores(aggregate_dir, score_corrections, long)
+  }
   prepared <- revision_v2_prepare_artifacts(estimands, paired, long)
   parent <- dirname(output_root)
   dir.create(parent, recursive = TRUE, showWarnings = FALSE)
@@ -2571,7 +2655,7 @@ revision_v2_main <- function() {
   }
   aggregate_dir <- normalizePath(cli$aggregate_dir, mustWork = TRUE)
   output_root <- normalizePath(cli$output_root, mustWork = FALSE)
-  revision_v2_build(aggregate_dir, output_root)
+  revision_v2_build(aggregate_dir, output_root, cli$score_corrections)
 }
 
 if (sys.nframe() == 0L) {
