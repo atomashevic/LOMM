@@ -270,7 +270,7 @@ class OrchestratorFixtureTests(unittest.TestCase):
         self.assertEqual(record["job_timeout_seconds"], 604800)
         self.assertEqual(record["per_unit_timeout_seconds"], 900)
         self.assertEqual(record["budget_seconds"], 900)
-        self.assertEqual(record["worker_limit"], 24)
+        self.assertEqual(record["worker_limit"], 4)
         self.assertEqual(record["expected_work"]["expected_units"], 64800)
         self.assertTrue(record["paths"]["checkpoint"].endswith("checkpoint_results.csv"))
         self.assertTrue(record["paths"]["run_log"].endswith("run.log"))
@@ -563,6 +563,7 @@ class OrchestratorFixtureTests(unittest.TestCase):
 
         statuses["empirical_cv"]["process_active"] = False
         statuses["t25_graphicalvar"]["process_active"] = True
+        statuses["t25_graphicalvar"]["workers"] = self.registry.defaults["max_workers"]
         with self.assertRaisesRegex(
             ORCHESTRATOR.OrchestratorError,
             r"24 active \+ 1 requested > 24",

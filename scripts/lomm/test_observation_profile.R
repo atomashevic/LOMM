@@ -162,13 +162,6 @@ lomm_test_config_contract <- function(config) {
     "Calibration run config hash"
   )
   changed <- lomm_test_clone(config)
-  changed$adoption_evidence$realism_aggregate$path <- "README.md"
-  changed$adoption_evidence$realism_aggregate$sha256 <-
-    digest::digest(file = file.path(LOMM_TEST_REPO, "README.md"), algo = "sha256")
-  lomm_test_error(
-    lomm_validate_observation_profile_config(changed), "Realism evidence path"
-  )
-  changed <- lomm_test_clone(config)
   changed$clip_scale <- changed$clip_scale[c(
     "upper", "lower", "law", "population_mean", "placement"
   )]
@@ -639,7 +632,7 @@ lomm_test_loaded_provenance <- function(config, fixture) {
   invisible(TRUE)
 }
 
-lomm_test_rejects_unverified_internal_source <- function() {
+lomm_test_rejects_unverified_internal_source <- function(config, fixture) {
   temporary_repo <- tempfile("lomm-unverified-")
   wrapper_directory <- file.path(temporary_repo, "scripts", "lomm")
   internal_directory <- file.path(temporary_repo, "scripts", "lomm_1_1")
@@ -654,6 +647,10 @@ lomm_test_rejects_unverified_internal_source <- function() {
     file.copy(
       LOMM_INTERNAL_IMPLEMENTATION,
       file.path(internal_directory, "canonical_observation_profile.R")
+    ),
+    file.copy(
+      lomm_default_profile_config_path(),
+      file.path(wrapper_directory, "observation_profile_config.json")
     ),
     file.copy(
       LOMM_INTERNAL_CONFIG,
@@ -679,6 +676,23 @@ lomm_test_rejects_unverified_internal_source <- function() {
       normalizePath(temporary_repo, mustWork = TRUE)
     ),
     "A sourced wrapper did not bind to its own repository root."
+  )
+  isolated_config <- verified_environment$lomm_read_observation_profile_config()
+  isolated <- verified_environment$lomm_draw_clip_effects(
+    rownames(fixture$loadings), "receipt-free", 20260812L,
+    profile = "compositional_bs",
+    between_clip_covariance = fixture$empirical_covariance,
+    config = isolated_config
+  )
+  original <- lomm_draw_clip_effects(
+    rownames(fixture$loadings), "receipt-free", 20260812L,
+    profile = "compositional_bs",
+    between_clip_covariance = fixture$empirical_covariance,
+    config = config
+  )
+  lomm_test_assert(
+    identical(isolated, original),
+    "The isolated public model differs without local evidence or run outputs."
   )
   chdir_environment <- new.env(parent = globalenv())
   source(
@@ -742,7 +756,7 @@ lomm_test_paired_homogeneous(config, fixture, empirical_effects)
 lomm_test_loading_aligned(config, fixture)
 lomm_test_observation_surfaces(config, fixture)
 lomm_test_loaded_provenance(config, fixture)
-lomm_test_rejects_unverified_internal_source()
+lomm_test_rejects_unverified_internal_source(config, fixture)
 
 module_environment <- new.env(parent = globalenv())
 sys.source(file.path(LOMM_TEST_DIRECTORY, "observation_profile.R"),
@@ -752,19 +766,5 @@ lomm_test_assert(
     exists("lomm11_canonical_observe", envir = module_environment, inherits = FALSE),
   "The public wrapper is not module-safe under sys.source()."
 )
-
-evidence_paths <- vapply(
-  config$adoption_evidence,
-  function(item) file.path(LOMM_TEST_REPO, item$path),
-  character(1)
-)
-if (all(file.exists(evidence_paths))) {
-  lomm_validate_observation_profile_config(
-    config, LOMM_TEST_REPO, validate_evidence_hashes = TRUE
-  )
-  cat("Public adoption-evidence hashes: PASS\n")
-} else {
-  cat("Public adoption-evidence hashes: SKIP (ignored local artifacts absent)\n")
-}
 
 cat("Public LOMM observation-profile tests: PASS\n")

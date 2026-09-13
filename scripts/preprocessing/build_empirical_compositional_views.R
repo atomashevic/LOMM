@@ -402,7 +402,7 @@ lomm_builder_main <- function() {
   lomm_assert_no_source_drift(input_path, input_hash, generator)
   output_directory <- lomm_publish_bundle(bundle, plan, args$output_root)
   lomm_validate_published_bundle(output_directory)
-  cat("Published LOMM 1.1 compositional preprocessing bundle:\n", output_directory, "\n")
+  cat("Published LOMM 1.1 compositional preprocessing bundle:\n", output_directory, "\n", sep = "")
   invisible(output_directory)
 }
 

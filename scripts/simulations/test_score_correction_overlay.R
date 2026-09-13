@@ -143,7 +143,7 @@ run_tests <- function() {
   routing$revision_v2_read_csv <- function(directory, filename, columns) {
     utils::read.csv(file.path(directory, filename), stringsAsFactors = FALSE)
   }
-  routing$revision_v2_prepare_artifacts <- function(estimands, paired, long) {
+  routing$revision_v2_prepare_artifacts <- function(estimands, paired, long, study2_only = FALSE) {
     routing$captured <- list(estimands = estimands, paired = paired, long = long)
     stop("fixture: captured before rendering", call. = FALSE)
   }
@@ -166,8 +166,8 @@ run_tests <- function() {
   active <- file.path(dirname(correction_dir), "active")
   expect(file.symlink(correction_dir, active), "Create temporary active link.")
   captured <- build_until_captured()
-  expect(identical(captured$long, expected) && captured$estimands$source == "corrected",
-    "Active correction must be loaded automatically.")
+  expect(identical(captured$long, long) && captured$estimands$source == "original",
+    "Local active links must not change explicit input selection.")
   receipt <- reset()
   receipt$source_aggregate_dir <- file.path(dirname(aggregate), "other_hash")
   save_receipt(receipt)
@@ -177,17 +177,17 @@ run_tests <- function() {
   receipt <- reset()
   receipt$source_aggregate_dir <- NULL
   save_receipt(receipt)
-  expect_error(suppressMessages(routing$revision_v2_build(aggregate, "unused")),
-    "active correction without an aggregate identity")
+  expect(identical(build_until_captured()$long, long),
+    "Incomplete local receipts must not affect fresh builds.")
   receipt <- reset()
   receipt$status <- "running"
   save_receipt(receipt)
-  expect_error(suppressMessages(routing$revision_v2_build(aggregate, "unused")),
-    "active correction without completed summaries")
+  expect(identical(build_until_captured()$long, long),
+    "Running local corrections must not affect fresh builds.")
   reset()
   unlink(receipt_path)
-  expect_error(suppressMessages(routing$revision_v2_build(aggregate, "unused")),
-    "unfinished active correction")
+  expect(identical(build_until_captured()$long, long),
+    "Missing local receipts must not affect fresh builds.")
 
   # Existing tiny constant-value fixtures make the 2,000-draw checks inexpensive.
   fixture <- implementation$revision_v2_fixture_long()

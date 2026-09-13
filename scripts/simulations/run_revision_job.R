@@ -30,12 +30,13 @@ revision_require_jsonlite <- function() {
 }
 
 revision_parse_cli <- function(args) {
-  parsed <- list(job = NULL, config = NULL, dry_run = FALSE)
+  parsed <- list(job = NULL, config = "scripts/simulations/revision_jobs.json",
+    dry_run = FALSE, resume = FALSE, study2_only = FALSE, print_output_dir = FALSE)
   index <- 1L
   while (index <= length(args)) {
     token <- args[[index]]
-    if (identical(token, "--dry-run")) {
-      parsed$dry_run <- TRUE
+    if (token %in% c("--dry-run", "--resume", "--study2-only", "--print-output-dir")) {
+      parsed[[gsub("-", "_", sub("^--", "", token))]] <- TRUE
       index <- index + 1L
       next
     }
@@ -50,7 +51,10 @@ revision_parse_cli <- function(args) {
     stop("Unknown argument: ", token, call. = FALSE)
   }
   if (is.null(parsed$job) || is.null(parsed$config)) {
-    stop("Usage: run_revision_job.R --job JOB --config FILE [--dry-run]", call. = FALSE)
+    stop("Usage: run_revision_job.R --job JOB [--config FILE] [--dry-run] [--resume] [--study2-only] [--print-output-dir]", call. = FALSE)
+  }
+  if (parsed$study2_only && !identical(parsed$job, "aggregate_results")) {
+    stop("--study2-only applies to aggregate_results.", call. = FALSE)
   }
   parsed
 }
@@ -3129,9 +3133,14 @@ revision_run_aggregate_job <- function(context, config) {
   )
   status <- system2(
     "Rscript",
-    c(script, "--config", context$config_path),
+    c(shQuote(script), "--config", shQuote(context$config_path),
+      if (isTRUE(context$study2_only)) "--study2-only"),
     stdout = "",
-    stderr = ""
+    stderr = "",
+    env = c(
+      paste0("REVISION_JOB_OUTPUT_DIR=", shQuote(context$output_dir)),
+      paste0("REVISION_JOB_CONFIG_HASH=", shQuote(context$config_hash))
+    )
   )
   if (!identical(as.integer(status), 0L)) {
     stop("Revision result builder failed with exit status ", status, ".", call. = FALSE)
@@ -3638,6 +3647,19 @@ revision_main <- function() {
     config,
     config_input$path
   )
+  context$resume <- context$resume || cli$resume
+  context$study2_only <- cli$study2_only
+  if (cli$study2_only) {
+    context$config_hash <- substr(digest::digest(
+      paste(context$config_hash, "study2-only", sep = "|"),
+      algo = "sha256", serialize = FALSE
+    ), 1L, 12L)
+    context$output_dir <- file.path(dirname(context$output_dir), context$config_hash)
+  }
+  if (cli$print_output_dir) {
+    cat(context$output_dir, "\n", sep = "")
+    return(invisible(0L))
+  }
   context$generator_hash <- revision_generator_hash()
   plan <- revision_job_plan(cli$job, REVISION_REPO_ROOT)
   plan$config_hash <- context$config_hash

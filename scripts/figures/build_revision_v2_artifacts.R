@@ -140,12 +140,12 @@ revision_v2_figure_stems <- function() {
 
 revision_v2_parse_cli <- function(arguments) {
   value <- list(aggregate_dir = NULL, output_root = NULL, score_corrections = NULL,
-    fixture_test = FALSE)
+    fixture_test = FALSE, study2_only = FALSE)
   index <- 1L
   while (index <= length(arguments)) {
     flag <- arguments[[index]]
-    if (identical(flag, "--fixture-test")) {
-      value$fixture_test <- TRUE
+    if (flag %in% c("--fixture-test", "--study2-only")) {
+      value[[gsub("-", "_", sub("^--", "", flag))]] <- TRUE
       index <- index + 1L
       next
     }
@@ -154,7 +154,7 @@ revision_v2_parse_cli <- function(arguments) {
       stop(
         paste(
           "Usage: build_revision_v2_artifacts.R",
-          "--aggregate-dir DIR --output-root DIR [--score-corrections DIR] [--fixture-test]."
+          "--aggregate-dir DIR --output-root DIR [--study2-only] [--score-corrections DIR] [--fixture-test]."
         ),
         call. = FALSE
       )
@@ -1370,7 +1370,7 @@ revision_v2_validate_table <- function(data, filename) {
   invisible(TRUE)
 }
 
-revision_v2_prepare_artifacts <- function(estimands, paired, long) {
+revision_v2_prepare_artifacts <- function(estimands, paired, long, study2_only = FALSE) {
   required_estimand <- c(
     "summary_level", "analysis_scope", "method_id", "community_algorithm",
     "stability_class", "TimeP", "estimand_id", "estimate", "conf_low",
@@ -1387,7 +1387,7 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
   }
   method_rows <- revision_v2_canonical_method_rows(long)
   condition_key <- revision_v2_prepare_condition_key(method_rows)
-  empirical <- revision_v2_prepare_empirical(estimands)
+  empirical <- if (!study2_only) revision_v2_prepare_empirical(estimands)
   overall_sensitivity <- revision_v2_prepare_horizon_estimands(
     estimands,
     c("p_usable", "p_correct_given_usable", "p_usable_and_correct"),
@@ -1456,6 +1456,7 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     supplementary_score_quality_readout_sensitivity.csv = score_sensitivity,
     supplementary_factor_effects_readout_sensitivity.csv = challenge
   )
+  if (study2_only) tables$empirical_realism_table.csv <- NULL
   tables <- lapply(tables, revision_v2_filter_reported_methods)
   for (filename in names(tables)) {
     revision_v2_validate_table(tables[[filename]], filename)
@@ -1469,6 +1470,7 @@ revision_v2_prepare_artifacts <- function(estimands, paired, long) {
     runtime = runtime,
     condition_key = condition_key
   )
+  if (study2_only) figure_data$empirical <- NULL
   figure_data <- lapply(figure_data, revision_v2_filter_reported_methods)
   for (label in names(figure_data)) {
     revision_v2_assert_reported_methods(
@@ -1984,16 +1986,22 @@ revision_v2_png_resolution <- function(path) {
   stop("Generated PNG omits physical-resolution metadata: ", path, call. = FALSE)
 }
 
-revision_v2_validate_generated_tree <- function(root) {
-  table_paths <- file.path(root, "tables", names(revision_v2_table_schemas()))
-  figure_names <- as.vector(outer(revision_v2_figure_stems(), c("pdf", "png"), paste, sep = "."))
+revision_v2_validate_generated_tree <- function(root, study2_only = FALSE) {
+  table_names <- names(revision_v2_table_schemas())
+  figure_stems <- revision_v2_figure_stems()
+  if (study2_only) {
+    table_names <- setdiff(table_names, "empirical_realism_table.csv")
+    figure_stems <- setdiff(figure_stems, "figure4_empirical_realism")
+  }
+  table_paths <- file.path(root, "tables", table_names)
+  figure_names <- as.vector(outer(figure_stems, c("pdf", "png"), paste, sep = "."))
   figure_paths <- file.path(root, "figures", figure_names)
   paths <- c(table_paths, figure_paths)
   invalid <- paths[!file.exists(paths) | file.info(paths)$size <= 0L]
   if (length(invalid) > 0L) {
     stop("Generated artifact tree is incomplete: ", paste(basename(invalid), collapse = ", "), call. = FALSE)
   }
-  for (filename in names(revision_v2_table_schemas())) {
+  for (filename in table_names) {
     data <- utils::read.csv(
       file.path(root, "tables", filename),
       check.names = FALSE,
@@ -2001,13 +2009,13 @@ revision_v2_validate_generated_tree <- function(root) {
     )
     revision_v2_validate_table(data, filename)
   }
-  pdf_magic <- vapply(file.path(root, "figures", paste0(revision_v2_figure_stems(), ".pdf")), function(path) {
+  pdf_magic <- vapply(file.path(root, "figures", paste0(figure_stems, ".pdf")), function(path) {
     identical(readChar(path, 4L, useBytes = TRUE), "%PDF")
   }, logical(1))
   png_paths <- file.path(
     root,
     "figures",
-    paste0(revision_v2_figure_stems(), ".png")
+    paste0(figure_stems, ".png")
   )
   png_magic <- vapply(png_paths, function(path) {
     identical(readBin(path, "raw", n = 8L), as.raw(c(137, 80, 78, 71, 13, 10, 26, 10)))
@@ -2026,21 +2034,23 @@ revision_v2_validate_generated_tree <- function(root) {
   invisible(paths)
 }
 
-revision_v2_owned_paths <- function() {
+revision_v2_owned_paths <- function(study2_only = FALSE) {
   figure_names <- as.vector(
     outer(revision_v2_figure_stems(), c("pdf", "png"), paste, sep = ".")
   )
-  c(
+  paths <- c(
     file.path("tables", names(revision_v2_table_schemas())),
     file.path("figures", figure_names)
   )
+  if (study2_only) paths <- paths[!grepl("empirical_realism", paths)]
+  paths
 }
 
 # Installs only the artifacts this builder declares. The output root normally
 # holds manuscript sources and artifacts written by other scripts, so replacing
 # the directory wholesale would destroy them.
-revision_v2_publish_tree <- function(staging_root, output_root) {
-  owned <- revision_v2_owned_paths()
+revision_v2_publish_tree <- function(staging_root, output_root, study2_only = FALSE) {
+  owned <- revision_v2_owned_paths(study2_only)
   absent <- owned[!file.exists(file.path(staging_root, owned))]
   if (length(absent) > 0L) {
     stop(
@@ -2107,7 +2117,7 @@ revision_v2_publish_tree <- function(staging_root, output_root) {
   invisible(output_root)
 }
 
-revision_v2_render_prepared <- function(prepared, output_root) {
+revision_v2_render_prepared <- function(prepared, output_root, study2_only = FALSE) {
   for (filename in names(prepared$tables)) {
     revision_v2_write_csv(
       prepared$tables[[filename]],
@@ -2115,7 +2125,7 @@ revision_v2_render_prepared <- function(prepared, output_root) {
     )
   }
   figures <- prepared$figure_data
-  revision_v2_write_figure(
+  if (!study2_only) revision_v2_write_figure(
     "figure4_empirical_realism", output_root, 12, 9,
     function() revision_v2_plot_empirical(figures$empirical)
   )
@@ -2144,7 +2154,7 @@ revision_v2_render_prepared <- function(prepared, output_root) {
       figures$challenge_sensitivity
     )
   )
-  revision_v2_validate_generated_tree(output_root)
+  revision_v2_validate_generated_tree(output_root, study2_only)
 }
 
 revision_v2_corrected_scores <- function(aggregate_dir, corrections_dir, long) {
@@ -2206,23 +2216,9 @@ revision_v2_corrected_scores <- function(aggregate_dir, corrections_dir, long) {
   long
 }
 
-revision_v2_build <- function(aggregate_dir, output_root, score_corrections = NULL) {
+revision_v2_build <- function(aggregate_dir, output_root, score_corrections = NULL,
+                              study2_only = FALSE) {
   revision_v2_require_aggregate_contract(aggregate_dir)
-  if (is.null(score_corrections)) {
-    active <- file.path(dirname(dirname(aggregate_dir)), "trajectory_score_correction", "active")
-    if (dir.exists(active)) {
-      receipt_path <- file.path(active, "summary_status.json")
-      if (!file.exists(receipt_path)) stop("Active trajectory correction is incomplete.", call. = FALSE)
-      receipt <- jsonlite::read_json(receipt_path, simplifyVector = TRUE)
-      if (!identical(receipt$status, "complete") || length(receipt$source_aggregate_dir) != 1L ||
-          is.na(receipt$source_aggregate_dir) || !nzchar(receipt$source_aggregate_dir)) {
-        stop("Active trajectory correction has an invalid completion receipt.", call. = FALSE)
-      }
-      if (identical(basename(aggregate_dir), basename(receipt$source_aggregate_dir))) {
-        score_corrections <- active
-      }
-    }
-  }
   summary_dir <- if (is.null(score_corrections)) aggregate_dir else score_corrections
   estimands <- revision_v2_read_csv(
     summary_dir,
@@ -2250,7 +2246,7 @@ revision_v2_build <- function(aggregate_dir, output_root, score_corrections = NU
   if (!is.null(score_corrections)) {
     long <- revision_v2_corrected_scores(aggregate_dir, score_corrections, long)
   }
-  prepared <- revision_v2_prepare_artifacts(estimands, paired, long)
+  prepared <- revision_v2_prepare_artifacts(estimands, paired, long, study2_only)
   parent <- dirname(output_root)
   dir.create(parent, recursive = TRUE, showWarnings = FALSE)
   staging_root <- tempfile(
@@ -2265,8 +2261,8 @@ revision_v2_build <- function(aggregate_dir, output_root, score_corrections = NU
       unlink(staging_root, recursive = TRUE, force = TRUE)
     }
   }, add = TRUE)
-  revision_v2_render_prepared(prepared, staging_root)
-  revision_v2_publish_tree(staging_root, output_root)
+  revision_v2_render_prepared(prepared, staging_root, study2_only)
+  revision_v2_publish_tree(staging_root, output_root, study2_only)
 }
 
 revision_v2_fixture_estimands <- function() {
@@ -2477,6 +2473,14 @@ revision_v2_run_fixture_tests <- function() {
   method_rows$structure_fit_runtime_sec[failed_gimme] <- 900
   method_rows$runtime_sec[failed_gimme] <- 900
   prepared <- revision_v2_prepare_artifacts(estimands, paired, method_rows)
+  study2 <- revision_v2_prepare_artifacts(
+    estimands[is.na(estimands$analysis_scope) | estimands$analysis_scope != "empirical_cv", ],
+    paired, method_rows, study2_only = TRUE
+  )
+  stopifnot(
+    identical(study2$tables, prepared$tables[setdiff(names(prepared$tables), "empirical_realism_table.csv")]),
+    !"empirical" %in% names(study2$figure_data)
+  )
   challenge_plot_sensitivity <- revision_v2_challenge_plot_data(
     prepared$figure_data$challenge_sensitivity
   )
@@ -2643,6 +2647,17 @@ revision_v2_run_fixture_tests <- function() {
     stop("Publishing did not replace an owned artifact.", call. = FALSE)
   }
   revision_v2_validate_generated_tree(publish_root)
+  empirical_paths <- file.path(publish_root, c(
+    "tables/empirical_realism_table.csv",
+    "figures/figure4_empirical_realism.pdf",
+    "figures/figure4_empirical_realism.png"
+  ))
+  empirical_hashes <- tools::md5sum(empirical_paths)
+  study2_root <- tempfile("revision-study2-fixture-")
+  on.exit(unlink(study2_root, recursive = TRUE, force = TRUE), add = TRUE)
+  revision_v2_render_prepared(study2, study2_root, study2_only = TRUE)
+  revision_v2_publish_tree(study2_root, publish_root, study2_only = TRUE)
+  stopifnot(identical(tools::md5sum(empirical_paths), empirical_hashes))
   invisible(TRUE)
 }
 
@@ -2655,7 +2670,7 @@ revision_v2_main <- function() {
   }
   aggregate_dir <- normalizePath(cli$aggregate_dir, mustWork = TRUE)
   output_root <- normalizePath(cli$output_root, mustWork = FALSE)
-  revision_v2_build(aggregate_dir, output_root, cli$score_corrections)
+  revision_v2_build(aggregate_dir, output_root, cli$score_corrections, cli$study2_only)
 }
 
 if (sys.nframe() == 0L) {

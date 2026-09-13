@@ -529,7 +529,7 @@ lomm11_runner_validate_execution_authority <- function(context) {
     stop("Package 'arrow' is required only for execute mode.", call. = FALSE)
   }
   workers <- if (is.null(args$workers)) {
-    as.integer(context$config$future_execution$worker_limit)
+    min(4L, as.integer(context$config$future_execution$worker_limit))
   } else {
     as.integer(args$workers)
   }

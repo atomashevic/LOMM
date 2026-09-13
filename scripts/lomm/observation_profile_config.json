@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "model_name": "LOMM",
   "default_profile": "compositional_bs",
   "public_api": {
@@ -74,22 +74,6 @@
     "implementation_path": "scripts/lomm_1_1/canonical_observation_profile.R",
     "implementation_sha256": "07ee2ff1896a0bb9985df5ca0242db83a39cf0a1ca181e0ba73e1962ba0d11c0",
     "calibration_run_config_hash": "854e8722d647ae1564a58459b66f66c87abf91217258fb04d0360ed26d8a4729"
-  },
-  "adoption_evidence": {
-    "realism_aggregate": {
-      "path": "simulation_outputs/lomm_1_1/empirical_realism_ablation_aggregates/854e8722d647/9769e6dd7fd1/paired_ablation_effects.csv",
-      "sha256": "e06eedb8ff9c46236ef895c12b90e1dcd990e2c1350a827e29b2ef01a457c7d3",
-      "receipt_path": "scripts/lomm/evidence/realism_adoption_receipt.json",
-      "receipt_sha256": "b592db43a71dd58c6692f443ada0e7fca2fecffa9105f916022527edb4e64b44"
-    },
-    "recovery_bridge": {
-      "path": "simulation_outputs/lomm_1_1/recovery_bridge_runs/991d45f9c90f/paired_bootstrap_effects.csv",
-      "sha256": "36be9ef8b854fbcbc729db3377e3765a4055548a52161d1af194fa49b5aeec35",
-      "receipt_path": "scripts/lomm/evidence/recovery_bridge_adoption_receipt.json",
-      "receipt_sha256": "7d1f8f071f81289601b9d2cbea7bba841ebb4fb2e83491646912ece6a10d5b82",
-      "representation": "linear_z",
-      "baseline_geometry": "loading_aligned"
-    }
   },
   "claim_scope": {
     "supported": [

@@ -28,10 +28,10 @@ MAFW_PLAUSIBILITY_SCRIPT_PATH <- mafw_script_path()
 MAFW_PLAUSIBILITY_ROOT <- normalizePath(
   file.path(dirname(MAFW_PLAUSIBILITY_SCRIPT_PATH), "..", ".."), mustWork = TRUE
 )
-MAFW_PLAUSIBILITY_PLAN <- file.path(
+MAFW_PLAUSIBILITY_PLAN <- Sys.getenv("MAFW_PLAUSIBILITY_PLAN", unset = file.path(
   MAFW_PLAUSIBILITY_ROOT, "simulation_outputs", "lomm_1_1",
   "empirical_realism_ablation", "854e8722d647"
-)
+))
 MAFW_PLAUSIBILITY_OUTPUT <- file.path(
   MAFW_PLAUSIBILITY_ROOT, "simulation_outputs", "lomm_1_1",
   "mafw_plausibility_validation"
@@ -128,20 +128,33 @@ mafw_atomic_text <- function(value, path) {
 }
 
 mafw_prepare <- function(paths = mafw_paths()) {
-  required <- c(paths$runner, MAFW_PLAUSIBILITY_PLAN)
+  bundle <- Sys.getenv("MAFW_COMPOSITIONAL_BUNDLE", unset = "")
+  required <- c(paths$runner, if (nzchar(bundle)) bundle else MAFW_PLAUSIBILITY_PLAN)
   if (any(!file.exists(required))) {
     mafw_stop("Missing required input: ", paste(required[!file.exists(required)], collapse = ", "))
   }
   assign("LOMM11_RUNNER_PATH", normalizePath(paths$runner), envir = .GlobalEnv)
   source(paths$runner, local = .GlobalEnv)
-  arguments <- lomm11_runner_parse_args(c(
-    "--plan-dir", normalizePath(MAFW_PLAUSIBILITY_PLAN), "--dry-run"
-  ))
-  context <- lomm11_runner_load_context(arguments)
-  input_directory <- normalizePath(
-    context$manifest$input_bundle$resolved_path, mustWork = TRUE
-  )
-  input_tables <- lomm_validation_read_tables(input_directory)
+  if (nzchar(bundle)) {
+    input_directory <- normalizePath(bundle, mustWork = TRUE)
+    # Verify the original score-file hash and rebuild the numerical tables;
+    # fresh metadata and floating-point serialization need not match an old run.
+    lomm_validate_published_bundle(input_directory)
+    config <- lomm11_read_config(LOMM11_RUNNER_DEPENDENCIES[["config"]])
+    input_tables <- lomm_validation_read_tables(input_directory)
+    plan <- lomm11_build_plan(config, input_tables[["clip_qc.csv"]],
+      input_tables[["probability_view.csv"]])
+    context <- list(config = config, plan = plan$tables)
+  } else {
+    arguments <- lomm11_runner_parse_args(c(
+      "--plan-dir", normalizePath(MAFW_PLAUSIBILITY_PLAN), "--dry-run"
+    ))
+    context <- lomm11_runner_load_context(arguments)
+    input_directory <- normalizePath(
+      context$manifest$input_bundle$resolved_path, mustWork = TRUE
+    )
+    input_tables <- lomm_validation_read_tables(input_directory)
+  }
   basis <- lomm11_runner_basis(input_tables)
   view_index <- lomm11_view_index_from_ledger(input_tables[["frame_ledger.csv"]])
   list(

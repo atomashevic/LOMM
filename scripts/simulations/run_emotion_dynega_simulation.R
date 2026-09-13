@@ -367,7 +367,7 @@ run_emotion_dynega <- function() {
   dry_run <- parse_emotion_bool("EMOTION_DYNEGA_DRY_RUN", default = FALSE)
   smoke <- parse_emotion_bool("EMOTION_DYNEGA_SMOKE", default = FALSE)
   reps <- parse_emotion_int("EMOTION_DYNEGA_REPS", 3L)
-  workers <- parse_emotion_int("EMOTION_DYNEGA_WORKERS", 12L)
+  workers <- parse_emotion_int("EMOTION_DYNEGA_WORKERS", 4L)
   out_dir <- Sys.getenv(
     "BENCHMARK_OUT_DIR",
     if (isTRUE(smoke)) {

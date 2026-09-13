@@ -1,56 +1,40 @@
-# Reproducing the LOMM paper
+# Reproduce the paper
 
-Run all commands from the repository root.
+Use Bash. Run every command from the repository root.
+The example and PDF builds need no external data. Study 2 generates its own data.
+Study 1 requires the original restricted MAFW score export.
 
-## Reproduction levels
+## 1. Install
 
-This repository supports three levels of reproduction:
+Install R 4.5.1, Python 3.13, Quarto, and a LaTeX distribution with
+`xelatex` and `pdflatex`. Then run:
 
-1. Render the manuscript and response letter from the checked-in figures and
-   tables.
-2. Run the LOMM example and focused validation tests.
-3. Rerun the simulation studies and rebuild the result summaries.
-
-The first two levels require no external data. The full Study 1 workflow
-requires licensed MAFW data and locally generated frame-level classifier scores.
-
-## Software
-
-The reported analyses used R 4.5.1 and Python 3.13. Rendering also requires
-Quarto and a LaTeX distribution.
-
-Install the main R packages with:
-
-```r
-install.packages(c(
-  "clue", "cowplot", "digest", "dplyr", "EGAnet", "ggplot2", "gimme",
-  "graphicalVAR", "igraph", "jpeg", "jsonlite", "knitr", "lavaan", "MASS",
-  "patchwork", "psych", "purrr", "qgraph", "readr", "scales", "stringr",
-  "tibble", "tidyr"
-))
+```bash
+git clone https://github.com/atomashevic/LOMM.git
+cd LOMM
+Rscript -e 'install.packages(c("clue", "cowplot", "data.table", "digest", "dplyr", "EGAnet", "ggplot2", "gimme", "graphicalVAR", "igraph", "jpeg", "jsonlite", "knitr", "lavaan", "MASS", "patchwork", "psych", "purrr", "qgraph", "Rcpp", "readr", "scales", "stringr", "tibble", "tidyr"), repos="https://cloud.r-project.org")'
 ```
 
-## Validate the public implementation
+Recorded analysis versions: R 4.5.1, EGAnet 2.3.0, graphicalVAR 0.3.4,
+gimme 10.0, igraph 2.2.1, clue 0.3-66, and jsonlite 2.0.0.
+The installation command above installs current CRAN releases; it does not pin
+these versions. Each simulation run records its package versions.
 
-Run the worked example and focused tests:
+## 2. Run the example
 
 ```bash
 Rscript scripts/lomm/example_observation_profile.R
 Rscript scripts/lomm/test_observation_profile.R
+Rscript scripts/simulations/test_common_scores.R
 Rscript scripts/simulations/test_graphicalvar_centering_covariance.R
 ```
 
-Load the shared implementation without starting the empirical extraction
-workflow:
+The example prints simulated scores. Each test prints a success message.
 
-```bash
-Rscript -e "options(run_extract_pipeline=FALSE); source('scripts/extract.r')"
-```
+## 3. Build the PDFs
 
-## Render the paper
-
-The manuscript reads the checked-in files under `paper/figures/` and
-`paper/tables/`.
+These commands use the supplied figures and tables. They replace the two PDFs
+in `paper/`.
 
 ```bash
 quarto render paper/Paper_emotion_dynamics_HGolino_RR.qmd --to pdf
@@ -58,112 +42,73 @@ pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/r
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=paper paper/response_letter.tex
 ```
 
-## Rerun the simulations
+## 4. Rerun Study 2
 
-Simulation outputs are written under `simulation_outputs/`, which is ignored by
-Git. The full grids are computationally expensive. Limit numerical-library
-threading before running parallel jobs:
-
-```bash
-export OMP_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-```
-
-Inspect and validate the simulation job graph without fitting any model:
+Run the jobs below in order. They run in the foreground, use at most four
+workers, and write to `simulation_outputs/revision_v2/`.
+The full simulation grids are computationally expensive.
 
 ```bash
-python3 scripts/simulations/orchestrate_revision_jobs.py plan
-python3 scripts/simulations/orchestrate_revision_jobs.py validate --structural-only
-```
+set -euo pipefail
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export REVISION_JOB_WORKERS=4
 
-The plan command lists the required job order. For any listed job, print its
-exact launch command with:
+for job in t100_reuse_audit t100_dynega t100_static_oracle \
+  t100_graphicalvar_fallback t100_gimme_fallback \
+  t25_dynega t25_graphicalvar t25_gimme t25_static_oracle \
+  challenge_dynega challenge_graphicalvar challenge_static_oracle
+do
+  Rscript scripts/simulations/run_revision_job.R --job "$job"
+done
 
-```bash
-python3 scripts/simulations/orchestrate_revision_jobs.py print-launch --job JOB_ID
-```
-
-The main simulation specification and dispatcher are:
-
-- `scripts/simulations/revision_spec.R`
-- `scripts/simulations/run_revision_job.R`
-- `scripts/simulations/revision_jobs.json`
-
-After the validated Study 2 aggregate directory has been produced, rebuild its
-paper-facing results with:
-
-```bash
+Rscript scripts/simulations/run_revision_job.R --job aggregate_results --study2-only
+aggregate_dir=$(Rscript scripts/simulations/run_revision_job.R --job aggregate_results --study2-only --print-output-dir)
 Rscript scripts/figures/build_revision_v2_artifacts.R \
-  --aggregate-dir /path/to/study2-aggregate \
-  --output-root paper
+  --aggregate-dir "$aggregate_dir" --output-root paper --study2-only
+Rscript scripts/simulations/audit_finite_horizon_amplification.R
 ```
 
-The retained July 2026 DynEGA results require correction of their trajectory
-diagnostics because derivative suffixes prevented matching partitions to the
-original indicators. Recompute from the stored seeds and partitions, then rebuild
-the affected summaries:
+The reuse audit accepts absent historical files; the two fallback jobs generate
+fresh GraphicalVAR and GIMME results. Aggregation verifies the completed inputs.
+The final commands replace the Study 2 figures and tables in `paper/`.
+Run section 3 again to update the PDFs.
+
+To continue an interrupted job, use its name and add `--resume`:
+`Rscript scripts/simulations/run_revision_job.R --job t100_dynega --resume`.
+Fresh runs already compute corrected trajectory diagnostics.
+Floating-point values and runtimes can vary with numerical libraries and hardware.
+In the retained correlated-residual runs, exact panel hashes matched with four
+OpenBLAS threads at R startup and failed with one. Fresh runs use one BLAS thread
+per worker. To reconstruct those historical panels, use one worker with
+`OPENBLAS_NUM_THREADS=4 OMP_NUM_THREADS=4`, set before starting R.
+
+## 5. Rerun Study 1
+
+Set `MAFW_FRAME_SCORES` to the original 100-clip score CSV.
+The preprocessing script verifies its SHA-256:
+`a6416f69f2090770f9fba5b13359883483ec4c689a34046a1c6c121c5843b67a`.
+This file is not distributed in the repository.
 
 ```bash
-correction_dir=simulation_outputs/revision_v2/trajectory_score_correction/20260905
-OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 Rscript scripts/simulations/recompute_dynega_scores.R \
-  --output-dir "$correction_dir" --workers 1 --batch-size 16
-OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 REVISION_JOB_WORKERS=4 \
-  Rscript scripts/simulations/summarize_corrected_dynega_scores.R \
-  --corrections-dir "$correction_dir"
-```
+set -euo pipefail
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export MAFW_FRAME_SCORES=/absolute/path/to/frame_scores.csv
 
-On the numerical backend used for this correction, the retained challenge panels
-with correlated residuals reproduce their stored hashes with four OpenBLAS threads
-at R startup. Reconstruction with one thread fails those checks; the original run
-did not record its startup thread setting.
-Use one reconstruction worker to keep the total within four threads. The matched
-cohorts also reproduced their stored hashes with four workers and one BLAS thread
-per worker. Four reconstruction workers with four BLAS threads each also passed
-the reconstruction checks when all processes were restricted to four logical CPUs
-using `taskset -c 0-3`; this setting reduced elapsed time for component hashing.
-Choose four CPUs permitted by the host if using this configuration.
+MAFW_COMPOSITIONAL_BUNDLE=$(Rscript scripts/preprocessing/build_empirical_compositional_views.R \
+  --input "$MAFW_FRAME_SCORES" | tail -n 1)
+export MAFW_COMPOSITIONAL_BUNDLE
 
-Add `--resume` to the first command to continue its checkpoint. Input hashes,
-original diagnostics, score counts, and observation supports are checked during
-reconstruction. Original results remain available; corrected diagnostics and
-summaries are stored in the correction directory. The artifact builder accepts
-`--score-corrections "$correction_dir"` and verifies the completed correction
-before using it. It also loads the `trajectory_score_correction/active` link for
-the matching original aggregate, when that link has been activated after review.
-
-## MAFW-derived inputs
-
-MAFW is a third-party dataset. Request access from
-<https://mafw-database.github.io/MAFW/> and follow its research-use terms. Keep
-the downloaded videos, extracted frames, and frame-level classifier scores
-outside this repository.
-
-The empirical workflow expects one row per retained frame with identifiers and
-the following score channels:
-
-```text
-clip,frame_index,truth_label,anger,disgust,fear,happiness,neutral,sadness,
-surprise,contempt,anxiety,helplessness,disappointment
-```
-
-With the restricted classifier-score input and Study 1 calibration plan in
-place, run the four-fold 25-versus-25 workflow in this order:
-
-```bash
 Rscript scripts/lomm_1_1/build_mafw_plausibility_validation_25v25.R
 Rscript scripts/lomm_1_1/build_mafw_plausibility_validation_25v25_extended.R
 Rscript scripts/lomm_1_1/build_mafw_clip_level_benchmark.R
 Rscript scripts/figures/build_mafw_study1_figures.R
 ```
 
-The first two commands select the generator and compute the extended metric
-panel. The third computes the disjoint MAFW reference, plausibility, coverage,
-and metric-specific discrepancies. The final command writes the manuscript
-figures and paper-facing tables.
+Intermediate results go to `simulation_outputs/lomm_1_1/`.
+The last command replaces the Study 1 benchmark figures and tables in `paper/`.
 
-The manuscript used the `oai-large` scoring setting. The scoring-time package
-release and exact model-checkpoint revision were not archived, so exact frame
-rescoring is not guaranteed. The checked-in aggregate summaries support the
-reported simulated-versus-real comparison without redistributing frame-level
-scores or raw videos.
+MAFW access is governed by the [dataset provider](https://mafw-database.github.io/MAFW/).
+Raw videos and frame-level scores are not redistributed. The original scoring
+package and model-checkpoint versions were not archived, so newly scored videos
+cannot be assumed to reproduce the original export. The supplied aggregate
+tables and figures remain usable without that export.

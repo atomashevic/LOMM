@@ -1147,7 +1147,7 @@ pa_publish <- function(results, output_dir, source, analysis_spec, analysis_hash
 pa_worker_limit <- function(value = NULL) {
   available <- parallel::detectCores(logical = FALSE)
   if (!is.finite(available) || available < 1L) available <- 1L
-  if (is.null(value)) return(as.integer(min(12L, available)))
+  if (is.null(value)) return(as.integer(min(4L, available)))
   parsed <- suppressWarnings(as.integer(value))
   if (is.na(parsed) || parsed < 1L || !identical(as.character(parsed), value)) {
     pa_stop("--workers must be a positive integer.")

@@ -55,13 +55,14 @@ rr_find_repo_root <- function() {
 rr_parse_arguments <- function(arguments) {
   result <- list(
     config = "scripts/simulations/revision_jobs.json",
-    dry_run = FALSE
+    dry_run = FALSE,
+    study2_only = FALSE
   )
   index <- 1L
   while (index <= length(arguments)) {
     argument <- arguments[[index]]
-    if (identical(argument, "--dry-run")) {
-      result$dry_run <- TRUE
+    if (argument %in% c("--dry-run", "--study2-only")) {
+      result[[gsub("-", "_", sub("^--", "", argument))]] <- TRUE
       index <- index + 1L
       next
     }
@@ -3732,7 +3733,8 @@ rr_dry_run_plan <- function(config_path, specification, jobs) {
       "prospective_manifest_valid and run_manifest_valid are true",
       "every output hash is a verified SHA-256",
       "each selected job has one authoritative hashed non-empty result CSV",
-      "empirical_cv supplies hashed results.csv and clip_contributions.csv",
+      if ("empirical_cv" %in% unlist(aggregate$required_dependencies))
+        "empirical_cv supplies hashed results.csv and clip_contributions.csv",
       "accepted reusable T100 results match the SHA-256 recorded by reuse_audit",
       "reusable T100 results require audited panel-input-hash equivalence",
       "rejected or hash-unverified reusable T100 results require the completed fallback",
@@ -3781,6 +3783,14 @@ rr_main <- function() {
   jobs <- rr_validate_configuration(configuration)
   specification <- revision_estimand_specification()
   rr_validate_estimands(specification)
+  if (arguments$study2_only) {
+    jobs$aggregate_results$required_dependencies <- setdiff(
+      unlist(jobs$aggregate_results$required_dependencies), "empirical_cv"
+    )
+    specification <- specification[
+      !grepl("^empirical_", specification$estimand_id), , drop = FALSE
+    ]
+  }
   stage_elapsed <- rr_progress("configuration and estimands validated", stage_elapsed)
 
   if (isTRUE(arguments$dry_run)) {
@@ -3815,9 +3825,12 @@ rr_main <- function() {
   identity_validation <- rr_validate_panel_identity(method_results)
   stage_elapsed <- rr_progress("panel and structure identities validated", stage_elapsed)
   estimand_results <- rr_bind_rows_fill(list(
-    rr_build_empirical_estimands(long_results, reps = 2000L),
+    if (!arguments$study2_only) rr_build_empirical_estimands(long_results, reps = 2000L),
     rr_build_method_estimands(method_results, reps = 2000L)
   ))
+  for (field in c("empirical_family", "empirical_metric", "empirical_scale", "contribution")) {
+    if (!field %in% names(estimand_results)) estimand_results[[field]] <- NA
+  }
   stage_elapsed <- rr_progress("estimands aggregated", stage_elapsed)
   paired_differences <- rr_build_paired_differences(
     method_results,

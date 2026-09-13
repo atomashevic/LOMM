@@ -488,7 +488,7 @@ build_benchmark_config <- function(smoke = FALSE) {
     Q_vals <- parse_num_csv_env("BENCHMARK_FULL_Q", 0.75)
     Loadings_vals <- parse_num_csv_env("BENCHMARK_FULL_LOADINGS", 0.6)
     reps <- parse_int_env("BENCHMARK_FULL_REPS", 10L)
-    dynEGA_ncores <- 8L
+    dynEGA_ncores <- 1L
     pca_parallel_iter <- 20L
     graphical_var_timeout_sec <- parse_num_env("BENCHMARK_GRAPHICALVAR_TIMEOUT_SEC", Inf)
     gimme_timeout_sec <- parse_num_env("BENCHMARK_GIMME_TIMEOUT_SEC", 3600)
@@ -526,11 +526,7 @@ build_benchmark_config <- function(smoke = FALSE) {
   }
 
   max_workers <- max(1L, available_cores - 1L)
-  default_parallel_workers <- if (smoke) {
-    15L
-  } else {
-    8L
-  }
+  default_parallel_workers <- 4L
   parallel_workers <- min(
     max_workers,
     parse_int_env("BENCHMARK_WORKERS", default_parallel_workers)

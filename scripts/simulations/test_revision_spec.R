@@ -574,7 +574,28 @@ test_aggregate_builder_fixture <- function() {
     isTRUE(aggregate_environment$rr_run_fixture_tests(reps = 20L)),
     "Aggregate result-builder fixture tests failed."
   )
+  scoped <- new.env(parent = aggregate_environment)
+  scoped$rr_main <- aggregate_environment$rr_main
+  environment(scoped$rr_main) <- scoped
+  scoped$commandArgs <- function(trailingOnly = FALSE) c("--study2-only", "--dry-run")
+  scoped$rr_find_repo_root <- function() test_root
+  plan <- aggregate_environment$rr_parse_json_text(
+    paste(capture.output(suppressMessages(scoped$rr_main())), collapse = "\n"),
+    "Study 2 dry run"
+  )
+  expect_true(
+    !"empirical_cv" %in% unlist(plan$required_upstream_jobs) &&
+      !any(grepl("^empirical_", unlist(plan$estimand_ids))),
+    "Study 2 aggregation still requires empirical inputs or estimands."
+  )
 }
+
+cli <- revision_parse_cli(c("--job", "aggregate_results", "--study2-only", "--resume"))
+expect_true(cli$study2_only && cli$resume &&
+  identical(cli$config, "scripts/simulations/revision_jobs.json"),
+  "Direct reproduction CLI did not resolve its defaults and flags.")
+expect_error(revision_parse_cli(c("--job", "t100_dynega", "--study2-only")),
+  "--study2-only applies to aggregate_results", "Study 2 scope accepted a fitting job.")
 
 test_transition_and_stability()
 test_observation_helpers()

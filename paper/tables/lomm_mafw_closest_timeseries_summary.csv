@@ -1,2 +1,0 @@
-"empirical_clip","empirical_label","frames","emotions","candidate_draws","selected_draw","selected_seed","trajectory_distance","level_rmse","change_rmse","level_scale","change_scale","observation_profile","selection_scope"
-"02875.mp4","sadness",49,11,100,26,781790636,0.92577996988551,0.105145256468959,0.0828666245524503,0.125533204385769,0.0817248678433592,"Clip baseline + scale","Illustrative best case among 100 prespecified draws"

@@ -1,4 +1,4 @@
-LOMM_OBSERVATION_PROFILE_SCHEMA_VERSION <- 1L
+LOMM_OBSERVATION_PROFILE_SCHEMA_VERSION <- 2L
 LOMM_OBSERVATION_PROFILES <- c(
   "compositional_bs", "loading_aligned_bs", "homogeneous"
 )
@@ -10,14 +10,6 @@ LOMM_INTERNAL_IMPLEMENTATION_SHA256 <-
   "07ee2ff1896a0bb9985df5ca0242db83a39cf0a1ca181e0ba73e1962ba0d11c0"
 LOMM_CALIBRATION_RUN_CONFIG_HASH <-
   "854e8722d647ae1564a58459b66f66c87abf91217258fb04d0360ed26d8a4729"
-LOMM_REALISM_EVIDENCE_SHA256 <-
-  "e06eedb8ff9c46236ef895c12b90e1dcd990e2c1350a827e29b2ef01a457c7d3"
-LOMM_BRIDGE_EVIDENCE_SHA256 <-
-  "36be9ef8b854fbcbc729db3377e3765a4055548a52161d1af194fa49b5aeec35"
-LOMM_REALISM_RECEIPT_SHA256 <-
-  "b592db43a71dd58c6692f443ada0e7fca2fecffa9105f916022527edb4e64b44"
-LOMM_BRIDGE_RECEIPT_SHA256 <-
-  "7d1f8f071f81289601b9d2cbea7bba841ebb4fb2e83491646912ece6a10d5b82"
 LOMM_RNG_STATE_VERSION <- "lomm11_lecuyer_cmrg_v1"
 LOMM_RNG_STATE_DERIVATION <- "sha256_full_key_to_lecuyer_cmrg_v1"
 LOMM_RNG_SHARED_SEGMENT <- "__clip_shared__"
@@ -357,82 +349,6 @@ lomm_profile_validate_internal_source <- function(contract) {
   invisible(TRUE)
 }
 
-lomm_profile_validate_adoption_evidence <- function(evidence) {
-  lomm_profile_require_fields(
-    evidence, c("realism_aggregate", "recovery_bridge"), "Adoption evidence"
-  )
-  lomm_profile_require_fields(
-    evidence$realism_aggregate,
-    c("path", "sha256", "receipt_path", "receipt_sha256"),
-    "Realism evidence"
-  )
-  lomm_profile_require_fields(
-    evidence$recovery_bridge,
-    c(
-      "path", "sha256", "receipt_path", "receipt_sha256", "representation",
-      "baseline_geometry"
-    ),
-    "Recovery-bridge evidence"
-  )
-  for (item in evidence) {
-    lomm_profile_validate_relative_path(item$path, "Evidence path")
-    lomm_profile_validate_sha256(item$sha256, "Evidence hash")
-    lomm_profile_validate_relative_path(item$receipt_path, "Evidence receipt path")
-    lomm_profile_validate_sha256(item$receipt_sha256, "Evidence receipt hash")
-  }
-  lomm_profile_expect(
-    evidence$recovery_bridge$representation, "linear_z",
-    "Recovery-bridge representation"
-  )
-  lomm_profile_expect(
-    evidence$recovery_bridge$baseline_geometry, "loading_aligned",
-    "Recovery-bridge baseline geometry"
-  )
-  lomm_profile_expect(
-    evidence$realism_aggregate$path,
-    paste0(
-      "simulation_outputs/lomm_1_1/empirical_realism_ablation_aggregates/",
-      "854e8722d647/9769e6dd7fd1/paired_ablation_effects.csv"
-    ),
-    "Realism evidence path"
-  )
-  lomm_profile_expect(
-    evidence$realism_aggregate$sha256, LOMM_REALISM_EVIDENCE_SHA256,
-    "Realism evidence hash"
-  )
-  lomm_profile_expect(
-    evidence$realism_aggregate$receipt_path,
-    "scripts/lomm/evidence/realism_adoption_receipt.json",
-    "Realism evidence receipt path"
-  )
-  lomm_profile_expect(
-    evidence$realism_aggregate$receipt_sha256, LOMM_REALISM_RECEIPT_SHA256,
-    "Realism evidence receipt hash"
-  )
-  lomm_profile_expect(
-    evidence$recovery_bridge$path,
-    paste0(
-      "simulation_outputs/lomm_1_1/recovery_bridge_runs/991d45f9c90f/",
-      "paired_bootstrap_effects.csv"
-    ),
-    "Recovery-bridge evidence path"
-  )
-  lomm_profile_expect(
-    evidence$recovery_bridge$sha256, LOMM_BRIDGE_EVIDENCE_SHA256,
-    "Recovery-bridge evidence hash"
-  )
-  lomm_profile_expect(
-    evidence$recovery_bridge$receipt_path,
-    "scripts/lomm/evidence/recovery_bridge_adoption_receipt.json",
-    "Recovery-bridge evidence receipt path"
-  )
-  lomm_profile_expect(
-    evidence$recovery_bridge$receipt_sha256, LOMM_BRIDGE_RECEIPT_SHA256,
-    "Recovery-bridge evidence receipt hash"
-  )
-  invisible(TRUE)
-}
-
 lomm_profile_validate_claim_scope <- function(scope) {
   lomm_profile_require_fields(scope, c("supported", "excluded"), "Claim scope")
   supported <- lomm_profile_character_vector(scope$supported, "Supported claims")
@@ -452,55 +368,36 @@ lomm_profile_validate_claim_scope <- function(scope) {
   invisible(TRUE)
 }
 
-lomm_profile_validate_hashes <- function(config, repo_root, evidence = FALSE) {
+lomm_profile_validate_hashes <- function(config, repo_root) {
   repo_root <- normalizePath(repo_root, mustWork = TRUE)
   contract <- config$internal_source_contract
   files <- c(
     config = contract$config_path,
-    implementation = contract$implementation_path,
-    realism_receipt = config$adoption_evidence$realism_aggregate$receipt_path,
-    recovery_bridge_receipt =
-      config$adoption_evidence$recovery_bridge$receipt_path
+    implementation = contract$implementation_path
   )
   expected <- c(
     config = contract$config_sha256,
-    implementation = contract$implementation_sha256,
-    realism_receipt = config$adoption_evidence$realism_aggregate$receipt_sha256,
-    recovery_bridge_receipt =
-      config$adoption_evidence$recovery_bridge$receipt_sha256
+    implementation = contract$implementation_sha256
   )
-  if (evidence) {
-    files <- c(
-      files,
-      realism_aggregate = config$adoption_evidence$realism_aggregate$path,
-      recovery_bridge = config$adoption_evidence$recovery_bridge$path
-    )
-    expected <- c(
-      expected,
-      realism_aggregate = config$adoption_evidence$realism_aggregate$sha256,
-      recovery_bridge = config$adoption_evidence$recovery_bridge$sha256
-    )
-  }
   absolute <- file.path(repo_root, unname(files))
   if (any(!file.exists(absolute))) {
-    lomm_profile_stop("A provenance-locked source or evidence file is missing.")
+    lomm_profile_stop("A provenance-locked source file is missing.")
   }
   observed <- vapply(absolute, lomm11_profile_file_sha256, character(1))
   if (!identical(unname(observed), unname(expected))) {
-    lomm_profile_stop("A provenance-locked source or evidence hash changed.")
+    lomm_profile_stop("A provenance-locked source hash changed.")
   }
   invisible(TRUE)
 }
 
 lomm_validate_observation_profile_config <- function(
-    config, repo_root = LOMM_REPO_ROOT, validate_internal_hashes = FALSE,
-    validate_evidence_hashes = FALSE) {
+    config, repo_root = LOMM_REPO_ROOT, validate_internal_hashes = FALSE) {
   lomm_profile_require_fields(
     config,
     c(
       "schema_version", "model_name", "default_profile", "public_api", "profiles",
       "baseline_modes", "clip_scale", "calibrated_defaults",
-      "internal_source_contract", "adoption_evidence", "claim_scope"
+      "internal_source_contract", "claim_scope"
     ),
     "Public observation profile"
   )
@@ -516,13 +413,9 @@ lomm_validate_observation_profile_config <- function(
   lomm_profile_validate_scale(config$clip_scale)
   lomm_profile_validate_calibrated_defaults(config$calibrated_defaults)
   lomm_profile_validate_internal_source(config$internal_source_contract)
-  lomm_profile_validate_adoption_evidence(config$adoption_evidence)
   lomm_profile_validate_claim_scope(config$claim_scope)
-  if (validate_evidence_hashes) validate_internal_hashes <- TRUE
   if (validate_internal_hashes) {
-    lomm_profile_validate_hashes(
-      config, repo_root, evidence = validate_evidence_hashes
-    )
+    lomm_profile_validate_hashes(config, repo_root)
   }
   invisible(TRUE)
 }
@@ -574,8 +467,7 @@ lomm_profile_config_identity <- function(config) {
 }
 
 lomm_read_observation_profile_config <- function(
-    path = lomm_default_profile_config_path(), validate_internal_hashes = TRUE,
-    validate_evidence_hashes = FALSE) {
+    path = lomm_default_profile_config_path(), validate_internal_hashes = TRUE) {
   lomm_profile_require_packages()
   path <- normalizePath(path, mustWork = TRUE)
   config_bytes <- readBin(path, what = "raw", n = file.info(path)$size)
@@ -593,8 +485,7 @@ lomm_read_observation_profile_config <- function(
   ))
   lomm_validate_observation_profile_config(
     config,
-    validate_internal_hashes = validate_internal_hashes,
-    validate_evidence_hashes = validate_evidence_hashes
+    validate_internal_hashes = validate_internal_hashes
   )
   config
 }
