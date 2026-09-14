@@ -41,7 +41,7 @@ We revised the paper as a methods contribution centered on the Latent Oscillator
   \item \textit{Tutorial material.} We removed the tutorial material because the \textit{transforEmotion} tutorial has now been published separately and is cited in Study 1.
 \end{enumerate}
 
-Below we respond to each comment and give the relevant page numbers in the revised manuscript. Because the revision substantially changes the manuscript, we have not included a version showing tracked changes.
+Below we respond to each comment and give the relevant page numbers in the revised BRM manuscript and its separate supplementary material. Page numbers refer to the document identified in each location statement; unmarked references refer to the main manuscript. Because the revision substantially changes the manuscript, we have not included a version showing tracked changes.
 
 \section*{Response to the Editor}
 
@@ -50,14 +50,14 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   In your revision, I urge you to especially note the reviewer's comments on restructuring the paper, and also consider including a pipeline figure describing how all components interact.
   \end{reviewquote}
-  \location{Abstract, p. 1; Introduction, pp. 1--3; Figure 1, p. 4; The Latent Oscillator Measurement Model, pp. 3--7; Study 1, pp. 7--9; Study 2, pp. 9--12; Results, pp. 12--16; Discussion, pp. 16--18.}
+  \location{Abstract, p. 2; Introduction, pp. 3--4; Figure 1, p. 5; The Latent Oscillator Measurement Model, pp. 4--9; Study 1, pp. 9--11; Study 2, pp. 11--15; Results, pp. 15--19; Discussion, pp. 19--21.}
   \response We reorganized the manuscript into six main sections: Introduction, LOMM, Study 1, Study 2, Results, and Discussion. The main text presents the conceptual model and the decisions needed to understand each study, while the appendices give the complete model specification, exact parameter grids and random draws, package settings, and supporting analyses. Figure 1 shows the scoring, simulation, and recovery components and how they connect to the two studies. Study 1 compares simulated bounded scores with MAFW-derived classifier scores. Study 2 evaluates recovery from continuous indicators and reports the bounded-score condition as a separate sensitivity analysis.
 
   \item \point{Editorial guidance on politically sensitive examples}
   \begin{reviewquote}
   In addition, please carefully reconsider the use of politically sensitive examples in the manuscript. My concerns are that (1) the political content may distract readers from the methodological contribution, which should be the focus; (2) the interpretive framing of emotion results (e.g., anger and fear in Boris Johnson's Brexit address) involves editorial judgment that goes beyond what a methods paper typically requires; and (3) politically charged examples risk dating the paper and may be less accessible to an international readership unfamiliar with the specific political context. The methodological points could likely be illustrated equally well with less politically loaded material, which may also be more suitable for guiding empirical researchers aiming to use your method in a lab setting.
   \end{reviewquote}
-  \location{Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Figure 3, p. 8; Discussion, pp. 16--18.}
+  \location{Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Figure 3, p. 10; Discussion, pp. 19--21.}
   \response We replaced the political example with a non-political MAFW clip. Figure 3 shows four selected frames from that clip, the eleven classifier scores for those frames, and smoothed classifier-score trajectories. The frames serve only to identify the dataset-derived scoring example. The GitHub repository at \url{https://github.com/atomashevic/LOMM} does not include raw MAFW videos; access to the original video materials remains governed by the dataset providers. The Introduction treats classifier scores as fallible measurements of visible expression and distinguishes them from subjective emotional experience.
 \end{enumerate}
 
@@ -68,42 +68,42 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   I find the notation \(N_g\) and \(P_s\) confusing, especially as N is already used for neutrality, making g and s read as subscripts rather than parts of compound variable names. Please consider clearer notation.
   \end{reviewquote}
-  \location{The Latent Oscillator Measurement Model, pp. 3--7; Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 9--12; Appendix A.5, pp. 26--29.}
+  \location{The Latent Oscillator Measurement Model, pp. 4--9; Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 11--15; Supplement, Appendix A.5, pp. 5--8.}
   \response We removed the confusing notation and rewrote the model with explicit indices and dimensions. The model section and Appendix A define \(i=1,\ldots,N\) for clips, \(n=1,\ldots,T\) for observations, \(t_n=(n-1)\Delta\) for physical time, and \(f=1,\ldots,m\) for latent dimensions. The number of bounded score channels is \(J\), their coordinate dimension is \(d=J-1\), and \(p\) is the number of continuous indicators; in Study 2, \(p=mk\), with \(k\) indicators per dimension.
 
   \item \point{Matrix multiplication notation}
   \begin{reviewquote}
   Equation (2): The \(\times\) symbol is used for matrix multiplication; the \(\cdot\) symbol or simple juxtaposition would be more conventional in this context.
   \end{reviewquote}
-  \location{Equations (1) and (2), p. 5; Appendix A, pp. 23--30.}
+  \location{Equations (1) and (2), pp. 6--7; Supplement, Appendix A, pp. 2--9.}
   \response We rewrote the equations with standard matrix notation and now distinguish the two output dimensions explicitly. The log-ratio branch uses \(\boldsymbol\Lambda_i^{(u)}\) and \(\boldsymbol\Sigma_i^{(u)}\) in \(d\) dimensions, whereas the continuous-indicator branch uses \(\boldsymbol\Lambda_i^{(z)}\) and \(\boldsymbol\Psi_i\) in \(p\) dimensions. The residual-equicorrelation condition is defined on \(\boldsymbol\Psi_i\). The primary Study 2 design sets \(\mathbf b_i^{(z)}=\mathbf 0\) and \(s_i^{(z)}=1\). Appendix A gives the complete specification, including the bounded-score sensitivity condition described in point 4 of the overview above.
 
   \item \point{Boldfacing of covariance matrices}
   \begin{reviewquote}
   Line 277: The covariance matrix Q is not boldfaced, inconsistent with the boldfacing convention used for other matrices.
   \end{reviewquote}
-  \location{Model equations and observation layer, p. 5; Appendix A, pp. 23--30.}
+  \location{Model equations and observation layer, pp. 6--7; Supplement, Appendix A, pp. 2--9.}
   \response We revised the notation throughout the model section. The log-ratio branch uses \(\boldsymbol{\Lambda}_i^{(u)}\), \(\boldsymbol{\varepsilon}_{in}^{(u)}\), and \(\boldsymbol{\Sigma}_i^{(u)}\) in \(d\) dimensions. The continuous-indicator branch uses \(\boldsymbol{\Lambda}_i^{(z)}\), \(\boldsymbol{\varepsilon}_{in}^{(z)}\), and \(\boldsymbol{\Psi}_i\) in \(p\) dimensions. Fixed-measurement designs set the corresponding clip-indexed matrices equal across clips. Scalar acceleration inputs are written as \(q_{if,n}\).
 
   \item \point{Missing word}
   \begin{reviewquote}
   Line 304: A word appears to be missing: "We will illustrate this approach [using?] OpenAI's CLIP..."
   \end{reviewquote}
-  \location{Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Appendix B.1, pp. 31--34.}
+  \location{Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Supplement, Appendix B.1, pp. 10--13.}
   \response We replaced the earlier sentence with a direct description of the scoring procedure and data-retention rules. Frames without a detected face have missing scores. The analysis uses complete observations and preserves uninterrupted segment boundaries. Values are not truncated, and zero replacement is disabled.
 
   \item \point{Interpretive claim in the previous political example}
   \begin{reviewquote}
   Figure 3 implies that Boris Johnson expressed fear throughout the duration of his address on Brexit. This is a substantial interpretive claim that I do not think is suitable for a methods journal, and it relies on the validity of CLIP, which is not discussed. Furthermore, if this paper is to guide empirical research, it would be more suitable to demonstrate the method using neutral or controlled videos that researchers might encounter in a lab setting.
   \end{reviewquote}
-  \location{Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Figure 3, p. 8; Discussion, pp. 16--18.}
+  \location{Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Figure 3, p. 10; Discussion, pp. 19--21.}
   \response We removed the Boris Johnson and Brexit example. Figure 3 uses a non-political MAFW clip and shows selected dataset frames, their eleven classifier scores, and smoothed trajectories. The still frames identify the scored clip while the raw MAFW videos remain outside the GitHub repository; access to the original materials remains under the dataset providers' terms. The text avoids substantive political interpretation of a public speech.
 
   \item \point{CLIP and FER validity}
   \begin{reviewquote}
   The method relies heavily on CLIP being able to accurately classify emotions for any given set of emotion labels. However, the manuscript does not cite or discuss evidence for CLIP's validity in facial expression recognition specifically. At minimum, the authors should review existing work on CLIP's FER accuracy and acknowledge limitations.
   \end{reviewquote}
-  \location{Introduction, pp. 1--3; Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Discussion, pp. 16--18.}
+  \location{Introduction, pp. 3--4; Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Discussion, pp. 19--21.}
   \response The Introduction treats classifier scores as fallible measurements of visible expression and cites CLIP-based facial-expression research. Study 1 identifies the \textit{transforEmotion} backend as OpenAI CLIP ViT-Large/14 (\texttt{oai-large}) and evaluates statistical resemblance between generated and empirical score series.
 
   Our published \textit{transforEmotion} tutorial includes a small zero-shot demonstration on FindingEmo. It reports accuracy 0.417, macro-F1 0.331, micro-F1 0.417, macro-precision 0.448, and macro-recall 0.315 (Tomašević, Golino, \& Christensen, 2026).\footnote{Tomašević, A., Golino, H., \& Christensen, A. (2026). transforEmotion: An open-source R package for emotion analysis using transformer-based generative AI models. \textit{Computational Communication Research, 8}(2), 1. \url{https://doi.org/10.5117/CCR2026.2.2.TOMA}} These results provide a limited demonstration of image-emotion classification. They do not establish the accuracy or probability calibration of the MAFW video scores used in Study 1.
@@ -132,14 +132,14 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   How do we know that DLO-MM produces realistic FER-like data? It would strengthen the paper considerably to compare statistical properties of simulated datasets to those of real CLIP-derived FER data, to demonstrate that the simulation model produces data resembling real-world observations.
   \end{reviewquote}
-  \location{Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Study 1 Results, pp. 12--13; Figure 4, p. 13; Appendix C.1, pp. 40--41; Discussion, pp. 16--18.}
+  \location{Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Study 1 Results, pp. 15--16; Figure 4, p. 15; Supplement, Appendix C.1, pp. 19--20; Discussion, pp. 19--21.}
   \response We added a simulated-versus-real comparison using MAFW-derived classifier-score time series. Study 1 evaluates eleven statistics: eight channel-level summaries and three cross-channel summaries. Each statistic is computed on the scores and a log-ratio representation, producing 22 features per series. Channel statistics use centered log-ratios, and joint statistics use isometric log-ratio coordinates. The 100 videos are divided into four category-stratified folds, each with 75 calibration videos and 25 evaluation videos. Generator settings are selected within the calibration videos, and LOMM and a static logistic-normal generator calibrated from the same videos are evaluated on the held-out fold. LOMM starts each uninterrupted segment from independent stationary states and uses an activity multiplier of one throughout. Median plausibility and coverage were 0.970 and 0.920 for LOMM and 0.510 and 0.370 for the static generator. Fourteen of the 22 LOMM feature discrepancies fell within the MAFW reference range; the largest remaining differences concerned entropy. Study 2 is a separate analysis and is described under the next point.
 
   \item \point{Alternative dimensionality recovery benchmarks}
   \begin{reviewquote}
   I appreciate the effort in developing a simulation framework, which is not common in image classification work as far as I am aware. However, since the authors develop both the DLO-MM simulation method and the DynEGA analysis method, strong performance of DynEGA on DLO-MM data is not entirely surprising. It would considerably strengthen the contribution to include alternative dimensionality recovery methods as benchmarks, to determine whether DynEGA specifically excels or whether recovering latent dimensions from this type of data is straightforward more generally.
   \end{reviewquote}
-  \location{Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 9--12; Study 2 Results, pp. 13--16; Table 3, p. 13; Figure 5, p. 14; Appendix B, pp. 31--40; Appendix C, pp. 40--53.}
+  \location{Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 11--15; Study 2 Results, pp. 16--19; Table 3, p. 16; Figure 5, p. 17; Supplement, Appendix B, pp. 10--19; Supplement, Appendix C, pp. 19--32.}
   \response We added static EGA, GraphicalVAR, and GIMME to the matched-method simulation design. Static EGA ignores temporal order and is computationally inexpensive; it shows how much of the grouping is recoverable from contemporaneous indicator levels alone. GraphicalVAR is the dynamic network comparison. GIMME is included as a per-clip method whose residual-covariance matrices from valid clip-level fits are averaged, symmetrized, converted to a nonnegative graph by the prespecified rule, and partitioned; this tests computational feasibility as well as recovery.
 
   The main Results report the valid-output rate, the correct-dimension rate among valid outputs, and the overall correct-dimension recovery rate. The last quantity counts every failure and timeout as an unsuccessful recovery. Assignment accuracy is reported among valid network outputs, and runtime and feasibility are counted per unique fitted structure. Appendix C reports the complete grouping diagnostics, best-match absolute trajectory correlation, trajectory NRMSE, and all-attempt failure-adjusted trajectory measures. Best-match correlation may reuse a recovered-group summary across latent dimensions, whereas NRMSE uses a separate one-to-one match. An attempt without a valid network output receives correlation 0 and NRMSE 2; the same replacements apply when the corresponding dataset diagnostic is undefined.
@@ -154,35 +154,35 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   The paper has the potential to be very timely and interesting to psychologists, as it uses both advanced zero-shot classification (AI-based) and theoretically motivated dynamic modeling (ODE-based). In principle, this is an exciting and valuable direction and I see a lot of applications. I would have been considerably more enthusiastic about the contribution if the manuscript did not suffer from notable lack of coherence, structure, conceptual clarity, and mathematical precision.
   \end{reviewquote}
-  \location{Whole manuscript, especially Abstract, p. 1; Introduction, pp. 1--3; model section, pp. 3--7; Study 1, pp. 7--9; Study 2, pp. 9--12; Results, pp. 12--16.}
+  \location{Whole manuscript, especially Abstract, p. 2; Introduction, pp. 3--4; model section, pp. 4--9; Study 1, pp. 9--11; Study 2, pp. 11--15; Results, pp. 15--19.}
   \response We narrowed and reorganized the manuscript. LOMM has one role in the paper: it is a data generator. Study 1 tests whether calibrated LOMM series reproduce the joint statistical profile of held-out MAFW score series. Study 2 tests whether analysis methods recover a prespecified dimensional structure from LOMM-generated indicators.
 
   \item \point{Introduction and conceptual clarity}
   \begin{reviewquote}
   I think the Introduction can be tightened in favor of conceptual clarity, such that the paper quickly comes to the point. Currently, it oscillates between aims, brief snippets of related work, and a restatement of a singular aim (P6L46). I suggest a more brain-friendly structure that briefly introduces emotion recognition, existing difficulties with theory-driven modeling (DLO-MM) and data-driven detection (DL, supervised and zero-shot classification), and how the proposed framework addressed these difficulties. Upon a naive reading, it may currently not become clear whether the authors propose new methods, apply existing methods in a new context, validate their own software, or a hodgepodge of different things revolving around the quantitative analysis of emotion dynamics. Some methodological aspects currently appear out of the blue (e.g., dynEGA) and it is not at all clear which method is being validated for what purpose. For example, only much later does it become clear that DLO-MM will be used as a simulator to validate the accuracy of dynEGA in in silico.
   \end{reviewquote}
-  \location{Abstract, p. 1; Introduction, pp. 1--3; Figure 1, p. 4.}
+  \location{Abstract, p. 2; Introduction, pp. 3--4; Figure 1, p. 5.}
   \response We rewrote the Introduction to move directly from multivariate classifier-score time series, to the measurement problem, to LOMM, and then to the two studies. The Introduction explains that observable associations can change while the generating dimensions and indicator assignments remain fixed. Figure 1 shows how scoring, simulation, and recovery connect to the two studies. DynEGA, static EGA, GraphicalVAR, and GIMME are introduced together in the Introduction and specified as recovery procedures in Study 2.
 
   \item \point{Connections among CLIP, simulation, and DynEGA}
   \begin{reviewquote}
   Related: It is unclear how the goals of the different methods connect to each other. For instance, even 15 pages deep in the paper, it remains unclear how the goal of generic synthetic emotion scores connects to the goal of applying zero-shot classification to the frames. How exactly do CLIPs outputs feed into DLO-MM or vice versa (or not at all?). Some figures appear at random places (e.g., Figure 3 presages the entire methodology of the paper, even though only DLO-MM has been formally introduced). It would be helpful it the paper included a ``pull figure'' describing all components of the pipeline and their interrelations (and priming for the tutorial part), instead of relying on readers to piece together the puzzle and fill in the blanks. Additionally, it would be helpful if sections include paragraphs (see AI papers) that group together and delineate core ideas. For instance, CLIP and details about its pretraining appear under ``Emotion Dynamics as a Damper Oscillator Model'', implying an apparent (but missing) connection.
   \end{reviewquote}
-  \location{Figure 1, p. 4; Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 9--12; Appendix B, pp. 31--40.}
+  \location{Figure 1, p. 5; Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Study 2: Recovery of Dimensionality and Indicator Assignments, pp. 11--15; Supplement, Appendix B, pp. 10--19.}
   \response Figure 1 shows the workflow connecting scoring, simulation, and recovery. In Study 1, classifier scores from MAFW calibration videos determine the generator settings, and videos excluded from calibration provide the comparison target. In Study 2, LOMM generates continuous indicators with a prespecified grouping for recovery analysis; the bounded-score sensitivity condition is described in point 4 of the overview. The main text keeps these questions separate, and Appendix B gives the design and implementation details.
 
   \item \point{Uneven detail and tutorial framing}
   \begin{reviewquote}
   Furthermore, the granularity of description of the components of the pipeline differs widely, from more precise and theoretically argued for (DLO-MM), to less detailed with a patchwork of mathematical details and lots of submethods and moving parts (dynEGA), to merely explained on a high level (CLIP, zero-shot classification). Together with the fact that the descriptions of these methods are interleaved throughout the text, but their connections are often left implicit or informal, it becomes incredibly hard to follow the paper, especially as a ``tutorial''. The formal level of description also experiences an uninterrupted drop from DLO-MM onwards.
   \end{reviewquote}
-  \location{Introduction, pp. 1--3; Study 1, pp. 7--9; Study 2, pp. 9--12.}
-  \response We moved tutorial framing out of the manuscript because the \textit{transforEmotion} R package tutorial has already been published separately and is cited in Study 1. The main LOMM section explains the latent, activity, and measurement layers through a running psychometric example, a notation paragraph, two equations, and a worked process figure. Study 1 defines the empirical comparison target, and Study 2 introduces the four recovery procedures through a compact method-role table. Appendix A gives the complete mathematical specification, and Appendix B gives the computational settings and a table of exact random draws and perturbations.
+  \location{Introduction, pp. 3--4; The Latent Oscillator Measurement Model, pp. 4--9; Study 1, pp. 9--11; Study 2, pp. 11--15.}
+  \response We moved tutorial framing out of the manuscript because the \textit{transforEmotion} R package tutorial has already been published separately and is cited in Study 1. The main LOMM section explains the latent, activity, and measurement layers through a theory-informed psychometric example, a notation paragraph, two equations, and a worked process figure. It connects the illustrative dimensions to psychological functions, explains position and velocity feedback in relation to departures from and returns toward baseline, and motivates the distinction between a latent process and its outward expression. These interpretations are presented with explicit limits on their psychological validation. Study 1 defines the empirical comparison target. Study 2 explains how shared latent variation can support network-based grouping and why each procedure is included: DynEGA uses estimated changes, static EGA uses indicator levels, GraphicalVAR uses residual associations after modeling lagged relations, and GIMME uses residual associations after fitting each clip separately. Table 2 summarizes these purposes. Appendix A in the supplementary material gives the complete mathematical specification, and Appendix B gives the computational settings and exact random draws and perturbations.
 
   \item \point{Notation and mathematical precision}
   \begin{reviewquote}
   There are some unfortunate choices of notation and mathematical sloppiness. For example, in a dynamic modeling context, Nt (Eq.1) can easily be interpreted as N times t (continuous time). Why do the parameters eta and xi need an Nt subscript? I understand that Eq.1 applies to all three sentiment variables, but positive and negative sentiment are only briefly discussed. Matrices are not consistently bolded (e.g., P13L270). It is unclear where the 2D vector \(X_t\) comes from (which is bolded and capitalized as if it were a matrix). It is later redefined as a delay embedding matrix (P20L398). Where does the i index come from (P14L281)? The dynamic errors's symbol is redefined from sigma to q. The time index is redefined from t to i (I assume t was meant to be reserved for continuous time and i for discrete). These are just a few examples of sloppy mathematics, prompting a thorough revision for consistency and precision.
   \end{reviewquote}
-  \location{Model equations, p. 5; observation layer, p. 5; Appendix A, pp. 23--30; outcome measures, Appendix B.4, pp. 38--40.}
+  \location{Model equations, pp. 6--7; observation layer, p. 7; Supplement, Appendix A, pp. 2--9; outcome measures, Supplement, Appendix B.4, pp. 17--19.}
   \response We rewrote the mathematical exposition and defined each index and object where it first appears. Video is indexed by \(i\), discrete observation by \(n=1,\ldots,T\), physical time is \(t_n=(n-1)\Delta\), and latent dimension is indexed by \(f\). The state is \(\mathbf{s}_{if,n}=[x_{if,n},v_{if,n}]^\top\), and the acceleration input is \(q_{if,n}\). The log-ratio and continuous-indicator branches now use separate loading, residual, covariance, baseline, and scale symbols with dimensions stated explicitly.
 
   We also removed the continuous- versus discrete-time ambiguity the reviewer noted. The main text gives the linear second-order oscillator in continuous time and defines the piecewise-constant acceleration input on each observation interval. Appendix A gives the exact sampled transition, \(\mathbf{s}_{if,n+1}=\boldsymbol{\Phi}_f(\Delta)\mathbf{s}_{if,n}+\boldsymbol{\Gamma}_f(\Delta)q_{if,n}\), including the transition matrix and acceleration-input loading vector. The revised notation omits the old \(N_t\), \(N_g\), and \(P_s\) terms.
@@ -191,8 +191,10 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   I am left puzzled by some aspects of the data generation pipeline. For example, it is called simulate\_video (which would imply that video frames are simulated), but as far as I understood, it simply used DLO-MM to generate score time series. Also a new parameter eta (with no subscript) appears out of nowhere. Further, at a conceptual level, FER scores are said to apply to both sentiments (neutral, positive) and concrete emotions (excitement, fear,...), so in what sense are the outputs of CLIP compatible, conflicting with, or orthogonal to the outputs of DLO-MM? Can DLO-MM be fitted to CLIP outputs? In the latter case, DLO-MM will be rather a model of AI emotion detection performance than a model of emotion dynamics per se.
   \end{reviewquote}
-  \location{Introduction, pp. 1--3; Study 1, pp. 7--9; Study 2, pp. 9--12; Appendix B, pp. 31--40; Table B2, p. 35; Discussion, pp. 16--18.}
+  \location{Introduction, pp. 3--4; Study 1, pp. 9--11; Study 2, pp. 11--15; Supplement, Appendix B, pp. 10--19; Supplement, Table B2, p. 14; Discussion, pp. 19--21.}
   \response LOMM generates multivariate score series and continuous indicators; it does not generate video frames. In Study 1, classifier-score series from the calibration videos determine the observation-model parameters and are used to select the dynamic and measurement settings. Videos in the evaluation fold are excluded from this calibration and provide the comparison target. This procedure calibrates a generator to selected statistical properties of classifier output. It does not estimate latent emotional trajectories for individual videos.
+
+  The Discussion identifies fitting LOMM to observed data and recovering its dynamic, activity, and measurement parameters as future work. It cites state-space and hierarchical continuous-time methods as starting points and calls for parameter-recovery studies to establish identification and estimation accuracy. It also outlines potential applications to compositional time series, including gaze allocation, daily time allocation, and topic proportions. These are proposed extensions; the present studies evaluate generation and dimensional recovery under specified conditions.
 
   The Study 1 generator includes between-video baseline and scale variation, uses independent stationary starts at each uninterrupted segment, and sets every activity multiplier to one. Study 2 analyzes continuous indicators (overview, point 4); its between-clip-variability analysis draws clip baselines inside the space spanned by the loadings so that the prespecified indicator blocks are preserved. The affect-taxonomy paragraph is explicitly illustrative: approach-affiliation, threat-defense, and orienting-novelty are simulation-design dimensions, and the prompt labels are examples rather than validated affect categories in MAFW.
 
@@ -202,56 +204,56 @@ Below we respond to each comment and give the relevant page numbers in the revis
   \begin{reviewquote}
   Using correlation for validation the recovery of true scores only tells part of the story. Please, complement the results with a metric that reflects potential biases (e.g., NRMSE, predictive coefficient of determination, ...).
   \end{reviewquote}
-  \location{Study 2, pp. 9--12; Study 2 Results, pp. 13--16; Table 3, p. 13; Appendix C.2, pp. 42--46; Appendix C.5, pp. 50--51.}
+  \location{Study 2, pp. 11--15; Study 2 Results, pp. 16--19; Table 3, p. 16; Supplement, Appendix C.2, pp. 21--25; Supplement, Appendix C.5, pp. 29--30.}
   \response We added metrics beyond correlation. The primary simulation design reports the overall correct-dimension recovery rate and assignment accuracy, together with runtime among valid network outputs and valid-output, timeout, and error counts. Accuracy is reported per fitted network and community-detection algorithm, while feasibility and runtime are reported per unique fitted structure. The main Results report the $T=100$ best-match absolute trajectory correlation and trajectory NRMSE values and explain that they assess recovered-group summaries rather than the primary grouping target. Appendix B gives the exact NRMSE equation and normalization. It specifies that recovered groups are summarized from the levels of the analyzed indicators for every method, including DynEGA, and that comparisons with fewer than three finite pairs after standardization receive a cost of 2. It also states that correlation may reuse a recovered-group summary across latent dimensions, whereas NRMSE uses a one-to-one match. All-attempt versions assign correlation 0 and NRMSE 2 to attempts without a valid network output or with an undefined value for the corresponding dataset diagnostic.
 
   \item \point{Calibration and limitations of zero-shot classifiers}
   \begin{reviewquote}
   The calibration of zero-shot classifiers is generally hard to measure or unknown (comapred to the calibration of supervised classifier). That means that CLIP-induced FER scores (which can be interpreted or converted into probabilities) for more exotic emotions (e.g., excitement, pride) have an unknown reliability. The same goes for its accuracy in detecting rare emotions. I believe these points warrant at least a small discussion, as users should know what to expect for their own applications and where to find numbers on accuracy and calibration for common emotion sets.
   \end{reviewquote}
-  \location{Introduction, pp. 1--3; Study 1: Comparing Simulated and Real Score Series, pp. 7--9; Discussion, pp. 16--18.}
+  \location{Introduction, pp. 3--4; Study 1: Comparing Simulated and Real Score Series, pp. 9--11; Discussion, pp. 19--21.}
   \response We describe these outputs as softmax-normalized classifier scores rather than calibrated emotion probabilities. The Introduction cites recent zero-shot and CLIP-like FER work as scoring context. The empirical Methods identify the \textit{transforEmotion} scoring backend. Our response to Action Editor point 8 above gives numerical image-emotion benchmarks and distinguishes their tasks and evaluation procedures. These aggregate accuracy and F1 values do not establish probability calibration or performance on individual rare labels. The Introduction distinguishes visible expression from subjective emotional experience. Study 1 evaluates selected statistical properties of classifier-score series; it provides no test of emotion-label accuracy or probability calibration.
 
   \item \point{Acronyms and model name}
   \begin{reviewquote}
   Some acronyms are not introduced, redundantly introduced multiple times, or introduced following a different term (e.g., DLO is hidden among references on P7L52, but the term is Damped Oscillator Model, which would abbreviate to DOM).
   \end{reviewquote}
-  \location{Title and Abstract, p. 1; Introduction, pp. 1--3; model section, pp. 3--7.}
+  \location{Title and Abstract, pp. 1--2; Introduction, pp. 3--4; model section, pp. 4--9.}
   \response We changed the model name to Latent Oscillator Measurement Model (LOMM). We spell out the name in the title and introduce the acronym in the abstract and Introduction. Damping is one optional velocity-feedback regime in the model. The model section now explains damped, undamped, and amplifying velocity-feedback cases.
 
   \item \point{Neutral factor}
   \begin{reviewquote}
   Why is there no neutral factor in the measurement model? The latent neutral trajectory is plotted in Figure 2 but its relationship to the observable scores is unclear.
   \end{reviewquote}
-  \location{Observation layer, p. 5; Appendix A, pp. 23--30; Figure 2, p. 6; Study 1, pp. 7--9.}
+  \location{Observation layer, p. 7; Supplement, Appendix A, pp. 2--9; Figure 2, p. 8; Study 1, pp. 9--11.}
   \response In Study 1, neutral is one of the eleven score channels. In the calibrated generator, its centered log-ratio score combines shared latent signals with the calibrated center, clip baseline, and measurement error; neutral is not assigned a separate latent factor. Study 2 uses generic indicators without emotion labels. Figure 2 shows three latent dimensions, their activity schedules and expressed signals, and four indicators per dimension.
 
   \item \point{Equation 1}
   \begin{reviewquote}
   Eq. 1 needs attention. The first term literally evaluates to \(dN_t/dt = dN_t/dt\) and is completely redundant. I suspect the zero and the one in the ``parameter matrix'' have to be swapped.
   \end{reviewquote}
-  \location{Equation (1), p. 5; Appendix A, pp. 23--30.}
+  \location{Equation (1), p. 6; Supplement, Appendix A, pp. 2--9.}
   \response Equation 1 now gives acceleration as the sum of position feedback, velocity feedback, and the acceleration input. Appendix A expresses the same oscillator as a two-component state and gives its exact sampled transition.
 
   \item \point{Dynamic error}
   \begin{reviewquote}
   It is not clear where the ``dynamic error'' enters the model and what makes it dynamic (it is not introduced as a function of time). Since this is a tutorial, I would have expected a more precise and focused mathematical exposition.
   \end{reviewquote}
-  \location{Equation (1), p. 5; Appendix A, pp. 23--30; Figure 2 and accompanying text, pp. 5--7.}
+  \location{Equation (1), p. 6; Supplement, Appendix A, pp. 2--9; Figure 2 and accompanying text, pp. 6--9.}
   \response We now define the acceleration input as \(q_{if,n}\sim\mathcal{N}(0,\sigma_{qf}^{2})\), held constant within an observation interval and entering the exact state transition at each step. The main LOMM text explains its role in creating irregular peaks and reversals. Appendix Figure A1 shows trajectories with and without these inputs.
 
   \item \point{Idiosyncratic expressions}
   \begin{reviewquote}
   Nit: Some expressions are rather idiosyncratic, e.g., ``Emotion Dynamics as a Damped Oscillator Model'' -> the notion of ``X as a model'' seems strange, a more natural expressions would be ``Modeling emotion dynamics via ...'', ``quantitative methods approach'' is redundant -> perhaps ``a quantitative framework / method / approach'', there are lots of synonyms.
   \end{reviewquote}
-  \location{Title, p. 1; The Latent Oscillator Measurement Model, pp. 3--7; manuscript-wide prose revisions.}
+  \location{Title, p. 1; The Latent Oscillator Measurement Model, pp. 4--9; manuscript-wide prose revisions.}
   \response We revised the title and section titles to better match the paper's methodological contribution. We also reduced tutorial-style and redundant phrasing throughout the revised manuscript.
 
   \item \point{Figure captions}
   \begin{reviewquote}
   Figure captions are sloppy, use inconsistent capitalization, and rarely helpful or self-explanatory.
   \end{reviewquote}
-  \location{Figure 1, p. 4; Figure 2, p. 6; Figure 3, p. 8; Figure 4, p. 13; Figure 5, p. 14; Appendix Figures C1--C5, pp. 41--53.}
+  \location{Figure 1, p. 5; Figure 2, p. 8; Figure 3, p. 10; Figure 4, p. 15; Figure 5, p. 17; Supplement, Figures C1--C5, pp. 20--32.}
   \response We rewrote the figure captions to be self-contained and consistent. The five main figures provide a two-study overview, the latent, activity, and observation layers of LOMM, the empirical score example without a single-clip network panel, the Study 1 plausibility and coverage comparison, and Study 2 recovery across scenarios at $T=100$ and $T=25$. Figure 3 now contains only its three displayed panels in the source PDF. Supporting sensitivity, runtime, and community-detection figures appear in Appendix C.
 \end{enumerate}
 

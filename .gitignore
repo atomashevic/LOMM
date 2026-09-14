@@ -116,3 +116,6 @@ paper/brm_submission_title_page.md
 /paper/tables/lomm_mafw_closest_timeseries_caption.txt
 /paper/tables/lomm_mafw_closest_timeseries_ranking.csv
 /paper/tables/lomm_mafw_closest_timeseries_summary.csv
+
+# Locally generated manuscript submission packages.
+/paper/manuscript-*-source.zip
