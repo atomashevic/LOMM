@@ -24,7 +24,11 @@ AGENTS.md
 .codex/
 .claude/
 .aider*
-.cursor/
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
+.cursor/skills/**/evidence/
+.cursor/skills/**/__pycache__/
 .roo/
 .windsurf/
 .aislop/
