@@ -1,5 +1,9 @@
 # LOMM
 
+[![Watch the LOMM explainer video (12 min)](media/lomm_explainer_poster.png)](media/lomm_explainer.mp4)
+
+*A 12-minute narrated explainer of the model and both studies. Click the image to open the video ([MP4, 28 MB](media/lomm_explainer.mp4)).*
+
 Code and materials for *A Latent Oscillator Measurement Model to Simulate
 Emotional-Expression Score Dynamics in Video*.
 
